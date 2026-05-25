@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Haru · 모닝 글로벌 마켓</title>
+<style>
+  :root {
+    color-scheme: light;
+    --brand: #ea580c;
+    --brand-50: #fff7ed;
+    --brand-100: #ffedd5;
+    --brand-200: #fed7aa;
+    --text: #1f2937;
+    --muted: #64748b;
+    --line: #e5e7eb;
+    --bg: #ffffff;
+    --bg-soft: #f8fafc;
+    --green: #047857;
+    --red: #b91c1c;
+    --amber: #b45309;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 4px;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    color: var(--text); font-size: 14px; line-height: 1.55;
+    background: transparent;
+  }
+
+  header.hero {
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 60%, #ecfeff 100%);
+    border: 1px solid #fde68a;
+    margin-bottom: 12px;
+  }
+  header.hero h1 { margin: 0 0 2px; font-size: 18px; letter-spacing: -0.01em; }
+  header.hero .meta {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    color: var(--muted); font-size: 12px; margin-top: 4px;
+  }
+  header.hero .meta b { color: #0f172a; }
+
+  .pill {
+    display: inline-block; padding: 2px 9px; border-radius: 999px;
+    background: #fff1e6; color: #9a3412; border: 1px solid #fdba74;
+    font-size: 11px; font-weight: 600; margin-right: 4px;
+  }
+
+  .row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    margin-top: 8px;
+  }
+  button.primary, button.ghost {
+    border: 1px solid var(--brand);
+    background: var(--brand);
+    color: #fff;
+    padding: 7px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+  button.primary:hover { background: #c2410c; }
+  button.primary[disabled] { opacity: .5; cursor: not-allowed; }
+  button.ghost {
+    background: #fff; color: var(--brand);
+  }
+  button.ghost:hover { background: var(--brand-50); }
+  button.tiny {
+    padding: 3px 9px; font-size: 11px;
+    border: 1px solid var(--line); background: #fff; border-radius: 6px;
+    color: var(--text); cursor: pointer;
+  }
+  button.tiny:hover { background: var(--bg-soft); }
+  input.url-input {
+    flex: 1 1 260px; min-width: 220px;
+    padding: 7px 10px; font-size: 12.5px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; color: var(--text);
+  }
+  input.url-input:focus { outline: 2px solid var(--brand-200); border-color: var(--brand); }
+
+  .section {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 12px;
+  }
+  .section h2 {
+    margin: 0 0 10px;
+    font-size: 14px; color: #0f172a; display: flex; align-items: center; gap: 6px;
+    letter-spacing: -0.01em;
+  }
+  .section h2 .num {
+    display: inline-block; min-width: 18px; height: 18px; line-height: 18px;
+    text-align: center; border-radius: 4px;
+    background: var(--brand); color: #fff; font-size: 11px; font-weight: 700;
+    padding: 0 5px;
+  }
+  .section .sub { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+
+  .summary-line {
+    font-size: 14px; color: #0f172a;
+    background: var(--brand-50); border-left: 4px solid var(--brand);
+    padding: 12px 14px; border-radius: 8px;
+    line-height: 1.6;
+  }
+
+  .grid-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: 8px;
+  }
+  .ticker-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 11px;
+    display: flex; flex-direction: column; gap: 2px;
+    min-height: 80px;
+    transition: border-color .15s ease;
+  }
+  .ticker-card:hover { border-color: var(--brand-200); }
+  .ticker-card .name { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .ticker-card .symbol { font-size: 10.5px; color: #94a3b8; }
+  .ticker-card .price { font-size: 17px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; margin-top: 2px; }
+  .ticker-card .chg { font-size: 12px; font-weight: 600; }
+  .ticker-card .chg.up { color: var(--green); }
+  .ticker-card .chg.down { color: var(--red); }
+  .ticker-card .chg.flat { color: var(--muted); }
+  .ticker-card .range {
+    margin-top: 6px; height: 4px; background: #f1f5f9; border-radius: 999px;
+    position: relative;
+  }
+  .ticker-card .range .dot {
+    position: absolute; top: -3px; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--brand); border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--brand);
+    transform: translateX(-50%);
+  }
+  .ticker-card .range-meta {
+    margin-top: 3px; display: flex; justify-content: space-between;
+    font-size: 10.5px; color: var(--muted);
+  }
+
+  .news-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 720px) { .news-grid { grid-template-columns: 1fr; } }
+  .news-col h3 {
+    margin: 0 0 6px; font-size: 12.5px; color: #0f172a; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .news-col h3 .lang {
+    font-size: 10px; padding: 1px 6px; border-radius: 4px;
+    background: var(--bg-soft); color: var(--muted); font-weight: 500;
+  }
+  .news-list { list-style: none; padding: 0; margin: 0; }
+  .news-list li {
+    border-top: 1px solid var(--line);
+    padding: 7px 0;
+  }
+  .news-list li:first-child { border-top: 0; }
+  .news-list a {
+    color: #0f172a; text-decoration: none; font-size: 12.5px;
+    line-height: 1.45;
+  }
+  .news-list a:hover { color: var(--brand); }
+  .news-list .meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  .ai-card {
+    background: linear-gradient(180deg, #fffbeb 0%, #fff 100%);
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .ai-card h4 { margin: 0 0 8px; font-size: 13px; color: #92400e; font-weight: 600; }
+  .ai-card .ai-section { margin-bottom: 10px; }
+  .ai-card .ai-section:last-child { margin-bottom: 0; }
+  .ai-card .ai-section h5 {
+    margin: 0 0 4px; font-size: 12px; color: #0f172a; font-weight: 600;
+  }
+  .ai-card .ai-section p, .ai-card .ai-section li { font-size: 12.5px; color: var(--text); line-height: 1.55; margin: 0; }
+  .ai-card ol { margin: 4px 0 0 16px; padding: 0; }
+  .ai-card ol li { margin-bottom: 3px; }
+
+  .disclaimer {
+    margin-top: 10px;
+    font-size: 11px; color: var(--muted); font-style: italic;
+    line-height: 1.5;
+  }
+  .skeleton {
+    color: var(--muted); font-size: 12.5px;
+    padding: 8px 0;
+  }
+  .err { color: var(--red); font-size: 12px; }
+
+  .save-status {
+    font-size: 12px; color: var(--muted); margin-left: 6px;
+    align-self: center;
+  }
+  .save-status.ok { color: var(--green); }
+  .save-status.err { color: var(--red); }
+  .save-status a { color: var(--brand); }
+
+  details.config {
+    border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px;
+    background: var(--bg-soft); font-size: 12px;
+  }
+  details.config summary { cursor: pointer; color: var(--muted); }
+  details.config[open] { padding-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <span class="pill">Haru</span>
+  <h1>📈 모닝 글로벌 마켓 브리핑</h1>
+  <div class="meta">
+    <span>KST <b id="hdrTime">로딩 중…</b></span>
+    <span>·</span>
+    <span id="hdrSubtitle">미국장 마감 + 한국 시각 글로벌 시장 헤드라인을 한 화면에</span>
+  </div>
+</header>
+
+<div class="section" style="padding-top:10px; padding-bottom:10px;">
+  <details class="config" id="configBox">
+    <summary>⚙️ 노션 저장 위치 설정 (한 번만 설정하면 기억됩니다)</summary>
+    <div class="row" style="margin-top:8px;">
+      <input class="url-input" id="notionParent"
+             placeholder="Notion 부모 페이지 URL 또는 페이지 ID 붙여넣기"
+             autocomplete="off" spellcheck="false">
+      <button class="tiny" id="saveParent">저장</button>
+      <button class="tiny" id="clearParent">초기화</button>
+    </div>
+    <div style="margin-top:6px; color: var(--muted); font-size: 11px;">
+      예: https://www.notion.so/Haru-1234abcd... 또는 32자리 ID. 비워두면 워크스페이스 루트에 생성됩니다.
+    </div>
+  </details>
+  <div class="row" style="margin-top:10px;">
+    <button class="primary" id="btnSave">📥 이 브리핑을 Notion에 저장</button>
+    <button class="ghost" id="btnReload">🔄 데이터 새로고침</button>
+    <span class="save-status" id="saveStatus"></span>
+  </div>
+</div>
+
+<!-- 진단 패널 — 호출 실패 발생 시 자동 노출 -->
+<div id="diagBox" class="section" style="display:none; border-color:#fecaca; background:#fef2f2;">
+  <h2 style="color:#991b1b;"><span class="num" style="background:#b91c1c;">!</span> 데이터 호출 진단</h2>
+  <div class="sub" style="color:#7f1d1d;">아래 호출에서 오류가 발생했습니다. 도구 권한·이름·응답 형태를 확인하세요.</div>
+  <pre id="diagPre" style="margin:0; background:#fff; border:1px solid #fecaca; border-radius:6px; padding:8px 10px; font-size:11.5px; line-height:1.4; white-space:pre-wrap; max-height:240px; overflow:auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color:#7f1d1d;"></pre>
+</div>
+
+<!-- 1. AI 한 줄 요약 -->
+<div class="section">
+  <h2><span class="num">1</span> 오늘 한 줄</h2>
+  <div class="sub">지수·뉴스·한국 보도를 종합한 AI 한 단락 요약입니다. 결정은 본인의 판단입니다.</div>
+  <div class="summary-line" id="oneLine">
+    <span class="skeleton">데이터를 모으고 요약을 만드는 중입니다…</span>
+  </div>
+</div>
+
+<!-- 2. 주요 지수 -->
+<div class="section">
+  <h2><span class="num">2</span> 주요 지수 (전일 마감 기준)</h2>
+  <div class="grid-cards" id="indices"></div>
+</div>
+
+<!-- 3. 환율 · 원자재 · 금리 -->
+<div class="section">
+  <h2><span class="num">3</span> 환율 · 원자재 · 금리</h2>
+  <div class="grid-cards" id="macro"></div>
+</div>
+
+<!-- 4. 메가캡 -->
+<div class="section">
+  <h2><span class="num">4</span> 메가캡 7 (Magnificent 7)</h2>
+  <div class="grid-cards" id="megacap"></div>
+</div>
+
+<!-- 5. 헤드라인 -->
+<div class="section">
+  <h2><span class="num">5</span> 헤드라인</h2>
+  <div class="news-grid">
+    <div class="news-col">
+      <h3>🇺🇸 영문 (Yahoo Finance) <span class="lang">EN</span></h3>
+      <ul class="news-list" id="newsEN"></ul>
+    </div>
+    <div class="news-col">
+      <h3>🇰🇷 한국 매체 (네이버 뉴스) <span class="lang">KO</span></h3>
+      <ul class="news-list" id="newsKO"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- 6. AI 분석 -->
+<div class="section">
+  <h2><span class="num">6</span> AI 분석</h2>
+  <div class="sub">
+    수집한 시세·헤드라인을 바탕으로 핵심 3가지와 한국 시장 시사점을 정리합니다.
+  </div>
+  <div class="ai-card" id="aiBox">
+    <span class="skeleton">분석 중…</span>
+  </div>
+  <div class="disclaimer">
+    본 자료는 정보 제공을 목적으로 합니다. 특정 종목의 매수·매도를 권유하지 않으며,
+    투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
+  </div>
+</div>
+
+<script>
+// ───────────────────────────────────────────────────────────
+// 데이터 정의
+// ───────────────────────────────────────────────────────────
+const INDICES = [
+  { ticker: "^GSPC", name: "S&P 500" },
+  { ticker: "^IXIC", name: "나스닥 종합" },
+  { ticker: "^DJI",  name: "다우 산업" },
+  { ticker: "^RUT",  name: "러셀 2000" },
+  { ticker: "^VIX",  name: "VIX 변동성" },
+];
+const MACROS = [
+  { ticker: "KRW=X",   name: "달러/원 (USD/KRW)" },
+  { ticker: "CL=F",    name: "WTI 원유" },
+  { ticker: "GC=F",    name: "금 (Gold)" },
+  { ticker: "^TNX",    name: "美 10년 국채" },
+  { ticker: "BTC-USD", name: "비트코인" },
+];
+const MEGACAP = [
+  { ticker: "AAPL",  name: "애플" },
+  { ticker: "MSFT",  name: "마이크로소프트" },
+  { ticker: "NVDA",  name: "엔비디아" },
+  { ticker: "GOOGL", name: "구글 (알파벳)" },
+  { ticker: "AMZN",  name: "아마존" },
+  { ticker: "META",  name: "메타" },
+  { ticker: "TSLA",  name: "테슬라" },
+];
+
+const STORAGE_KEY = "haru.notion.parent";
+const STATE = {
+  ts: null,
+  indices: [],
+  macros: [],
+  megacap: [],
+  newsEN: [],
+  newsKO: [],
+  oneLine: "",
+  ai: null,
+};
+
+// ───────────────────────────────────────────────────────────
+// 헬퍼
+// ───────────────────────────────────────────────────────────
+function fmtNum(n, digits = 2) {
+  if (n === null || n === undefined || Number.isNaN(n)) return "—";
+  return Number(n).toLocaleString("ko-KR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+function fmtSign(pct) {
+  if (pct === null || pct === undefined || Number.isNaN(pct)) return "—";
+  const s = pct > 0 ? "+" : (pct < 0 ? "" : "");
+  return `${s}${pct.toFixed(2)}%`;
+}
+function chgClass(v) { return v > 0 ? "up" : (v < 0 ? "down" : "flat"); }
+function chgArrow(v) { return v > 0 ? "▲" : (v < 0 ? "▼" : "─"); }
+
+function parseStockInfo(raw) {
+  // 다양한 형태 지원: 문자열 / {result: JSON-string} / {result: object} / 직접 객체
+  try {
+    if (raw == null) return null;
+    if (typeof raw === "string") {
+      const t = raw.trim();
+      try { return parseStockInfo(JSON.parse(t)); } catch (e) { return null; }
+    }
+    if (typeof raw === "object") {
+      if (raw.result !== undefined) {
+        if (typeof raw.result === "string") {
+          try { return JSON.parse(raw.result); } catch (e) { return null; }
+        }
+        return raw.result;
+      }
+      // already a price-shaped object (yfinance fields visible)
+      if ("regularMarketPrice" in raw || "previousClose" in raw || "shortName" in raw) {
+        return raw;
+      }
+    }
+    return null;
+  } catch (e) { return null; }
+}
+function getQuote(info) {
+  if (!info) return null;
+  const price = info.regularMarketPrice ?? info.price ?? info.previousClose;
+  const prev  = info.regularMarketPreviousClose ?? info.previousClose ?? null;
+  const chg   = info.regularMarketChange ?? (price && prev ? price - prev : null);
+  const pct   = info.regularMarketChangePercent ?? (chg && prev ? (chg / prev) * 100 : null);
+  return {
+    price,
+    prev,
+    chg,
+    pct,
+    dayLow: info.regularMarketDayLow ?? info.dayLow ?? null,
+    dayHigh: info.regularMarketDayHigh ?? info.dayHigh ?? null,
+    yearLow: info.fiftyTwoWeekLow ?? null,
+    yearHigh: info.fiftyTwoWeekHigh ?? null,
+    name: info.shortName ?? info.longName ?? "",
+    state: info.marketState ?? "",
+  };
+}
+
+function tickerCard(item, q) {
+  if (!q || q.price == null) {
+    return `<div class="ticker-card">
+      <div class="name">${item.name}</div>
+      <div class="symbol">${item.ticker}</div>
+      <div class="price" style="color:#94a3b8;">—</div>
+      <div class="chg flat">데이터 없음</div>
+    </div>`;
+  }
+  let rangePos = 50;
+  if (q.yearLow != null && q.yearHigh != null && q.yearHigh > q.yearLow) {
+    rangePos = Math.max(0, Math.min(100, ((q.price - q.yearLow) / (q.yearHigh - q.yearLow)) * 100));
+  }
+  const cls = chgClass(q.pct ?? 0);
+  return `<div class="ticker-card" title="${item.name} (${item.ticker})">
+    <div class="name">${item.name}</div>
+    <div class="symbol">${item.ticker}${q.state ? " · " + q.state : ""}</div>
+    <div class="price">${fmtNum(q.price)}</div>
+    <div class="chg ${cls}">${chgArrow(q.pct ?? 0)} ${fmtSign(q.pct ?? 0)} <span style="color:var(--muted); font-weight:500;">(${q.chg != null ? (q.chg>0?"+":"")+fmtNum(q.chg) : "—"})</span></div>
+    <div class="range" title="52주 범위 내 위치">
+      <div class="dot" style="left: ${rangePos}%;"></div>
+    </div>
+    <div class="range-meta"><span>${q.yearLow != null ? fmtNum(q.yearLow, 0) : "—"}</span><span>52w</span><span>${q.yearHigh != null ? fmtNum(q.yearHigh, 0) : "—"}</span></div>
+  </div>`;
+}
+
+function renderTickerGrid(elId, list, results) {
+  const el = document.getElementById(elId);
+  el.innerHTML = list.map((it, i) => tickerCard(it, results[i])).join("");
+}
+
+function htmlEscape(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function stripHtml(s) {
+  return String(s ?? "").replace(/<[^>]*>/g, "");
+}
+
+function parseYahooNews(raw) {
+  // result is text. blocks separated by blank line. each block has "Title:", "Summary:", "URL:"
+  try {
+    const text = (typeof raw === "string") ? raw : (raw?.result ?? "");
+    const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+    return blocks.map(block => {
+      const t = block.match(/Title:\s*(.+)/);
+      const s = block.match(/Summary:\s*([\s\S]+?)(?:\nDescription:|\nURL:|$)/);
+      const u = block.match(/URL:\s*(\S+)/);
+      return {
+        title: t ? t[1].trim() : "",
+        summary: s ? s[1].trim() : "",
+        url: u ? u[1].trim() : "",
+      };
+    }).filter(it => it.title);
+  } catch (e) {
+    return [];
+  }
+}
+
+function fmtPubDate(s) {
+  if (!s) return "";
+  try {
+    const d = new Date(s);
+    return d.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch (e) { return s; }
+}
+
+// ───────────────────────────────────────────────────────────
+// 데이터 로드 — MCP 응답 wrap 형태에 견고하게 대응
+// ───────────────────────────────────────────────────────────
+const ERRORS = []; // 호출 실패 누적
+
+// MCP ToolResult, structuredContent, raw string 등 어떤 형태로 와도 unwrap
+function unwrapMcp(res) {
+  if (res === null || res === undefined) return res;
+  if (typeof res === "string") {
+    const t = res.trim();
+    if ((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"))) {
+      try { return JSON.parse(t); } catch (e) { /* fallthrough */ }
+    }
+    return res;
+  }
+  if (typeof res !== "object") return res;
+  if (res.isError && Array.isArray(res.content)) {
+    const txt = res.content.filter(c => c && c.type === "text").map(c => c.text).join("\n");
+    throw new Error(txt || "MCP tool reported error");
+  }
+  if (res.structuredContent !== undefined) return res.structuredContent;
+  if (Array.isArray(res.content)) {
+    const texts = res.content.filter(c => c && c.type === "text" && typeof c.text === "string").map(c => c.text);
+    if (texts.length) {
+      const joined = texts.length === 1 ? texts[0] : texts.join("\n");
+      try { return JSON.parse(joined); } catch (e) { return joined; }
+    }
+  }
+  return res;
+}
+
+async function callTool(name, args) {
+  if (!window.cowork || !window.cowork.callMcpTool) {
+    throw new Error("Cowork 환경이 아닙니다 — 라이브 아티팩트로 열어주세요.");
+  }
+  let res;
+  try { res = await window.cowork.callMcpTool(name, args); }
+  catch (e) {
+    ERRORS.push({ tool: name, args, error: (e && (e.message || String(e))) });
+    throw e;
+  }
+  let unwrapped;
+  try { unwrapped = unwrapMcp(res); }
+  catch (e) {
+    ERRORS.push({ tool: name, args, error: (e && (e.message || String(e))) });
+    throw e;
+  }
+  return unwrapped;
+}
+
+async function fetchTime() {
+  try {
+    const res = await callTool("mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__NaverSearch-get_current_korean_time", {});
+    // 두 가지 응답 가능: {current_korean_time:{...}} 또는 {formatted:"..."}
+    return res?.current_korean_time?.formatted ?? res?.formatted ?? "";
+  } catch (e) { return ""; }
+}
+
+async function fetchQuote(ticker) {
+  try {
+    const res = await callTool("mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__UsStockInfo-get_stock_info", { ticker });
+    return getQuote(parseStockInfo(res));
+  } catch (e) {
+    console.warn("quote fail", ticker, e);
+    return null;
+  }
+}
+
+async function fetchYahooNews(ticker) {
+  try {
+    const res = await callTool("mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__UsStockInfo-get_finance_news", { ticker });
+    // 응답: {result: "Title:...\n\n..."} 또는 직접 문자열
+    const text = (typeof res === "string") ? res : (res?.result ?? "");
+    return parseYahooNews(text);
+  } catch (e) { return []; }
+}
+
+async function fetchNaverNews(query) {
+  try {
+    const res = await callTool("mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__NaverSearch-search_news",
+      { query, display: 8, sort: "date" });
+    const items = res?.items ?? res?.result?.items ?? [];
+    return items.map(it => ({
+      title: stripHtml(it.title),
+      summary: stripHtml(it.description),
+      url: it.link || it.originallink,
+      pubDate: it.pubDate,
+    }));
+  } catch (e) { return []; }
+}
+
+// ───────────────────────────────────────────────────────────
+// AI 요약
+// ───────────────────────────────────────────────────────────
+async function runAi() {
+  if (!window.cowork || !window.cowork.askClaude) return;
+
+  const indicesSummary = STATE.indices.map((q, i) => {
+    if (!q || q.price == null) return `- ${INDICES[i].name}: 데이터 없음`;
+    return `- ${INDICES[i].name} (${INDICES[i].ticker}): ${fmtNum(q.price)} (${fmtSign(q.pct ?? 0)})`;
+  }).join("\n");
+
+  const macroSummary = STATE.macros.map((q, i) => {
+    if (!q || q.price == null) return `- ${MACROS[i].name}: 데이터 없음`;
+    return `- ${MACROS[i].name} (${MACROS[i].ticker}): ${fmtNum(q.price)} (${fmtSign(q.pct ?? 0)})`;
+  }).join("\n");
+
+  const megaSummary = STATE.megacap.map((q, i) => {
+    if (!q || q.price == null) return `- ${MEGACAP[i].name}: 데이터 없음`;
+    return `- ${MEGACAP[i].name} (${MEGACAP[i].ticker}): ${fmtNum(q.price)} (${fmtSign(q.pct ?? 0)})`;
+  }).join("\n");
+
+  const enHeadlines = STATE.newsEN.slice(0, 6).map((n, i) => `${i+1}. ${n.title} — ${n.summary}`).join("\n");
+  const koHeadlines = STATE.newsKO.slice(0, 6).map((n, i) => `${i+1}. ${n.title} — ${n.summary}`).join("\n");
+
+  const prompt = `당신은 투자자에게 정보를 정리해 주는 어시스턴트입니다.
+구체적인 종목 매수/매도 추천이나 가격 예측은 절대 하지 마세요. 사실 정리와 일반적 해석만 합니다.
+응답 끝에는 반드시 "본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다."를 포함하세요.
+모든 응답은 한국어로, 응답은 반드시 아래 JSON 형식 하나만 반환하세요(다른 말 X):
+
+{
+  "one_line": "오늘 새벽 미국장과 글로벌 시장을 한 단락(2~3문장)으로 자연스럽게 요약",
+  "key_points": ["오늘의 핵심 포인트 1", "핵심 포인트 2", "핵심 포인트 3"],
+  "korea_implication": "한국 시장에 어떤 함의가 있는지 2~3문장",
+  "watch": "오늘 추가로 살펴볼 만한 이벤트/지표/섹터를 1~2문장 (특정 종목 추천 X)",
+  "disclaimer": "본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다."
+}
+
+## 입력 데이터
+
+### 주요 지수
+${indicesSummary}
+
+### 환율·원자재·금리
+${macroSummary}
+
+### 메가캡
+${megaSummary}
+
+### 영문 헤드라인 (Yahoo Finance)
+${enHeadlines || "없음"}
+
+### 한국어 헤드라인 (네이버 뉴스)
+${koHeadlines || "없음"}
+
+위 정보만 사용해서 JSON으로 답하세요.`;
+
+  try {
+    const res = await window.cowork.askClaude(prompt, []);
+    let text = (typeof res === "string") ? res : (res?.text ?? res?.content ?? JSON.stringify(res));
+    // try to extract JSON
+    const m = text.match(/\{[\s\S]*\}/);
+    const json = m ? JSON.parse(m[0]) : null;
+    return json;
+  } catch (e) {
+    console.error("askClaude fail", e);
+    return null;
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+// 렌더링
+// ───────────────────────────────────────────────────────────
+function renderHeader(timeStr) {
+  document.getElementById("hdrTime").textContent = timeStr || "—";
+}
+
+function renderNewsList(elId, items, opts = {}) {
+  const el = document.getElementById(elId);
+  if (!items || items.length === 0) {
+    el.innerHTML = `<li class="skeleton">불러올 헤드라인이 없습니다.</li>`;
+    return;
+  }
+  el.innerHTML = items.slice(0, opts.limit ?? 7).map(n => {
+    const url = n.url || "#";
+    const title = htmlEscape(n.title || "(제목 없음)");
+    const meta = n.pubDate ? fmtPubDate(n.pubDate) : (n.summary ? htmlEscape(n.summary).slice(0, 90) + "…" : "");
+    return `<li>
+      <a href="${htmlEscape(url)}" target="_blank" rel="noopener">${title}</a>
+      <div class="meta">${meta}</div>
+    </li>`;
+  }).join("");
+}
+
+function renderAi(ai) {
+  const box = document.getElementById("aiBox");
+  if (!ai) {
+    box.innerHTML = `<div class="err">AI 요약을 가져오지 못했습니다. 새로고침을 시도해 주세요.</div>`;
+    return;
+  }
+  document.getElementById("oneLine").textContent = ai.one_line || "—";
+
+  const points = (ai.key_points || []).slice(0, 5).map(p => `<li>${htmlEscape(p)}</li>`).join("");
+  box.innerHTML = `
+    <h4>📝 오늘의 핵심</h4>
+    <div class="ai-section">
+      <ol>${points || "<li>—</li>"}</ol>
+    </div>
+    <div class="ai-section">
+      <h5>🇰🇷 한국 시장 시사점</h5>
+      <p>${htmlEscape(ai.korea_implication || "—")}</p>
+    </div>
+    <div class="ai-section">
+      <h5>🔭 오늘 더 살펴볼 것</h5>
+      <p>${htmlEscape(ai.watch || "—")}</p>
+    </div>
+  `;
+  STATE.ai = ai;
+}
+
+// ───────────────────────────────────────────────────────────
+// 메인 로드
+// ───────────────────────────────────────────────────────────
+async function loadAll() {
+  // 시간
+  fetchTime().then(renderHeader);
+
+  // 시세 병렬
+  const [indQ, macQ, megaQ] = await Promise.all([
+    Promise.all(INDICES.map(i => fetchQuote(i.ticker))),
+    Promise.all(MACROS.map(i => fetchQuote(i.ticker))),
+    Promise.all(MEGACAP.map(i => fetchQuote(i.ticker))),
+  ]);
+  STATE.indices = indQ;
+  STATE.macros = macQ;
+  STATE.megacap = megaQ;
+
+  renderTickerGrid("indices", INDICES, indQ);
+  renderTickerGrid("macro",   MACROS,  macQ);
+  renderTickerGrid("megacap", MEGACAP, megaQ);
+
+  // 뉴스 병렬 — 영문은 ^GSPC 기준, 한글은 두 쿼리 합침
+  const [yn, kn1, kn2] = await Promise.all([
+    fetchYahooNews("^GSPC"),
+    fetchNaverNews("미국 증시 마감"),
+    fetchNaverNews("뉴욕 증시"),
+  ]);
+  STATE.newsEN = yn;
+  // 한글은 두 쿼리 결과를 link 기준으로 dedupe
+  const seen = new Set();
+  const koMerged = [...kn1, ...kn2].filter(n => {
+    const k = (n.url || n.title);
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  }).slice(0, 8);
+  STATE.newsKO = koMerged;
+
+  renderNewsList("newsEN", yn, { limit: 7 });
+  renderNewsList("newsKO", koMerged, { limit: 7 });
+
+  // AI
+  const ai = await runAi();
+  renderAi(ai);
+
+  // 진단 — 한 번이라도 실패가 있었으면 사용자에게 보여준다
+  if (ERRORS.length) {
+    const box = document.getElementById("diagBox");
+    const pre = document.getElementById("diagPre");
+    pre.textContent = ERRORS.slice(0, 8).map((e, i) =>
+      `${i+1}. ${e.tool}\n   args: ${JSON.stringify(e.args)}\n   error: ${e.error}`
+    ).join("\n\n") + (ERRORS.length > 8 ? `\n\n... 외 ${ERRORS.length - 8}건` : "");
+    box.style.display = "";
+  }
+
+  STATE.ts = new Date();
+}
+
+// ───────────────────────────────────────────────────────────
+// Notion 저장
+// ───────────────────────────────────────────────────────────
+function loadNotionParent() {
+  return localStorage.getItem(STORAGE_KEY) || "";
+}
+function saveNotionParent(v) {
+  if (v) localStorage.setItem(STORAGE_KEY, v);
+  else localStorage.removeItem(STORAGE_KEY);
+}
+
+function extractPageId(input) {
+  if (!input) return null;
+  const cleaned = input.trim();
+  // Try UUID dashed
+  const m1 = cleaned.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+  if (m1) return m1[0];
+  // 32-hex (URL slug end)
+  const m2 = cleaned.match(/([0-9a-fA-F]{32})/);
+  if (m2) {
+    const s = m2[1];
+    return `${s.slice(0,8)}-${s.slice(8,12)}-${s.slice(12,16)}-${s.slice(16,20)}-${s.slice(20)}`;
+  }
+  // raw 32-hex with no dashes
+  if (/^[0-9a-fA-F]{32}$/.test(cleaned)) {
+    const s = cleaned;
+    return `${s.slice(0,8)}-${s.slice(8,12)}-${s.slice(12,16)}-${s.slice(16,20)}-${s.slice(20)}`;
+  }
+  return null;
+}
+
+function buildNotionMarkdown() {
+  const ai = STATE.ai || {};
+  const today = STATE.ts || new Date();
+  const dateStr = today.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
+
+  const indicesTable = [
+    "| 지수 | 종가 | 변동 |",
+    "|---|---:|---:|",
+    ...INDICES.map((it, i) => {
+      const q = STATE.indices[i];
+      if (!q || q.price == null) return `| ${it.name} | — | — |`;
+      return `| ${it.name} (${it.ticker}) | ${fmtNum(q.price)} | ${fmtSign(q.pct ?? 0)} |`;
+    })
+  ].join("\n");
+
+  const macroTable = [
+    "| 항목 | 값 | 변동 |",
+    "|---|---:|---:|",
+    ...MACROS.map((it, i) => {
+      const q = STATE.macros[i];
+      if (!q || q.price == null) return `| ${it.name} | — | — |`;
+      return `| ${it.name} (${it.ticker}) | ${fmtNum(q.price)} | ${fmtSign(q.pct ?? 0)} |`;
+    })
+  ].join("\n");
+
+  const megaTable = [
+    "| 종목 | 종가 | 변동 |",
+    "|---|---:|---:|",
+    ...MEGACAP.map((it, i) => {
+      const q = STATE.megacap[i];
+      if (!q || q.price == null) return `| ${it.name} | — | — |`;
+      return `| ${it.name} (${it.ticker}) | ${fmtNum(q.price)} | ${fmtSign(q.pct ?? 0)} |`;
+    })
+  ].join("\n");
+
+  const enList = (STATE.newsEN || []).slice(0, 6)
+    .map(n => `- [${(n.title || "").replace(/\|/g, "")}](${n.url || "#"})`).join("\n") || "_없음_";
+  const koList = (STATE.newsKO || []).slice(0, 6)
+    .map(n => `- [${(n.title || "").replace(/\|/g, "")}](${n.url || "#"})`).join("\n") || "_없음_";
+
+  const md = [
+    `> ${ai.one_line || "오늘의 글로벌 시장 요약"}`,
+    "",
+    `**기준 시각**: ${dateStr} (KST)`,
+    "",
+    "## 📝 오늘의 핵심",
+    ...((ai.key_points || []).map((p, i) => `${i+1}. ${p}`)),
+    "",
+    "## 🇰🇷 한국 시장 시사점",
+    ai.korea_implication || "—",
+    "",
+    "## 🔭 오늘 더 살펴볼 것",
+    ai.watch || "—",
+    "",
+    "## 📊 주요 지수",
+    indicesTable,
+    "",
+    "## 💱 환율 · 원자재 · 금리",
+    macroTable,
+    "",
+    "## 🚀 메가캡 7",
+    megaTable,
+    "",
+    "## 🇺🇸 영문 헤드라인",
+    enList,
+    "",
+    "## 🇰🇷 한국 매체 헤드라인",
+    koList,
+    "",
+    "---",
+    `_${ai.disclaimer || "본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다."}_`,
+    "",
+    "_생성: Haru · Personal Investment Workflow OS_"
+  ].join("\n");
+
+  return { md, dateStr };
+}
+
+async function saveToNotion() {
+  const status = document.getElementById("saveStatus");
+  status.className = "save-status";
+  status.textContent = "저장 중…";
+
+  const today = new Date();
+  const dateOnly = today.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" })
+                    .replace(/\./g, "").trim().replace(/\s+/g, "-"); // 2026-05-04
+  const dow = today.toLocaleDateString("ko-KR", { weekday: "short" });
+  const title = `📈 모닝 글로벌 마켓 — ${dateOnly} (${dow})`;
+
+  const { md } = buildNotionMarkdown();
+
+  const parentInput = document.getElementById("notionParent").value.trim() || loadNotionParent();
+  const pageId = extractPageId(parentInput);
+
+  const args = {
+    pages: [{
+      properties: { title: title },
+      content: md,
+      icon: "📈",
+    }]
+  };
+  if (pageId) {
+    args.parent = { type: "page_id", page_id: pageId };
+  } else {
+    // create at workspace level (private)
+    args.parent = { type: "page_id", page_id: "" };
+    delete args.parent;
+  }
+
+  try {
+    const res = await callTool("mcp__91b1b707-5514-4e15-8175-c193c9cea5d8__notion-create-pages",
+      pageId ? args : { pages: args.pages }
+    );
+    let url = "";
+    try {
+      // res shape varies; try a few common spots
+      const arr = res?.pages || res?.created_pages || res?.results || (Array.isArray(res) ? res : null);
+      if (arr && arr[0]) {
+        url = arr[0].url || arr[0].public_url || "";
+      } else if (res?.url) { url = res.url; }
+    } catch (e) {}
+
+    status.className = "save-status ok";
+    status.innerHTML = url
+      ? `✅ 저장됨 — <a href="${htmlEscape(url)}" target="_blank" rel="noopener">노션에서 열기</a>`
+      : `✅ Notion에 페이지가 생성되었습니다.`;
+  } catch (e) {
+    console.error(e);
+    status.className = "save-status err";
+    status.textContent = `❌ 저장 실패: ${e?.message || e}`;
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+// 이벤트 바인딩
+// ───────────────────────────────────────────────────────────
+document.getElementById("notionParent").value = loadNotionParent();
+document.getElementById("saveParent").addEventListener("click", () => {
+  const v = document.getElementById("notionParent").value.trim();
+  saveNotionParent(v);
+  const status = document.getElementById("saveStatus");
+  status.className = "save-status ok";
+  status.textContent = v ? "📌 위치 저장됨" : "🗑 위치 초기화됨";
+  setTimeout(() => { status.textContent = ""; }, 2500);
+});
+document.getElementById("clearParent").addEventListener("click", () => {
+  document.getElementById("notionParent").value = "";
+  saveNotionParent("");
+});
+document.getElementById("btnSave").addEventListener("click", saveToNotion);
+document.getElementById("btnReload").addEventListener("click", () => loadAll());
+
+// 초기 로드
+loadAll().catch(e => {
+  console.error(e);
+  document.getElementById("oneLine").innerHTML = `<span class="err">데이터 로드 실패: ${htmlEscape(e?.message || String(e))}</span>`;
+});
+</script>
+
+</body>
+</html>

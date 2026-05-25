@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Haru · MCP 응답 형태 진단</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; padding: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "SF Pro Text", "Segoe UI", sans-serif;
+    color: #1f2937; background: transparent; font-size: 13px;
+  }
+  h1 { margin: 0 0 4px; font-size: 17px; }
+  .meta { color: #64748b; font-size: 12px; margin-bottom: 12px; }
+  .case {
+    border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px;
+    background: #fff; margin-bottom: 8px;
+  }
+  .case h3 { margin: 0 0 4px; font-size: 13px; color: #ea580c; }
+  .case .args { color: #64748b; font-size: 11.5px; margin-bottom: 6px; }
+  .status {
+    display: inline-block; padding: 1px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; margin-right: 6px;
+  }
+  .status.ok  { background: #dcfce7; color: #166534; }
+  .status.err { background: #fee2e2; color: #b91c1c; }
+  .status.pending { background: #fef3c7; color: #92400e; }
+  pre {
+    margin: 6px 0 0; background: #f8fafc; border: 1px solid #e5e7eb;
+    border-radius: 6px; padding: 8px 10px;
+    font-size: 11.5px; line-height: 1.4;
+    white-space: pre-wrap; word-break: break-all;
+    max-height: 320px; overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .meta-row {
+    font-size: 11.5px; color: #475569;
+    background: #f1f5f9; padding: 6px 8px; border-radius: 4px;
+    margin-bottom: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  button {
+    border: 1px solid #ea580c; background: #ea580c; color: #fff;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<h1>🔍 Haru · MCP 응답 형태 진단</h1>
+<div class="meta">
+  각 도구를 한 번씩 호출하고 <b>응답의 최상위 형태</b>를 그대로 보여줍니다.
+  결과를 보고 어떤 형태로 들어오는지 확인 후, 모닝/이브닝 아티팩트 파서를 거기에 맞춥니다.
+</div>
+<button id="btnRun">🔄 다시 실행</button>
+<div id="results" style="margin-top: 10px;"></div>
+
+<script>
+const CASES = [
+  {
+    label: "1. 한국 시간",
+    name: "mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__NaverSearch-get_current_korean_time",
+    args: {},
+  },
+  {
+    label: "2. S&P 500 시세 (응답: result에 JSON 문자열 예상)",
+    name: "mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__UsStockInfo-get_stock_info",
+    args: { ticker: "^GSPC" },
+  },
+  {
+    label: "3. KOSPI 시세 (한국 ticker 동작 확인)",
+    name: "mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__UsStockInfo-get_stock_info",
+    args: { ticker: "^KS11" },
+  },
+  {
+    label: "4. Yahoo 뉴스 (응답: result에 텍스트 블록 예상)",
+    name: "mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__UsStockInfo-get_finance_news",
+    args: { ticker: "^GSPC" },
+  },
+  {
+    label: "5. 네이버 뉴스 (응답: items 배열 예상)",
+    name: "mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__NaverSearch-search_news",
+    args: { query: "코스피 마감", display: 3, sort: "date" },
+  },
+  {
+    label: "6. DART 공시 (응답: list 배열 예상)",
+    name: "mcp__85640d61-ea71-49da-ad70-bd97db3f84a8__opendart-search_disclosures",
+    args: { bgn_de: "20260501", end_de: "20260504", corp_cls: "Y", page_count: 3 },
+  },
+];
+
+function htmlEscape(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function describe(v, depth = 0, maxDepth = 2) {
+  if (v === null) return "null";
+  if (v === undefined) return "undefined";
+  const t = typeof v;
+  if (t !== "object") return `${t}: ${JSON.stringify(v).slice(0, 100)}`;
+  if (Array.isArray(v)) {
+    return `array[${v.length}]` + (v.length && depth < maxDepth ? ` of { 0: ${describe(v[0], depth+1, maxDepth)} }` : "");
+  }
+  // object
+  const keys = Object.keys(v);
+  return `object{${keys.slice(0, 8).map(k => `"${k}": ${typeof v[k]}`).join(", ")}${keys.length > 8 ? ", ..." : ""}}`;
+}
+
+async function runOne(c, container) {
+  const div = document.createElement("div");
+  div.className = "case";
+  div.innerHTML = `
+    <h3>${htmlEscape(c.label)}</h3>
+    <div class="args">tool: <code>${htmlEscape(c.name)}</code><br>args: <code>${htmlEscape(JSON.stringify(c.args))}</code></div>
+    <span class="status pending">호출 중…</span>
+  `;
+  container.appendChild(div);
+
+  const t0 = performance.now();
+  let res, err;
+  try {
+    if (!window.cowork || !window.cowork.callMcpTool) {
+      throw new Error("window.cowork.callMcpTool 가 없습니다 — 라이브 아티팩트 환경이 아닐 수 있습니다.");
+    }
+    res = await window.cowork.callMcpTool(c.name, c.args);
+  } catch (e) {
+    err = e;
+  }
+  const dt = (performance.now() - t0).toFixed(0);
+
+  const status = err ? `<span class="status err">❌ 에러</span>` : `<span class="status ok">✅ 성공 (${dt}ms)</span>`;
+
+  let body = "";
+  if (err) {
+    body = `<pre>${htmlEscape((err && (err.stack || err.message || String(err))) || "(unknown error)")}</pre>`;
+  } else {
+    const top = describe(res);
+    let preview;
+    try { preview = JSON.stringify(res, null, 2); }
+    catch (e) { preview = String(res); }
+    if (preview && preview.length > 6000) preview = preview.slice(0, 6000) + "\n... [truncated " + (preview.length - 6000) + " chars]";
+    body = `
+      <div class="meta-row">typeof res = <b>${typeof res}</b>${Array.isArray(res) ? " (array)" : ""}<br>top-level: <b>${htmlEscape(top)}</b></div>
+      <pre>${htmlEscape(preview)}</pre>
+    `;
+  }
+
+  div.innerHTML = `
+    <h3>${htmlEscape(c.label)}</h3>
+    <div class="args">tool: <code>${htmlEscape(c.name)}</code> · args: <code>${htmlEscape(JSON.stringify(c.args))}</code></div>
+    ${status}
+    ${body}
+  `;
+}
+
+async function runAll() {
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+  for (const c of CASES) {
+    await runOne(c, container);
+  }
+}
+
+document.getElementById("btnRun").addEventListener("click", runAll);
+runAll();
+</script>
+</body>
+</html>

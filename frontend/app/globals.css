@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: #f8fafc; /* slate-50 */
+  color: #020617; /* slate-950 */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* 한글은 단어 단위로 줄바꿈(어색한 음절 분리 방지), 긴 토큰은 넘치지 않게 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.32s ease both;
+}
+
+@keyframes pulseBg {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulseBg 1.2s ease-in-out infinite;
+}

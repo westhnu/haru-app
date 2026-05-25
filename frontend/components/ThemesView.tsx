@@ -1,0 +1,257 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft, RefreshCw, Network, ChevronRight } from "lucide-react";
+import type { Confidence, ThemeResponse, ThemeStock } from "@/lib/thememap";
+import { nameToCode } from "@/lib/corpcodes";
+import GlossaryText from "@/components/GlossaryText";
+
+type Resp = ThemeResponse & { empty?: boolean };
+
+const CONF: Record<Confidence, { cls: string; label: string }> = {
+  high: { cls: "bg-emerald-50 text-emerald-700", label: "신뢰도 높음" },
+  medium: { cls: "bg-slate-100 text-slate-500", label: "신뢰도 보통" },
+  low: { cls: "bg-amber-50 text-amber-700", label: "신뢰도 낮음" },
+};
+
+function StockChip({ s }: { s: ThemeStock }) {
+  const target = s.code || nameToCode(s.name) || s.symbol || s.name;
+  return (
+    <Link
+      href={`/stock/${encodeURIComponent(target)}?name=${encodeURIComponent(s.name)}`}
+      className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 transition hover:bg-slate-100"
+    >
+      <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+        <span
+          title={s.name}
+          className="truncate text-[14px] font-black text-slate-900"
+        >
+          {s.name}
+        </span>
+        {s.symbol && (
+          <span className="shrink-0 text-[11px] font-bold text-slate-400">
+            {s.symbol}
+          </span>
+        )}
+      </div>
+      <div className="flex max-w-[52%] shrink-0 items-center gap-1.5">
+        {s.reason && (
+          <span
+            title={s.reason}
+            className="truncate text-right text-[12px] font-semibold text-slate-500"
+          >
+            {s.reason}
+          </span>
+        )}
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+      </div>
+    </Link>
+  );
+}
+
+export default function ThemesView() {
+  const [data, setData] = useState<Resp | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/themes", { cache: "no-store" });
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      setData((await res.json()) as Resp);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const generate = useCallback(async () => {
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/themes", { method: "POST" });
+      if (!res.ok) throw new Error(`생성 실패 (${res.status})`);
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setGenerating(false);
+    }
+  }, [load]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const isEmpty = data?.empty || (data?.items?.length ?? 0) === 0;
+
+  return (
+    <div className="min-h-svh bg-slate-50">
+      <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white px-5 pb-12">
+        {/* 상단 바 */}
+        <div className="flex items-center justify-between py-5">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            하루
+          </Link>
+          <button
+            onClick={generate}
+            disabled={generating}
+            className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200 disabled:opacity-40"
+          >
+            <RefreshCw className={`h-4 w-4 ${generating ? "animate-spin" : ""}`} />
+            {generating ? "분석 중" : "다시 분석"}
+          </button>
+        </div>
+
+        {/* 타이틀 */}
+        <div className="pt-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-soft">
+            <Network className="h-6 w-6" />
+          </div>
+          <h1 className="mt-4 text-[2rem] font-black leading-tight tracking-tight text-slate-950">
+            이슈·테마 매핑
+          </h1>
+          <p className="mt-2 text-[15px] font-semibold leading-7 text-slate-500">
+            오늘의 이슈가 어떤 테마·종목으로 번지는지 연결해 드려요.
+          </p>
+          {data && !isEmpty && data.meta.forDate && (
+            <p className="mt-3 text-[13px] font-bold text-slate-400">
+              {data.meta.forDate} 기준
+            </p>
+          )}
+        </div>
+
+        {/* 로딩 */}
+        {loading && (
+          <div className="mt-8 space-y-3">
+            {[0, 1].map((i) => (
+              <div
+                key={i}
+                className="animate-pulse-soft rounded-[24px] border border-slate-200 bg-white p-5"
+              >
+                <div className="mb-3 h-5 w-32 rounded bg-slate-100" />
+                <div className="h-14 rounded-xl bg-slate-50" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 빈 상태 */}
+        {!loading && isEmpty && (
+          <div className="mt-8 rounded-[28px] border border-slate-200 bg-white p-7 text-center shadow-card">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 text-white">
+              <Network className="h-7 w-7" />
+            </div>
+            <p className="mt-5 text-[17px] font-black text-slate-950">
+              아직 분석된 테마가 없어요
+            </p>
+            <p className="mt-2 text-[14px] font-semibold leading-6 text-slate-500">
+              오늘의 이슈를 모아 테마로 묶어볼게요.
+            </p>
+            <button
+              onClick={generate}
+              disabled={generating}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+            >
+              {generating ? "분석 중…" : "지금 분석하기"}
+            </button>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="mt-6 rounded-2xl bg-slate-100 p-4 text-[13px] font-semibold text-slate-700">
+            {error}
+          </div>
+        )}
+
+        {/* 테마 카드 */}
+        {data && !loading && !isEmpty && (
+          <div className="mt-8 space-y-3">
+            {data.items.map((item, i) => {
+              const conf = CONF[item.confidence] ?? CONF.medium;
+              return (
+                <section
+                  key={i}
+                  className="animate-fade-up rounded-[24px] border border-slate-200 bg-white p-5 shadow-soft"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="text-[17px] font-black tracking-tight text-slate-950">
+                      {item.theme}
+                    </h2>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${conf.cls}`}
+                    >
+                      {conf.label}
+                    </span>
+                  </div>
+
+                  <GlossaryText
+                    text={item.summary}
+                    className="mt-2 block text-[15px] font-medium leading-[1.8] text-slate-700"
+                  />
+
+                  {item.drivers && item.drivers.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {item.drivers.map((d, k) => (
+                        <span
+                          key={k}
+                          className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600"
+                        >
+                          {d}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {item.stocks && item.stocks.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {item.stocks.map((s, k) => (
+                        <StockChip key={k} s={s} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+
+            {data.sources.length > 0 && (
+              <details className="rounded-2xl border border-slate-200 bg-white p-5 text-[13px]">
+                <summary className="cursor-pointer list-none font-black text-slate-900">
+                  근거 이슈 {data.sources.length}건
+                </summary>
+                <div className="mt-3 space-y-2">
+                  {data.sources.map((s, i) => (
+                    <a
+                      key={i}
+                      href={s.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block truncate rounded-2xl bg-slate-50 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      {s.title}
+                    </a>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            <p className="px-1 pt-3 text-[11px] font-medium leading-relaxed text-slate-400">
+              이슈→테마 매핑은 AI(zero-shot)가 공개 이슈를 정리한 참고 자료이며, 특정
+              종목 매수·매도 권유가 아닙니다.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

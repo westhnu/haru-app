@@ -1,0 +1,13 @@
+/node_modules
+/.next
+/out
+/build
+.env*.local
+.env
+.env.example
+
+# 생성된 브리핑 저장본 (런타임 데이터)
+/data/*.json
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store

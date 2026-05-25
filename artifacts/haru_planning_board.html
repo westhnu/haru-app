@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Haru 기획 비주얼 보드</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: transparent;
+    color: #1f2937;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .wrap { padding: 8px 4px 24px; }
+  header.hero {
+    padding: 18px 22px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 50%, #ecfeff 100%);
+    border: 1px solid #fde68a;
+    margin-bottom: 14px;
+  }
+  header.hero h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; color: #1e293b; }
+  header.hero p { margin: 0; color: #475569; font-size: 13px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px;
+    background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; margin-right: 6px;
+  }
+  nav.tabs {
+    display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px;
+    background: #f8fafc; padding: 4px; border-radius: 10px; border: 1px solid #e2e8f0;
+  }
+  nav.tabs button {
+    flex: 1 1 auto; min-width: 84px;
+    background: transparent; border: 0; padding: 8px 10px; border-radius: 7px;
+    font-size: 12.5px; cursor: pointer; color: #475569; font-weight: 500;
+  }
+  nav.tabs button.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 2px rgba(15,23,42,.08); }
+  nav.tabs button:hover:not(.active) { background: #eef2f7; }
+  section.panel { display: none; }
+  section.panel.active { display: block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none;} }
+
+  .card {
+    background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 12px;
+  }
+  .card h2 { margin: 0 0 10px; font-size: 15px; color: #0f172a; letter-spacing: -0.01em; }
+  .card h3 { margin: 14px 0 6px; font-size: 13px; color: #334155; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (max-width: 760px) {
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+  }
+
+  .pill {
+    display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11.5px;
+    background: #f1f5f9; color: #334155; margin: 0 4px 4px 0; border: 1px solid #e2e8f0;
+  }
+  .pill.ok    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .pill.warn  { background: #fff7ed; color: #b45309; border-color: #fed7aa; }
+  .pill.bad   { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .pill.brand { background: #fff1e6; color: #9a3412; border-color: #fdba74; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+  th { background: #f8fafc; color: #475569; font-weight: 600; font-size: 12px; }
+  tr:last-child td { border-bottom: 0; }
+
+  /* Positioning matrix */
+  .matrix-wrap { position: relative; padding: 28px 28px 36px; }
+  .matrix {
+    position: relative; width: 100%; aspect-ratio: 1.4 / 1;
+    background:
+      linear-gradient(to right, #ffffff 0 50%, #fffbeb 50% 100%),
+      linear-gradient(to bottom, #ffffff 0 50%, #fffbeb 50% 100%);
+    background-blend-mode: multiply;
+    border: 1px solid #e2e8f0; border-radius: 12px;
+  }
+  .axis-x, .axis-y {
+    position: absolute; color: #64748b; font-size: 11.5px; font-weight: 600; letter-spacing: .02em;
+  }
+  .axis-x.left  { left: 0; bottom: -22px; }
+  .axis-x.right { right: 0; bottom: -22px; }
+  .axis-y.top    { left: -2px; top: -20px; }
+  .axis-y.bottom { left: -2px; bottom: -20px; }
+  .axis-label-x { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #94a3b8; }
+  .axis-label-y { position: absolute; top: 50%; left: -10px; transform: translate(-100%, -50%) rotate(-90deg); font-size: 11px; color: #94a3b8; white-space: nowrap; }
+  .quadline-h, .quadline-v {
+    position: absolute; background: #cbd5e1;
+  }
+  .quadline-h { left: 0; right: 0; top: 50%; height: 1px; }
+  .quadline-v { top: 0; bottom: 0; left: 50%; width: 1px; }
+  .dot {
+    position: absolute; transform: translate(-50%, -50%);
+    padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+    border: 1.5px solid; white-space: nowrap;
+  }
+  .dot.you   { background: #ea580c; color: #fff; border-color: #ea580c; box-shadow: 0 4px 14px rgba(234,88,12,.35); transform: translate(-50%, -50%) scale(1.06); }
+  .dot.green { background: #ecfdf5; color: #047857; border-color: #6ee7b7; }
+  .dot.amber { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+  .dot.red   { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+
+  /* Workflow cycle */
+  .cycle { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 6px; }
+  .cycle .step {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px;
+    position: relative;
+  }
+  .cycle .step .num {
+    display: inline-block; width: 22px; height: 22px; border-radius: 50%;
+    background: #ea580c; color: #fff; font-size: 12px; font-weight: 700;
+    text-align: center; line-height: 22px; margin-bottom: 6px;
+  }
+  .cycle .step b { display: block; color: #0f172a; font-size: 13px; margin-bottom: 4px; }
+  .cycle .step span { font-size: 12px; color: #475569; }
+  @media (max-width: 760px) { .cycle { grid-template-columns: 1fr 1fr; } }
+
+  /* IA tree */
+  .ia { font-size: 12.5px; color: #334155; }
+  .ia ul { list-style: none; padding-left: 14px; margin: 4px 0; border-left: 1px dashed #cbd5e1; }
+  .ia li { padding: 3px 0; }
+  .ia .seg { color: #ea580c; font-weight: 600; }
+
+  /* Pricing cards */
+  .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 760px) { .price-grid { grid-template-columns: 1fr; } }
+  .price {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px;
+    position: relative;
+  }
+  .price.pro { border-color: #ea580c; box-shadow: 0 4px 16px rgba(234,88,12,.10); }
+  .price h4 { margin: 0; font-size: 14px; color: #0f172a; }
+  .price .amt { margin: 6px 0 8px; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #0f172a; }
+  .price .amt small { font-size: 12px; color: #64748b; font-weight: 500; }
+  .price ul { padding-left: 16px; margin: 8px 0 0; color: #475569; font-size: 12.5px; }
+  .price ul li { margin-bottom: 3px; }
+  .price .tag {
+    position: absolute; top: -10px; right: 12px; padding: 2px 8px; border-radius: 999px;
+    background: #ea580c; color: #fff; font-size: 10.5px; font-weight: 600;
+  }
+
+  /* Roadmap timeline */
+  .timeline {
+    display: grid; grid-template-columns: 100px 1fr; gap: 8px 14px; row-gap: 6px;
+    font-size: 12.5px;
+  }
+  .timeline .when { color: #ea580c; font-weight: 600; }
+  .timeline .what { color: #334155; }
+  .timeline .what b { color: #0f172a; }
+
+  /* Risk matrix */
+  .risk-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; align-items: center; font-size: 12.5px; }
+  .risk-row:last-child { border-bottom: 0; }
+  .sev { padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; min-width: 36px; text-align: center; }
+  .sev.high { background: #fee2e2; color: #b91c1c; }
+  .sev.med  { background: #fef3c7; color: #92400e; }
+  .sev.low  { background: #dcfce7; color: #166534; }
+
+  footer { color: #94a3b8; font-size: 11px; text-align: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="badge">기획 v1.0 · 2026-05-04</span>
+    <span class="badge" style="background:#fff1e6; color:#9a3412; border-color:#fdba74;">Haru (가제)</span>
+    <h1>Personal Investment Workflow OS</h1>
+    <p>리서치 → 의사결정 → 회고를 한 곳에서 설계·자동화하는 SaaS — 한국 시장 부재 카테고리</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-t="positioning" class="active">포지셔닝</button>
+    <button data-t="workflow">핵심 워크플로우</button>
+    <button data-t="ia">정보구조</button>
+    <button data-t="business">비즈니스 모델</button>
+    <button data-t="roadmap">로드맵</button>
+    <button data-t="risk">법적 리스크</button>
+  </nav>
+
+  <!-- 1. POSITIONING -->
+  <section class="panel active" id="p-positioning">
+    <div class="card">
+      <h2>경쟁 포지셔닝 매트릭스</h2>
+      <p style="margin:0 0 10px;color:#64748b;font-size:12.5px;">
+        가로축 = 사용자 주체성(자동매매 ↔ 의사결정 보조) · 세로축 = 정보 깊이(요약 ↔ 워크플로우)
+      </p>
+      <div class="matrix-wrap">
+        <div class="matrix">
+          <div class="quadline-h"></div>
+          <div class="quadline-v"></div>
+
+          <span class="axis-y top">정보·깊이 ↑</span>
+          <span class="axis-y bottom">단순 알림</span>
+          <span class="axis-x left">자동화 (위임)</span>
+          <span class="axis-x right">사용자 주도</span>
+          <span class="axis-label-x">→ 사용자 주체성</span>
+          <span class="axis-label-y">→ 정보·과정 깊이</span>
+
+          <div class="dot red"   style="left:18%; top:22%;">자동매매 봇</div>
+          <div class="dot red"   style="left:30%; top:62%;">유사투자자문</div>
+          <div class="dot amber" style="left:55%; top:78%;">증권사 MTS</div>
+          <div class="dot amber" style="left:72%; top:60%;">토스/카뱅 증권</div>
+          <div class="dot green" style="left:62%; top:35%;">네이버 증권·종토방</div>
+          <div class="dot green" style="left:80%; top:46%;">투자 SNS</div>
+          <div class="dot you"   style="left:78%; top:18%;">⭐ Haru</div>
+        </div>
+      </div>
+      <p style="margin:8px 0 0;color:#475569;font-size:12px;">
+        Haru는 <b>'사용자 주도 + 깊은 워크플로우'</b> 사분면. 한국 시장에 존재하지 않는 영역.
+      </p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>왜 이 포지션인가</h2>
+        <span class="pill ok">법적 안전</span>
+        <span class="pill ok">차별화</span>
+        <span class="pill ok">SaaS 수익화</span>
+        <span class="pill brand">글로벌 확장</span>
+        <h3>① 법: 도구만 제공, 추천 X</h3>
+        <p style="margin:0;color:#475569;font-size:12.5px;">사용자가 본인 체크리스트로 종목을 검토 — 자본시장법상 투자자문업 회피</p>
+        <h3>② 시장: 빈 카테고리</h3>
+        <p style="margin:0;color:#475569;font-size:12.5px;">증권사앱은 매매 중심, SNS는 정보 소비 중심. '의사결정 과정' 도구는 한국에 부재</p>
+        <h3>③ 수익: 구독제 SaaS</h3>
+        <p style="margin:0;color:#475569;font-size:12.5px;">Free→Pro 전환 명확. 광고 없이 ARPU 성장 가능</p>
+      </div>
+      <div class="card">
+        <h2>레퍼런스 (한국 부재 → 글로벌 사례)</h2>
+        <table>
+          <tr><th>서비스</th><th>국가</th><th>핵심</th></tr>
+          <tr><td>Stratosphere.io</td><td>미국</td><td>리서치 워크북</td></tr>
+          <tr><td>Atom Finance</td><td>미국</td><td>분석 + 협업</td></tr>
+          <tr><td>Stock Unlock</td><td>미국</td><td>밸류에이션 도구</td></tr>
+          <tr><td>Commonstock</td><td>미국</td><td>투자 메모 SNS</td></tr>
+          <tr><td>finchat.io</td><td>캐나다</td><td>AI 리서치</td></tr>
+        </table>
+        <p style="margin:8px 0 0;color:#64748b;font-size:11.5px;">→ 한국어/한국 시장 특화 + DART/한투 연동이 Haru의 진입장벽</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. WORKFLOW -->
+  <section class="panel" id="p-workflow">
+    <div class="card">
+      <h2>핵심 사이클 — Capture · Curate · Decide · Reflect</h2>
+      <div class="cycle">
+        <div class="step">
+          <span class="num">1</span><b>Capture</b>
+          <span>관심 종목·뉴스·공시·지표를 한 곳에 모으기. DART, Tavily 자동 수집</span>
+        </div>
+        <div class="step">
+          <span class="num">2</span><b>Curate</b>
+          <span>워크북에 정리, AI가 핵심·이슈·리스크 요약. 모르는 용어 즉시 풀이</span>
+        </div>
+        <div class="step">
+          <span class="num">3</span><b>Decide</b>
+          <span>나만의 체크리스트로 점검 → 매수/관찰/패스 결정 + 근거 기록</span>
+        </div>
+        <div class="step">
+          <span class="num">4</span><b>Reflect</b>
+          <span>가상 포트폴리오로 결과 추적, 월간 회고에 AI가 패턴 코멘트</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>MVP 기능 4선 (3개월 출시 목표)</h2>
+      <div class="grid2">
+        <div>
+          <h3>① 종목 워크북</h3>
+          <p style="margin:0;color:#475569;font-size:12.5px;">DART 공시·재무·차트를 자동 정리한 한 페이지. AI 요약 토글. 메모/하이라이트.</p>
+          <h3>② AI 체크리스트</h3>
+          <p style="margin:0;color:#475569;font-size:12.5px;">사용자가 만든 투자 원칙(예: PER&lt;15, ROE&gt;10)을 AI가 종목별로 채점.</p>
+        </div>
+        <div>
+          <h3>③ 투자 저널</h3>
+          <p style="margin:0;color:#475569;font-size:12.5px;">매수/매도 결정 기록 + 근거. 가상 포트폴리오로 손익 추적, 월간 회고.</p>
+          <h3>④ 용어 도우미</h3>
+          <p style="margin:0;color:#475569;font-size:12.5px;">73개 용어 사전 + 워크북 안에서 모르는 단어 hover → 즉시 풀이.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>외부 연동 (이미 연결된 커넥터 활용)</h2>
+      <span class="pill brand">PlayMCP</span><span class="pill">→ 카카오톡 나챗방 푸시 (모닝 브리핑)</span><br>
+      <span class="pill brand">Notion</span><span class="pill">→ 워크북을 Notion 페이지로 내보내기</span><br>
+      <span class="pill brand">Canva</span><span class="pill">→ 월간 회고 카드 자동 디자인 (SNS 공유용)</span>
+    </div>
+  </section>
+
+  <!-- 3. IA -->
+  <section class="panel" id="p-ia">
+    <div class="card">
+      <h2>정보 구조 (Information Architecture)</h2>
+      <div class="ia">
+        <ul>
+          <li><span class="seg">/dashboard</span> — 오늘의 시장, 내 워치리스트, 워크북 진행률, 최근 메모</li>
+          <li><span class="seg">/workbook</span>
+            <ul>
+              <li>/workbook/new — 워크북 생성 (템플릿 선택)</li>
+              <li>/workbook/[id] — 워크북 에디터 (블록 기반)</li>
+              <li>/workbook/[id]/checklist — 내 체크리스트 점검</li>
+            </ul>
+          </li>
+          <li><span class="seg">/journal</span>
+            <ul>
+              <li>/journal — 가상 포트폴리오 + 결정 로그</li>
+              <li>/journal/review — 월간 회고 (AI 코멘트 포함)</li>
+            </ul>
+          </li>
+          <li><span class="seg">/library</span>
+            <ul>
+              <li>/library/glossary — 용어 사전 (검색)</li>
+              <li>/library/templates — 공식·커뮤니티 워크북 템플릿</li>
+              <li>/library/checklists — 체크리스트 템플릿</li>
+            </ul>
+          </li>
+          <li><span class="seg">/automation</span>
+            <ul>
+              <li>/automation/morning-brief — 모닝 브리핑 시간/조건 설정 (PlayMCP)</li>
+              <li>/automation/alerts — 가격·지표·뉴스 알림</li>
+            </ul>
+          </li>
+          <li><span class="seg">/settings</span> — 계정, 구독, 한투 OpenAPI(조회), Notion 연동, 면책 동의</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>화면 우선순위 (MVP)</h2>
+      <table>
+        <tr><th>P</th><th>화면</th><th>핵심 컴포넌트</th></tr>
+        <tr><td>P0</td><td>대시보드</td><td>워치리스트 카드, 최근 워크북, 오늘의 한 줄</td></tr>
+        <tr><td>P0</td><td>워크북 에디터</td><td>블록(차트/재무/뉴스/메모) 드래그, AI 사이드패널</td></tr>
+        <tr><td>P0</td><td>체크리스트 점검</td><td>항목별 ✓/✗, AI 자동 채점, 근거 표시</td></tr>
+        <tr><td>P1</td><td>투자 저널</td><td>결정 기록 폼, 가상 포트폴리오 손익</td></tr>
+        <tr><td>P1</td><td>용어 사전</td><td>검색, 카테고리, 즉시 hover 풀이</td></tr>
+        <tr><td>P2</td><td>모닝 브리핑 설정</td><td>시간·종목 선택, PlayMCP 푸시 토글</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. BUSINESS -->
+  <section class="panel" id="p-business">
+    <div class="card">
+      <h2>요금제</h2>
+      <div class="price-grid">
+        <div class="price">
+          <h4>Free</h4>
+          <div class="amt">₩0<small> / 월</small></div>
+          <ul>
+            <li>워크북 3개</li>
+            <li>워치리스트 5종목</li>
+            <li>AI 분석 5회/일</li>
+            <li>기본 용어 사전</li>
+          </ul>
+        </div>
+        <div class="price pro">
+          <span class="tag">추천</span>
+          <h4>Pro</h4>
+          <div class="amt">₩9,900<small> / 월</small></div>
+          <ul>
+            <li>워크북 무제한</li>
+            <li>워치리스트 무제한</li>
+            <li>AI 무제한 + 우선 응답</li>
+            <li>모닝 브리핑(PlayMCP)</li>
+            <li>Notion · Canva 내보내기</li>
+            <li>월간 회고 AI 코멘트</li>
+          </ul>
+        </div>
+        <div class="price">
+          <h4>Team</h4>
+          <div class="amt">₩19,900<small> / 인·월</small></div>
+          <ul>
+            <li>Pro 모든 기능</li>
+            <li>워크북 협업·공유</li>
+            <li>팀 라이브러리</li>
+            <li>관리자 대시보드</li>
+            <li>(향후) B2B 핀테크 API</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>유닛 이코노믹스 가정</h2>
+        <table>
+          <tr><th>지표</th><th>가정값</th></tr>
+          <tr><td>Pro ARPU</td><td>₩9,900 / 월</td></tr>
+          <tr><td>변동비 (AI · 인프라)</td><td>약 ₩2,500 / 월</td></tr>
+          <tr><td>Gross Margin</td><td>약 75%</td></tr>
+          <tr><td>CAC 가정 (개인투자자 커뮤니티 채널)</td><td>₩15,000</td></tr>
+          <tr><td>Payback</td><td>약 3개월</td></tr>
+          <tr><td>Free → Pro 전환율 목표</td><td>3% (1년차)</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h2>12개월 시나리오 (보수)</h2>
+        <table>
+          <tr><th>월</th><th>가입(Free)</th><th>Pro</th><th>MRR</th></tr>
+          <tr><td>M3 베타</td><td>500</td><td>10</td><td>₩99K</td></tr>
+          <tr><td>M6</td><td>3,000</td><td>90</td><td>₩891K</td></tr>
+          <tr><td>M9</td><td>8,000</td><td>240</td><td>₩2.37M</td></tr>
+          <tr><td>M12</td><td>15,000</td><td>450</td><td>₩4.45M</td></tr>
+        </table>
+        <p style="margin:8px 0 0;color:#64748b;font-size:11.5px;">※ 추정치이며 실제 결과를 보장하지 않습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. ROADMAP -->
+  <section class="panel" id="p-roadmap">
+    <div class="card">
+      <h2>로드맵 (M1 → M12)</h2>
+      <div class="timeline">
+        <div class="when">M1</div><div class="what"><b>기획·디자인 확정</b> — IA 잠금, 디자인 시스템(shadcn/ui 커스텀), 핵심 화면 와이어프레임</div>
+        <div class="when">M2</div><div class="what"><b>인프라·백엔드 골격</b> — FastAPI + Supabase + jutopia_data 모듈 래핑, 인증(Supabase Auth)</div>
+        <div class="when">M3</div><div class="what"><b>MVP 알파</b> — 워크북 에디터 + AI 사이드패널 + 용어 사전. 내부 사용</div>
+        <div class="when">M4</div><div class="what"><b>MVP 베타</b> — 체크리스트 점검 + 투자 저널, 클로즈드 베타 100명</div>
+        <div class="when">M5</div><div class="what"><b>결제·요금제</b> — Pro 도입(토스페이먼츠), 사용량 제한, 면책 UX 강화</div>
+        <div class="when">M6</div><div class="what"><b>퍼블릭 런칭</b> — 모닝 브리핑(PlayMCP), Notion 내보내기, 한투 OpenAPI(조회)</div>
+        <div class="when">M7-9</div><div class="what"><b>성장기</b> — 템플릿 마켓플레이스, Canva 회고 카드, 추천·검색 개선</div>
+        <div class="when">M10-12</div><div class="what"><b>팀 플랜·B2B 시드</b> — Team 플랜 GA, 핀테크/증권사 데이터 파트너 1곳, 영문 베타</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. RISK -->
+  <section class="panel" id="p-risk">
+    <div class="card">
+      <h2>법적·운영 리스크 매트릭스</h2>
+      <div class="risk-row" style="border-bottom:1px solid #e2e8f0; font-weight:600; color:#0f172a;">
+        <div>리스크</div><div>심각도</div><div>가능성</div><div>대응</div>
+      </div>
+      <div class="risk-row">
+        <div>투자자문업 위반 (구체 종목 추천)</div>
+        <div><span class="sev high">상</span></div>
+        <div><span class="sev med">중</span></div>
+        <div>AI 응답에 추천 금지 가드 + 면책 텍스트</div>
+      </div>
+      <div class="risk-row">
+        <div>유사투자자문업 신고 누락</div>
+        <div><span class="sev high">상</span></div>
+        <div><span class="sev low">하</span></div>
+        <div>유료 정보 = 도구·교육 영역만, 자문 출판 X</div>
+      </div>
+      <div class="risk-row">
+        <div>한투 OpenAPI 약관 위반 (재배포)</div>
+        <div><span class="sev med">중</span></div>
+        <div><span class="sev low">하</span></div>
+        <div>본인 인증된 사용자만 본인 계좌 조회</div>
+      </div>
+      <div class="risk-row">
+        <div>개인정보 유출</div>
+        <div><span class="sev high">상</span></div>
+        <div><span class="sev low">하</span></div>
+        <div>Supabase Row Level Security + 키 분리, 개보위 신고체계</div>
+      </div>
+      <div class="risk-row">
+        <div>AI 환각으로 잘못된 재무 수치</div>
+        <div><span class="sev med">중</span></div>
+        <div><span class="sev med">중</span></div>
+        <div>모든 수치는 출처(DART) 인용, AI는 요약·해석만</div>
+      </div>
+      <div class="risk-row">
+        <div>저작권 — 뉴스·리포트 인용</div>
+        <div><span class="sev med">중</span></div>
+        <div><span class="sev med">중</span></div>
+        <div>요약·링크만, 원문 전체 저장 금지</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>금지/허용 표현 가이드 (AI 시스템 프롬프트에 적용)</h2>
+      <table>
+        <tr><th>구분</th><th>예시</th></tr>
+        <tr><td>❌ 금지</td><td>"이 종목을 매수하세요" / "○○○원까지 갈 것" / "수익률 보장"</td></tr>
+        <tr><td>✅ 허용</td><td>"당신의 체크리스트 7개 중 5개를 충족합니다" / "DART 공시 기준 매출은 ○○입니다" / "결정은 본인의 판단입니다"</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <footer>Haru 기획 v1.0 · 작성: 2026-05-04 · 본 자료는 정보 제공 목적이며 투자 권유가 아닙니다.</footer>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('#tabs button');
+  const panels = document.querySelectorAll('section.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    const target = t.dataset.t;
+    tabs.forEach(b => b.classList.toggle('active', b === t));
+    panels.forEach(p => p.classList.toggle('active', p.id === 'p-' + target));
+  }));
+</script>
+</body>
+</html>

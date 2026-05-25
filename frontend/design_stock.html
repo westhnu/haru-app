@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>하루 HARU · 종목 페이지 미리보기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{ --s950:#020617; --s900:#0f172a; --s700:#334155; --s500:#64748b; --s400:#94a3b8;
+    --s300:#cbd5e1; --s200:#e2e8f0; --s100:#f1f5f9; --s50:#f8fafc; --red:#e11d48; --blue:#2563eb;
+    --em:#047857; --embg:#ecfdf5; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--s50); font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--s950); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word; display:flex; justify-content:center; }
+  .phone{ width:480px; max-width:100%; background:#fff; min-height:100vh; padding:0 20px 48px; }
+  .bar{ padding:20px 0; }
+  .pill{ display:inline-flex; align-items:center; gap:6px; background:var(--s100); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700; color:var(--s600); }
+  h1{ font-size:1.7rem; font-weight:900; letter-spacing:-0.02em; margin:0; display:inline; }
+  .mkt{ display:inline-block; background:var(--s100); border-radius:999px; padding:2px 8px; font-size:11px; font-weight:700; color:var(--s500); margin-left:8px; vertical-align:middle; }
+  .code{ font-size:13px; font-weight:700; color:var(--s400); margin:2px 0 0; }
+  .price{ font-size:2rem; font-weight:900; margin-top:12px; }
+  .chg{ font-size:15px; font-weight:900; color:var(--red); margin-left:8px; }
+  .chartcard{ border:1px solid var(--s200); border-radius:24px; background:#fff; padding:16px; margin-top:20px; box-shadow:0 10px 30px -20px rgba(15,23,42,.45); }
+  .chartwrap{ position:relative; }
+  .tip{ position:absolute; top:-4px; transform:translateX(-50%); background:var(--s900); border-radius:12px; padding:6px 10px; text-align:center; box-shadow:0 18px 54px -42px rgba(15,23,42,.55); }
+  .tip .d{ font-size:10px; font-weight:600; color:rgba(255,255,255,.6); }
+  .tip .p{ font-size:12px; font-weight:900; color:#fff; }
+  .period{ display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:var(--s400); margin-top:8px; }
+  .seg{ display:flex; gap:6px; background:var(--s100); border-radius:999px; padding:4px; margin-top:12px; }
+  .seg button{ flex:1; border:0; background:transparent; border-radius:999px; padding:6px; font-size:12px; font-weight:700; color:var(--s500); cursor:pointer; }
+  .seg button.on{ background:#fff; color:var(--s900); box-shadow:0 1px 2px rgba(0,0,0,.06); }
+  .tabs{ display:flex; gap:6px; background:var(--s100); border-radius:999px; padding:4px; margin-top:16px; }
+  .tabs button{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; border:0; background:transparent; border-radius:999px; padding:8px; font-size:13px; font-weight:700; color:var(--s500); cursor:pointer; }
+  .tabs button.on{ background:#fff; color:var(--s900); box-shadow:0 1px 2px rgba(0,0,0,.06); }
+  .card{ border:1px solid var(--s200); border-radius:24px; background:#fff; padding:20px; margin-top:12px; }
+  .ct{ font-size:13px; font-weight:900; color:var(--s900); }
+  .ct .sub{ font-size:11px; font-weight:700; color:var(--s400); margin-left:6px; }
+  .badge{ float:right; background:var(--s100); color:var(--s400); border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; }
+  .help{ font-size:11px; font-weight:700; color:var(--s400); margin:4px 0 0; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .tile{ background:var(--s50); border-radius:16px; padding:12px 16px; }
+  .tile .top{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .tile .k{ font-size:12px; font-weight:600; color:var(--s500); }
+  .tile .v{ font-size:15px; font-weight:900; color:var(--s900); margin-top:2px; }
+  .tile .v.up{ color:var(--red); } .tile .v.down{ color:var(--blue); }
+  .tile .ctx{ font-size:11px; font-weight:700; color:var(--s500); margin-top:2px; line-height:1.35; }
+  .tile .h{ font-size:11px; font-weight:500; color:var(--s400); margin-top:2px; line-height:1.35; }
+  .term{ border-bottom:1px dashed var(--s400); cursor:help; }
+  .tone{ flex:none; border-radius:999px; padding:1px 7px; font-size:10px; font-weight:800; }
+  .tone.good{ background:var(--embg); color:var(--em); }
+  .tone.neutral{ background:var(--s100); color:var(--s500); }
+  .disclaim{ font-size:11px; font-weight:500; line-height:1.7; color:var(--s400); padding:20px 4px 0; margin:0; }
+  svg{ display:block; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="bar"><span class="pill"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>하루</span></div>
+
+  <div>
+    <h1>삼성전자</h1><span class="mkt">KOSPI</span>
+    <p class="code">005930</p>
+    <div class="price">81,300원<span class="chg">+1.2%</span></div>
+  </div>
+
+  <div class="chartcard">
+    <div class="chartwrap">
+      <svg viewBox="0 0 440 180" style="width:100%" preserveAspectRatio="none">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e11d48" stop-opacity="0.18"/><stop offset="100%" stop-color="#e11d48" stop-opacity="0"/></linearGradient></defs>
+        <polygon fill="url(#g)" points="6,174 6,120 50,128 94,96 138,108 182,72 226,88 270,60 314,76 358,44 402,58 434,40 434,174"/>
+        <polyline fill="none" stroke="#e11d48" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="6,120 50,128 94,96 138,108 182,72 226,88 270,60 314,76 358,44 402,58 434,40"/>
+        <!-- 크로스헤어 (호버 데모) -->
+        <line x1="314" y1="6" x2="314" y2="174" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>
+        <circle cx="314" cy="76" r="7" fill="#e11d48" fill-opacity="0.18"/>
+        <circle cx="314" cy="76" r="3.5" fill="#e11d48"/>
+      </svg>
+      <div class="tip" style="left:71%"><div class="d">2026-05-08</div><div class="p">79,800원</div></div>
+    </div>
+    <div class="period"><span>02.20</span><span>62거래일</span><span>05.22</span></div>
+    <div class="seg"><button>1개월</button><button class="on">3개월</button><button>전체</button></div>
+  </div>
+
+  <div class="tabs">
+    <button class="on"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>종목정보</button>
+    <button><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7"/><rect x="12" y="6" width="3" height="11"/><rect x="17" y="13" width="3" height="4"/></svg>재무제표</button>
+  </div>
+
+  <!-- 시세 요약 -->
+  <div class="card">
+    <div class="ct">시세 요약<span class="sub">최근 62거래일</span></div>
+    <div class="grid">
+      <div class="tile"><div class="k">기간 최고가</div><div class="v">84,200원</div></div>
+      <div class="tile"><div class="k">기간 최저가</div><div class="v">71,500원</div></div>
+      <div class="tile"><div class="k">기간 등락률</div><div class="v up">+8.4%</div></div>
+      <div class="tile"><div class="k">최근 거래량</div><div class="v">1,243만주</div></div>
+      <div class="tile"><div class="k">평균 거래량</div><div class="v">1,087만주</div></div>
+    </div>
+  </div>
+
+  <!-- 수급 동향 -->
+  <div class="card">
+    <div class="ct">수급 동향<span class="sub">순매수 / 순매도</span></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="tile" style="text-align:center"><div class="k">외국인</div><div class="v up">+124만주</div><div class="ctx" style="color:var(--s400)">순매수</div></div>
+      <div class="tile" style="text-align:center"><div class="k">기관</div><div class="v down">-45만주</div><div class="ctx" style="color:var(--s400)">순매도</div></div>
+      <div class="tile" style="text-align:center"><div class="k">개인</div><div class="v down">-79만주</div><div class="ctx" style="color:var(--s400)">순매도</div></div>
+    </div>
+    <p class="help" style="margin-top:8px">2026-05-22 기준</p>
+  </div>
+
+  <!-- 투자 참고 지표 -->
+  <div class="card">
+    <div class="ct">투자 참고 지표<span class="badge">데모</span></div>
+    <p class="help">양호·보통·주의는 업종(섹터) 평균 대비 참고 평가예요.</p>
+    <div class="grid">
+      <div class="tile"><div class="top"><span class="k">시가총액</span><span class="tone neutral">보통</span></div><div class="v">485조 6,000억</div><div class="ctx">대형주</div></div>
+      <div class="tile"><div class="top"><span class="k term" title="PER: 주가가 이익의 몇 배인지">PER</span><span class="tone good">양호</span></div><div class="v">13.2배</div><div class="ctx">코스피 평균(10~15배) 수준</div></div>
+      <div class="tile"><div class="top"><span class="k term" title="PBR: 주가가 순자산의 몇 배인지">PBR</span><span class="tone good">양호</span></div><div class="v">1.4배</div><div class="ctx">1배 이상·과열 아님</div></div>
+      <div class="tile"><div class="top"><span class="k term" title="EPS: 주당 순이익">EPS</span><span class="tone good">양호</span></div><div class="v">6,120원</div><div class="ctx">전년 대비 증가</div></div>
+      <div class="tile"><div class="top"><span class="k term" title="배당수익률: 주가 대비 연 배당">배당수익률</span><span class="tone neutral">보통</span></div><div class="v">1.9%</div><div class="ctx">시장 평균 수준</div></div>
+      <div class="tile"><div class="top"><span class="k">외국인 보유율</span><span class="tone good">양호</span></div><div class="v">54.3%</div><div class="ctx">업종 내 높은 편</div></div>
+    </div>
+  </div>
+
+  <p class="disclaim">재무 데이터 출처: DART(전자공시시스템). 본 정보는 투자 참고용이며 특정 종목 매수·매도 권유가 아닙니다.</p>
+</div>
+</body>
+</html>

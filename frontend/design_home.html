@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>하루 HARU · 홈 미리보기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --s950:#020617; --s900:#0f172a; --s800:#1e293b; --s700:#334155;
+    --s600:#475569; --s500:#64748b; --s400:#94a3b8; --s300:#cbd5e1;
+    --s200:#e2e8f0; --s100:#f1f5f9; --s50:#f8fafc;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--s50);
+    font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--s950); -webkit-font-smoothing:antialiased; display:flex; justify-content:center; }
+  .phone{ position:relative; width:480px; max-width:100%; background:#fff; min-height:100vh; padding:0 20px 48px; overflow:hidden; }
+  .glow{ position:absolute; inset:0 0 auto 0; height:320px; pointer-events:none; z-index:0;
+         background:radial-gradient(120% 70% at 50% -10%, rgba(251,191,36,0.14), rgba(139,92,246,0.12) 42%, transparent 72%); }
+  .content{ position:relative; z-index:1; }
+  .bar{ display:flex; align-items:center; justify-content:space-between; padding:20px 0; }
+  .logo{ display:flex; align-items:baseline; gap:6px; }
+  .logo .ko{ font-size:18px; font-weight:900; letter-spacing:-0.02em; }
+  .logo .en{ font-size:13px; font-weight:700; letter-spacing:0.18em; color:var(--s300); }
+  .tag{ background:var(--s100); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700; color:var(--s600); }
+  .badge{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:6px 12px; font-size:12px; font-weight:700;
+          color:var(--s700); margin-top:32px;
+          background:linear-gradient(90deg,#fef3c7,#ffe4e6,#ede9fe); }
+  .badge svg{ color:#f59e0b; }
+  h1{ font-size:2.4rem; font-weight:900; line-height:1.12; letter-spacing:-0.02em; margin:20px 0 0; }
+  h1 .grad{ background:linear-gradient(90deg,#f59e0b,#f43f5e,#7c3aed);
+            -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .lead{ font-size:1.05rem; font-weight:600; line-height:1.7; color:var(--s500); margin:20px 0 0; }
+  .cta{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+        background:var(--s950); color:#fff; border:0; border-radius:16px; padding:16px 20px;
+        font-size:16px; font-weight:700; text-decoration:none; margin-top:32px; cursor:pointer; }
+  .preview{ border:1px solid var(--s200); border-radius:28px; background:#fff; padding:20px; margin-top:40px;
+            box-shadow:0 18px 54px -42px rgba(15,23,42,.55); }
+  .preview .row1{ display:flex; align-items:center; justify-content:space-between; }
+  .preview .kick{ font-size:12px; font-weight:700; color:var(--s400); }
+  .preview .ttl{ font-size:20px; font-weight:900; margin-top:4px; }
+  .tile{ width:44px; height:44px; border-radius:16px; color:#fff;
+         display:flex; align-items:center; justify-content:center;
+         background:linear-gradient(135deg,#fbbf24,#f97316); }
+  .kv{ display:flex; align-items:center; justify-content:space-between; background:var(--s50);
+       border-radius:16px; padding:12px 16px; margin-top:10px; }
+  .kv .k{ font-size:14px; font-weight:600; color:var(--s500); }
+  .kv .v{ font-size:14px; font-weight:900; color:var(--s900); }
+  .note{ background:var(--s50); border-radius:16px; padding:16px; margin-top:12px;
+         font-size:14px; font-weight:600; line-height:1.6; color:var(--s700); }
+  .sec-label{ font-size:14px; font-weight:900; color:var(--s500); margin:48px 0 0; }
+  h2{ font-size:1.875rem; font-weight:900; line-height:1.2; letter-spacing:-0.02em; margin:12px 0 0; }
+  .list{ border:1px solid var(--s200); border-radius:28px; background:#fff; margin-top:28px; }
+  .item{ display:flex; align-items:center; gap:16px; padding:20px; }
+  .item + .item{ border-top:1px solid var(--s100); }
+  .item .ic{ width:44px; height:44px; border-radius:16px; flex:none; display:flex; align-items:center; justify-content:center;
+             background:var(--s100); color:var(--s700); }
+  .item.off .ic{ background:var(--s50); color:var(--s300); }
+  .item .name{ font-size:16px; font-weight:900; }
+  .item.off .name{ color:var(--s400); }
+  .item .chip{ display:inline-block; background:var(--s100); color:var(--s600); border-radius:999px;
+               padding:1px 9px; font-size:11px; font-weight:700; margin-left:8px; }
+  .item.off .chip{ background:var(--s50); color:var(--s400); }
+  .item .desc{ font-size:14px; font-weight:600; line-height:1.6; color:var(--s500); margin:4px 0 0; }
+  .item .arr{ color:var(--s300); flex:none; }
+  .row{ display:flex; align-items:center; }
+  .closing{ background:var(--s100); border-radius:32px; padding:24px; margin-top:48px; }
+  .closing .tile{ width:48px; height:48px; background:linear-gradient(135deg,#fbbf24,#fb7185,#8b5cf6); }
+  .closing h2{ font-size:1.5rem; margin-top:20px; }
+  .closing p{ font-size:14px; font-weight:600; line-height:1.6; color:var(--s500); margin:12px 0 0; }
+  .disc{ font-size:11px; font-weight:500; line-height:1.7; color:var(--s400); padding:32px 4px 0; margin:0; }
+  svg{ display:block; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="glow"></div>
+  <div class="content">
+    <div class="bar">
+      <span class="logo"><span class="ko">하루</span><span class="en">HARU</span></span>
+      <span class="tag">Daily 2-Brief</span>
+    </div>
+
+    <div class="badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.94 14.06 6 18l-2-2 3.94-3.94"/><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+      AI 마켓 브리핑
+    </div>
+
+    <h1>매일 아침과 저녁,<br>시장을 읽는 시간을<br><span class="grad">하루가 대신할게요.</span></h1>
+    <p class="lead">흩어진 뉴스와 시세를 모아, 무엇에 왜 투자할지 판단할 맥락만 정리해 드려요.</p>
+
+    <a class="cta" href="#">오늘의 브리핑 보기
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </a>
+
+    <div class="preview">
+      <div class="row1">
+        <div><p class="kick">Today 하루</p><p class="ttl">모닝 브리핑</p></div>
+        <div class="tile">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+        </div>
+      </div>
+      <div class="kv"><span class="k">오늘 한 줄</span><span class="v">반도체 강세 동조</span></div>
+      <div class="kv"><span class="k">교차검증</span><span class="v">통과</span></div>
+      <div class="kv"><span class="k">주목 테마</span><span class="v">HBM · 2차전지</span></div>
+      <div class="note">간밤 미국 반도체 강세에 동조해 국내 반도체 대형주가 주목받는 흐름이에요. 금리·환율 변수는 함께 확인하세요.</div>
+    </div>
+
+    <p class="sec-label">기능</p>
+    <h2>투자 판단에 필요한 화면을<br>하나로 모았어요.</h2>
+
+    <div class="list">
+      <div class="item">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg></div>
+        <div style="flex:1">
+          <div class="row"><span class="name">모닝 브리핑</span><span class="chip">08:00</span></div>
+          <p class="desc">간밤 글로벌 시장이 오늘 국내 장에 줄 영향까지 정리해 드려요.</p>
+        </div>
+        <svg class="arr" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </div>
+      <div class="item">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10V2"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg></div>
+        <div style="flex:1">
+          <div class="row"><span class="name">이브닝 브리핑</span><span class="chip">17:00</span></div>
+          <p class="desc">오늘 국내 장 마감을 짚고, 오늘 밤 미국 장 대비 포인트까지.</p>
+        </div>
+        <svg class="arr" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </div>
+      <div class="item off">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg></div>
+        <div style="flex:1">
+          <div class="row"><span class="name">이슈·테마 매핑</span><span class="chip">준비 중</span></div>
+          <p class="desc">하나의 이슈가 어떤 테마·종목으로 번지는지 연결해 보여드려요.</p>
+        </div>
+      </div>
+      <div class="item off">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <div style="flex:1">
+          <div class="row"><span class="name">AI 품질 리포트</span><span class="chip">준비 중</span></div>
+          <p class="desc">브리핑의 정확성과 교차검증 결과를 매일 누적해 기록해요.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="closing">
+      <div class="tile">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.94 14.06 6 18l-2-2 3.94-3.94"/><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+      </div>
+      <h2>읽고, 판단은<br>본인 증권사에서.</h2>
+      <p>하루는 자동매매나 종목 추천을 하지 않아요. 매일 두 번, 결정에 필요한 맥락만 전해드릴게요.</p>
+    </div>
+
+    <p class="disc">본 브리핑은 공개 정보를 AI가 정리한 참고 자료이며, 특정 종목 매수·매도 권유가 아닙니다. 모든 투자 판단과 책임은 본인에게 있습니다.</p>
+  </div>
+</div>
+</body>
+</html>
