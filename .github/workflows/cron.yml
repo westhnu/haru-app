@@ -11,9 +11,12 @@ on:
   workflow_dispatch:
     inputs:
       slot:
-        description: "morning | evening"
-        default: "morning"
-        required: true
+        description: "morning or evening"
+        type: choice
+        options:
+          - morning
+          - evening
+        default: morning
 
 jobs:
   run:
