@@ -31,3 +31,7 @@ next-env.d.ts
 # logs
 *.log
 npm-debug.log*
+
+# build artifacts
+dist/
+*.zip

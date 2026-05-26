@@ -1,9 +1,9 @@
-// GitHub Actions에서 직접 실행하는 cron 워커.
-// Amplify Hosting Compute의 30초 응답 한계를 피해 작업을 GHA 런너에서 수행하고
-// 결과를 S3에 저장한다. Amplify 앱은 S3에서 읽기만 한다.
+// AWS Lambda handler — EventBridge Scheduler가 호출.
+// 페이로드: { "slot": "morning" | "evening" }
 //
-// 사용: STORAGE=s3 S3_BUCKET=... AWS_*=... OPENAI_API_KEY=... ...
-//      npx tsx scripts/run-cron.ts <morning|evening>
+// 빌드: npm run build:lambda
+//   → dist/lambda-handler.mjs 단일 파일 (esbuild 번들).
+// 배포된 Lambda는 이 파일과 package.json만 zip해서 올린다.
 
 import type { BriefType } from "@/lib/types";
 import { generateBriefResponse } from "@/lib/pipeline";
@@ -11,14 +11,16 @@ import { writeBrief } from "@/lib/store";
 import { generateThemeMap } from "@/lib/thememap";
 import { writeThemes } from "@/lib/themestore";
 
-async function main() {
-  const slot = (process.argv[2] || "").toLowerCase();
+interface Event {
+  slot?: string;
+}
+
+export const handler = async (event: Event) => {
+  const slot = (event?.slot || "").toLowerCase();
   if (slot !== "morning" && slot !== "evening") {
-    console.error("usage: run-cron.ts <morning|evening>");
-    process.exit(2);
+    throw new Error(`invalid slot: ${JSON.stringify(event)}`);
   }
   const briefType: BriefType = slot;
-
   console.log(`[cron] start slot=${briefType} ts=${new Date().toISOString()}`);
 
   const errors: string[] = [];
@@ -48,10 +50,6 @@ async function main() {
   }
 
   console.log(`[cron] done errors=${errors.length}`);
-  process.exit(errors.length > 0 ? 1 : 0);
-}
-
-main().catch((e) => {
-  console.error("[cron] fatal:", e);
-  process.exit(1);
-});
+  if (errors.length) throw new Error(errors.join(" | "));
+  return { ok: true, slot: briefType };
+};
