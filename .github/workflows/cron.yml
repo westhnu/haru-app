@@ -1,0 +1,38 @@
+name: haru-cron
+
+# 배포된 하루 HARU의 통합 생성 엔드포인트를 정해진 시각에 호출한다.
+# (어느 호스팅이든 동작 — Amplify/Render/Railway/Vercel 공통)
+#
+# GitHub repo → Settings → Secrets and variables → Actions 에 등록:
+#   HARU_URL     배포 도메인 (예: https://main.xxxx.amplifyapp.com)
+#   CRON_SECRET  앱과 동일한 시크릿
+
+on:
+  schedule:
+    - cron: "0 23 * * *" # 08:00 KST — 모닝(브리핑+테마)
+    - cron: "0 8 * * *" # 17:00 KST — 이브닝(브리핑+테마)
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: "morning | evening"
+        default: "morning"
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve slot
+        id: s
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 8 * * *" ]; then
+            echo "slot=evening" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 23 * * *" ]; then
+            echo "slot=morning" >> "$GITHUB_OUTPUT"
+          else
+            echo "slot=${{ github.event.inputs.slot }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Call /api/cron
+        run: |
+          curl -fsS -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.HARU_URL }}/api/cron?slot=${{ steps.s.outputs.slot }}"

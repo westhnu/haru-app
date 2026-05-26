@@ -4,6 +4,8 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        # 빌드 시 KRX 전체 종목 매핑 생성 → 배포 환경에서 데모 없이 모든 국내 종목 라이브
+        - npm run build:krx || echo "KRX 매핑 생성 건너뜀(네트워크/형식 변경). 큐레이션 목록으로 동작."
     build:
       commands:
         - npm run build
