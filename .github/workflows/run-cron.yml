@@ -5,6 +5,9 @@ name: haru-cron
 # Amplify 앱은 S3에서 읽기만 한다.
 
 on:
+  push:
+    paths:
+      - .github/workflows/run-cron.yml
   schedule:
     - cron: "0 23 * * *" # 08:00 KST — 모닝
     - cron: "0 8 * * *" # 17:00 KST — 이브닝
@@ -45,7 +48,7 @@ jobs:
           elif [ "${{ github.event.schedule }}" = "0 23 * * *" ]; then
             echo "slot=morning" >> "$GITHUB_OUTPUT"
           else
-            echo "slot=${{ github.event.inputs.slot }}" >> "$GITHUB_OUTPUT"
+            echo "slot=${{ github.event.inputs.slot || 'morning' }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run cron worker
