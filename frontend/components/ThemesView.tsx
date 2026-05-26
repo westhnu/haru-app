@@ -70,15 +70,13 @@ export default function ThemesView() {
     }
   }, []);
 
+  // 운영에선 EventBridge Scheduler → Lambda 가 매일 테마 매핑을 갱신한다.
+  // UI 의 버튼은 저장된 최신본을 다시 가져오는 역할만 한다.
   const generate = useCallback(async () => {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch("/api/themes", { method: "POST" });
-      if (!res.ok) throw new Error(`생성 실패 (${res.status})`);
       await load();
-    } catch (e) {
-      setError((e as Error).message);
     } finally {
       setGenerating(false);
     }
@@ -155,14 +153,16 @@ export default function ThemesView() {
               아직 분석된 테마가 없어요
             </p>
             <p className="mt-2 text-[14px] font-semibold leading-6 text-slate-500">
-              오늘의 이슈를 모아 테마로 묶어볼게요.
+              매일 08:00·17:00 KST에 자동 분석됩니다.
+              <br />
+              잠시 후 새로고침 해주세요.
             </p>
             <button
               onClick={generate}
               disabled={generating}
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
             >
-              {generating ? "분석 중…" : "지금 분석하기"}
+              {generating ? "갱신 중…" : "새로고침"}
             </button>
           </div>
         )}

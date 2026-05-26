@@ -89,21 +89,17 @@ export default function BriefView({ type }: { type: BriefType }) {
     }
   }, [type]);
 
+  // 운영에선 EventBridge Scheduler 가 매일 08:00·17:00 KST 에 Lambda 를 호출해
+  // 브리핑을 갱신한다. UI 의 버튼은 저장된 최신본을 다시 가져오는 역할만 한다.
   const generate = useCallback(async () => {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch(`/api/brief/generate?type=${type}`, {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error(`생성 실패 (${res.status})`);
       await load();
-    } catch (e) {
-      setError((e as Error).message);
     } finally {
       setGenerating(false);
     }
-  }, [type, load]);
+  }, [load]);
 
   useEffect(() => {
     load();
@@ -138,7 +134,7 @@ export default function BriefView({ type }: { type: BriefType }) {
               <RefreshCw
                 className={`h-4 w-4 ${generating ? "animate-spin" : ""}`}
               />
-              {generating ? "생성 중" : "지금 생성"}
+              {generating ? "갱신 중" : "새로고침"}
             </button>
           </div>
 
@@ -225,14 +221,14 @@ export default function BriefView({ type }: { type: BriefType }) {
               <p className="mt-2 text-[14px] font-semibold leading-6 text-slate-500">
                 매일 {meta.time}에 자동 생성됩니다.
                 <br />
-                지금 바로 만들어 볼 수도 있어요.
+                잠시 후 새로고침 해주세요.
               </p>
               <button
                 onClick={generate}
                 disabled={generating}
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
               >
-                {generating ? "생성 중…" : "지금 생성하기"}
+                {generating ? "갱신 중…" : "새로고침"}
               </button>
             </div>
           )}

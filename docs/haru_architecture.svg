@@ -1,0 +1,113 @@
+<svg width="1080" height="640" viewBox="0 0 1080 640" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrowDark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <rect width="1080" height="640" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="44" y="50" font-size="26" font-weight="800" fill="#0f172a" letter-spacing="-0.5">하루 HARU · 시스템 아키텍처</text>
+  <text x="44" y="76" font-size="14" font-weight="600" fill="#64748b">개인 투자자용 Daily 2-Brief — 생성·조회 분리 + 이중 LLM 교차검증</text>
+
+  <!-- ===== 데이터 소스 ===== -->
+  <text x="44" y="126" font-size="13" font-weight="800" fill="#475569">데이터 소스</text>
+  <g>
+    <rect x="44" y="138" width="170" height="46" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="60" y="160" font-size="13" font-weight="800" fill="#0f172a">Tavily</text>
+    <text x="60" y="177" font-size="11" font-weight="600" fill="#64748b">이슈·뉴스 수집</text>
+    <rect x="44" y="194" width="170" height="46" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="60" y="216" font-size="13" font-weight="800" fill="#0f172a">KIS Open API</text>
+    <text x="60" y="233" font-size="11" font-weight="600" fill="#64748b">시세·지표·수급</text>
+    <rect x="44" y="250" width="170" height="46" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="60" y="272" font-size="13" font-weight="800" fill="#0f172a">DART</text>
+    <text x="60" y="289" font-size="11" font-weight="600" fill="#64748b">공시·재무</text>
+  </g>
+
+  <!-- ===== ① 생성 레인 ===== -->
+  <rect x="240" y="108" width="800" height="200" rx="18" fill="#fbfdff" stroke="#e2e8f0" stroke-dasharray="4 4"/>
+  <text x="262" y="134" font-size="13" font-weight="800" fill="#1e293b">① 생성 (스케줄 자동 · 하루 2회 08:00 / 17:00 KST)</text>
+
+  <!-- 스케줄러 -->
+  <rect x="262" y="150" width="150" height="62" rx="12" fill="#0f172a"/>
+  <text x="278" y="176" font-size="13" font-weight="800" fill="#ffffff">스케줄러</text>
+  <text x="278" y="194" font-size="10.5" font-weight="600" fill="#cbd5e1">EventBridge·Lambda</text>
+  <text x="278" y="208" font-size="10.5" font-weight="600" fill="#cbd5e1">/ GitHub Actions</text>
+
+  <!-- 수집 -->
+  <rect x="438" y="150" width="132" height="62" rx="12" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <text x="454" y="178" font-size="13" font-weight="800" fill="#0f172a">수집</text>
+  <text x="454" y="196" font-size="11" font-weight="600" fill="#64748b">Tavily 검색</text>
+
+  <!-- GPT 생성 -->
+  <rect x="596" y="150" width="140" height="62" rx="12" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text x="612" y="174" font-size="13" font-weight="800" fill="#3730a3">GPT 생성</text>
+  <text x="612" y="192" font-size="10.5" font-weight="600" fill="#6366f1">메인 LLM · 브리핑</text>
+  <text x="612" y="206" font-size="10.5" font-weight="600" fill="#6366f1">5섹션 JSON</text>
+
+  <!-- Gemini 교차검증 -->
+  <rect x="762" y="150" width="156" height="62" rx="12" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text x="778" y="174" font-size="13" font-weight="800" fill="#3730a3">Gemini 교차검증</text>
+  <text x="778" y="192" font-size="10.5" font-weight="600" fill="#6366f1">LLM-as-judge</text>
+  <text x="778" y="206" font-size="10.5" font-weight="600" fill="#6366f1">할루시네이션·권유 적발</text>
+
+  <!-- 화살표 (생성 레인) -->
+  <line x1="412" y1="181" x2="436" y2="181" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="570" y1="181" x2="594" y2="181" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="736" y1="181" x2="760" y2="181" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- 데이터소스 → 수집 -->
+  <line x1="214" y1="217" x2="438" y2="190" stroke="#cbd5e1" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- ===== 저장소 (공유) ===== -->
+  <rect x="780" y="300" width="138" height="86" rx="14" fill="#0f172a"/>
+  <text x="800" y="332" font-size="14" font-weight="800" fill="#ffffff">저장소</text>
+  <text x="800" y="352" font-size="11" font-weight="600" fill="#cbd5e1">S3 / 파일</text>
+  <text x="800" y="368" font-size="11" font-weight="600" fill="#cbd5e1">brief·themes JSON</text>
+
+  <!-- 검증 → 저장 (write) -->
+  <path d="M840 212 L840 300" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#arrowDark)"/>
+  <text x="848" y="262" font-size="11" font-weight="700" fill="#475569">저장</text>
+
+  <!-- ===== ② 조회 레인 ===== -->
+  <rect x="240" y="420" width="800" height="150" rx="18" fill="#fbfdff" stroke="#e2e8f0" stroke-dasharray="4 4"/>
+  <text x="262" y="446" font-size="13" font-weight="800" fill="#1e293b">② 조회 (사용자 · 실시간 · LLM 대기 없음)</text>
+
+  <!-- 사용자 -->
+  <rect x="262" y="462" width="150" height="78" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="278" y="490" font-size="13" font-weight="800" fill="#0f172a">사용자</text>
+  <text x="278" y="508" font-size="10.5" font-weight="600" fill="#64748b">홈·브리핑</text>
+  <text x="278" y="522" font-size="10.5" font-weight="600" fill="#64748b">종목·테마 매핑</text>
+
+  <!-- Next.js -->
+  <rect x="462" y="462" width="170" height="78" rx="12" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <text x="478" y="492" font-size="13" font-weight="800" fill="#0f172a">Next.js 웹</text>
+  <text x="478" y="510" font-size="10.5" font-weight="600" fill="#64748b">AWS Amplify (SSR)</text>
+
+  <!-- GET -->
+  <rect x="682" y="462" width="156" height="78" rx="12" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <text x="698" y="492" font-size="13" font-weight="800" fill="#0f172a">GET /api/brief</text>
+  <text x="698" y="510" font-size="10.5" font-weight="600" fill="#64748b">저장본 즉시 반환</text>
+
+  <!-- 화살표 (조회 레인) -->
+  <line x1="412" y1="501" x2="460" y2="501" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="632" y1="501" x2="680" y2="501" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- GET → 저장소 (read) -->
+  <path d="M838 470 L860 470 L860 386" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#arrowDark)"/>
+  <text x="868" y="430" font-size="11" font-weight="700" fill="#475569">읽기</text>
+
+  <!-- ===== 핵심 배지 ===== -->
+  <g>
+    <rect x="44" y="586" width="150" height="34" rx="17" fill="#0f172a"/>
+    <text x="119" y="608" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">생성·조회 분리</text>
+    <rect x="206" y="586" width="150" height="34" rx="17" fill="#eef2ff" stroke="#c7d2fe"/>
+    <text x="281" y="608" font-size="12" font-weight="800" fill="#3730a3" text-anchor="middle">LLM-as-judge</text>
+    <rect x="368" y="586" width="232" height="34" rx="17" fill="#f1f5f9" stroke="#e2e8f0"/>
+    <text x="484" y="608" font-size="12" font-weight="800" fill="#334155" text-anchor="middle">할루시네이션 방지 · disclaimer 자동화</text>
+    <rect x="612" y="586" width="180" height="34" rx="17" fill="#f1f5f9" stroke="#e2e8f0"/>
+    <text x="702" y="608" font-size="12" font-weight="800" fill="#334155" text-anchor="middle">실패 시 모킹 폴백(graceful)</text>
+  </g>
+</svg>
