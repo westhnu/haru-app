@@ -4,36 +4,42 @@ import { generateBriefResponse } from "@/lib/pipeline";
 import { writeBrief } from "@/lib/store";
 import { generateThemeMap } from "@/lib/thememap";
 import { writeThemes } from "@/lib/themestore";
+import { s3PutJson } from "@/lib/s3";
 
-// 브리핑 + 테마를 한 번에 생성·저장하는 통합 스케줄 엔드포인트.
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/**
- * 시간대별 일괄 생성:
- *   - slot=morning: 모닝 브리핑 + 테마 매핑
- *   - slot=evening: 이브닝 브리핑 + 테마 매핑
- *
- * Amplify Hosting Compute의 게이트웨이 응답 한계(약 30초)를 피하려고
- * 작업은 비동기로 시작하고 202를 즉시 반환한다. Lambda는 응답 이후에도
- * 이벤트 루프가 비기 전까지 살아 있으므로 백그라운드 작업이 완료된다.
- */
+// 단계별 진단용 — S3에 cron-status.json 으로 흔적 남김
+async function mark(stage: string, detail?: unknown) {
+  try {
+    await s3PutJson("cron-status.json", {
+      stage,
+      detail,
+      ts: new Date().toISOString(),
+    });
+  } catch {}
+}
+
 async function runWork(briefType: BriefType) {
-  const errs: string[] = [];
+  await mark("brief:start", { briefType });
   try {
     const brief = await generateBriefResponse(briefType);
+    await mark("brief:generated", { mode: brief.meta.mode });
     await writeBrief(briefType, brief);
+    await mark("brief:saved");
   } catch (e) {
-    errs.push(`brief: ${(e as Error).message}`);
+    await mark("brief:error", String((e as Error).message));
   }
+  await mark("themes:start");
   try {
     const themes = await generateThemeMap();
+    await mark("themes:generated", { mode: themes.meta.mode, count: themes.items.length });
     await writeThemes(themes);
+    await mark("themes:saved");
   } catch (e) {
-    errs.push(`themes: ${(e as Error).message}`);
+    await mark("themes:error", String((e as Error).message));
   }
-  if (errs.length) console.error("[cron]", briefType, errs.join(" | "));
-  else console.log("[cron]", briefType, "완료");
+  await mark("done");
 }
 
 export async function POST(req: Request) {
@@ -44,8 +50,9 @@ export async function POST(req: Request) {
   const slotParam = new URL(req.url).searchParams.get("slot");
   const briefType: BriefType = slotParam === "evening" ? "evening" : "morning";
 
-  // fire-and-forget: 응답 후에도 이벤트 루프에 남아 작업 진행
+  await mark("received", { briefType });
   void runWork(briefType);
+  await mark("kicked-off");
 
   return NextResponse.json(
     { ok: true, slot: briefType, status: "started" },
