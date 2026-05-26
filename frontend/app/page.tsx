@@ -48,7 +48,10 @@ const features = [
   },
 ];
 
-// 현재 KST 시각으로 지금 보여줄 브리핑 결정 (14시 전=모닝, 이후=이브닝)
+// 현재 KST 시각으로 지금 보여줄 브리핑 결정.
+// cron 이 모닝 08:00 / 이브닝 17:00 KST 에 갱신하므로
+//   08:00 ≤ hour < 17:00  → 오늘 모닝이 최신
+//   그 외 (17:00~익일 07:59) → 오늘 또는 어제 이브닝이 최신
 function currentPeriod(): BriefType {
   const hour = Number(
     new Intl.DateTimeFormat("en-US", {
@@ -57,7 +60,7 @@ function currentPeriod(): BriefType {
       timeZone: "Asia/Seoul",
     }).format(new Date())
   );
-  return hour < 14 ? "morning" : "evening";
+  return hour >= 8 && hour < 17 ? "morning" : "evening";
 }
 
 const PREVIEW: Record<
