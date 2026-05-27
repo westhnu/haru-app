@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -70,10 +71,20 @@ export default function BriefView({ type }: { type: BriefType }) {
   const meta = BRIEF_META[type];
   const accent = ACCENT[type];
   const HeroIcon = type === "morning" ? Sunrise : Sunset;
+  const router = useRouter();
   const [data, setData] = useState<BriefResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 브라우저 히스토리가 있으면 뒤로가기, 없으면 홈
+  const goBack = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  }, [router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -119,13 +130,14 @@ export default function BriefView({ type }: { type: BriefType }) {
         <div className="relative z-10">
           {/* 상단 바 */}
           <div className="flex items-center justify-between py-5">
-            <Link
-              href="/"
+            <button
+              type="button"
+              onClick={goBack}
               className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200"
             >
               <ArrowLeft className="h-4 w-4" />
-              하루
-            </Link>
+              뒤로
+            </button>
             <button
               onClick={generate}
               disabled={generating}

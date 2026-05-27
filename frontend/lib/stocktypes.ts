@@ -56,10 +56,11 @@ export interface StockResponse {
     rows: FinancialRow[];
   };
   meta: {
-    priceMode: "live" | "mock";
-    dartMode: "live" | "mock";
-    indicatorsMode: "live" | "mock";
-    supplyMode: "live" | "mock";
+    // "unsupported" = 해외/비표준 코드라 KIS·DART 조회 자체가 불가
+    priceMode: "live" | "mock" | "unsupported";
+    dartMode: "live" | "mock" | "unsupported";
+    indicatorsMode: "live" | "mock" | "unsupported";
+    supplyMode: "live" | "mock" | "unsupported";
     warnings: string[];
   };
 }

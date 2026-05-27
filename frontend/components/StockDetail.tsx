@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Info, BarChart3 } from "lucide-react";
 import type { IndicatorTone, StockResponse } from "@/lib/stocktypes";
@@ -53,9 +53,19 @@ export default function StockDetail({
   code: string;
   name?: string;
 }) {
+  const router = useRouter();
   const [data, setData] = useState<StockResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("3m");
+
+  // 브라우저 히스토리가 있으면 뒤로가기, 없으면 홈으로 (직접 URL 접속 케이스)
+  const goBack = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  }, [router]);
   const [tab, setTab] = useState<"info" | "financial">("info");
 
   const load = useCallback(async () => {
@@ -88,13 +98,14 @@ export default function StockDetail({
     <div className="min-h-svh bg-slate-50">
       <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white px-5 pb-12">
         <div className="flex items-center justify-between py-5">
-          <Link
-            href="/"
+          <button
+            type="button"
+            onClick={goBack}
             className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200"
           >
             <ArrowLeft className="h-4 w-4" />
-            하루
-          </Link>
+            뒤로
+          </button>
         </div>
 
         {loading || !data ? (
@@ -133,6 +144,16 @@ export default function StockDetail({
                 )}
               </div>
             </div>
+
+            {/* 해외 종목 안내 배너 */}
+            {data.meta.priceMode === "unsupported" && (
+              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[13px] font-semibold text-amber-900">
+                <p className="font-black">해외 종목은 라이브 시세 미지원</p>
+                <p className="mt-1 leading-6">
+                  이 종목은 한국투자증권(KIS) Open API 의 조회 대상이 아니에요. 시세·재무 차트는 표시되지 않습니다. 브리핑 본문의 텍스트 정보만 참고해 주세요.
+                </p>
+              </div>
+            )}
 
             {/* 차트 */}
             <div className="mt-5 rounded-[24px] border border-slate-200 bg-white p-4 shadow-soft">

@@ -30,13 +30,22 @@ export async function GET(
   const isKrCode = /^\d{6}$/.test(code);
   const warnings: string[] = [];
 
-  let priceMode: "live" | "mock" = "mock";
-  let indicatorsMode: "live" | "mock" = "mock";
-  let supplyMode: "live" | "mock" = "mock";
-  let prices: PricePoint[] = mockPrices(code, info ? 80000 : 50000);
-  let indicators = mockIndicators();
-  let supply = mockSupply();
+  let priceMode: "live" | "mock" | "unsupported" = "mock";
+  let indicatorsMode: "live" | "mock" | "unsupported" = "mock";
+  let supplyMode: "live" | "mock" | "unsupported" = "mock";
+  // 해외/비표준 코드는 KIS 가 지원하지 않으므로 데모 데이터를 만들지 않고
+  // 빈 배열로 반환한다. UI 는 빈 상태에서 "지원하지 않음" 안내를 보여준다.
+  let prices: PricePoint[] = isKrCode
+    ? mockPrices(code, info ? 80000 : 50000)
+    : [];
+  let indicators = isKrCode ? mockIndicators() : [];
+  let supply = isKrCode ? mockSupply() : { date: "", rows: [] };
   let quote: KisQuote | null = null;
+  if (!isKrCode) {
+    priceMode = "unsupported";
+    indicatorsMode = "unsupported";
+    supplyMode = "unsupported";
+  }
 
   // ── KIS 실시간 시세 (국내 6자리 코드 + 키 있을 때) ──
   if (isKrCode && kisConfigured()) {
@@ -81,7 +90,7 @@ export async function GET(
       warnings.push(`KIS 수급 실패: ${(e as Error).message} → 데모 수급`);
     }
   } else if (!isKrCode) {
-    warnings.push("해외·비표준 코드 → 시세·지표 데모 데이터");
+    warnings.push("해외·비표준 코드는 시세·지표·재무 라이브 데이터 미지원");
   } else {
     warnings.push("KIS 키 없음 → 시세·지표 데모 데이터");
   }
@@ -102,20 +111,29 @@ export async function GET(
         ? Math.round(((last - prev) / prev) * 1000) / 10
         : null;
 
-  const basics: PriceBasics = {
-    high: Math.max(...closes),
-    low: Math.min(...closes),
-    returnPct:
-      last !== null && first ? Math.round(((last - first) / first) * 1000) / 10 : 0,
-    latestVolume: quote?.volume ?? vols[vols.length - 1] ?? 0,
-    avgVolume: Math.round(vols.reduce((a, b) => a + b, 0) / vols.length),
-    periodDays: prices.length,
-  };
+  // 빈 배열이면 Math.max(...[]) === -Infinity 가 되므로 가드.
+  const basics: PriceBasics = closes.length
+    ? {
+        high: Math.max(...closes),
+        low: Math.min(...closes),
+        returnPct:
+          last !== null && first
+            ? Math.round(((last - first) / first) * 1000) / 10
+            : 0,
+        latestVolume: quote?.volume ?? vols[vols.length - 1] ?? 0,
+        avgVolume: Math.round(vols.reduce((a, b) => a + b, 0) / vols.length),
+        periodDays: prices.length,
+      }
+    : { high: 0, low: 0, returnPct: 0, latestVolume: 0, avgVolume: 0, periodDays: 0 };
 
-  // ── 재무: DART 라이브 (corp_code 매핑 + 키), 아니면 데모 ──
-  let dartMode: "live" | "mock" = "mock";
-  let financials = mockFinancials() as StockResponse["financials"];
-  if (info) {
+  // ── 재무: DART 라이브 (corp_code 매핑 + 키), 아니면 데모/미지원 ──
+  let dartMode: "live" | "mock" | "unsupported" = "mock";
+  let financials: StockResponse["financials"] = isKrCode
+    ? (mockFinancials() as StockResponse["financials"])
+    : { year: "", rows: [] };
+  if (!isKrCode) {
+    dartMode = "unsupported";
+  } else if (info) {
     const fin = await fetchFinancials(info.corp);
     if (fin.warning) warnings.push(fin.warning);
     if (fin.rows.some((r) => r.value !== null)) {

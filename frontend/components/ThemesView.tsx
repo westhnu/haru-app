@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, RefreshCw, Network, ChevronRight } from "lucide-react";
 import type { Confidence, ThemeResponse, ThemeStock } from "@/lib/thememap";
@@ -51,10 +52,19 @@ function StockChip({ s }: { s: ThemeStock }) {
 }
 
 export default function ThemesView() {
+  const router = useRouter();
   const [data, setData] = useState<Resp | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const goBack = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  }, [router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,13 +103,14 @@ export default function ThemesView() {
       <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white px-5 pb-12">
         {/* 상단 바 */}
         <div className="flex items-center justify-between py-5">
-          <Link
-            href="/"
+          <button
+            type="button"
+            onClick={goBack}
             className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200"
           >
             <ArrowLeft className="h-4 w-4" />
-            하루
-          </Link>
+            뒤로
+          </button>
           <button
             onClick={generate}
             disabled={generating}
