@@ -155,6 +155,9 @@ export default function StockDetail({
               </div>
             )}
 
+            {/* 해외/비지원 종목은 차트·시세요약·수급·지표·재무 섹션을 모두 숨김 */}
+            {data.meta.priceMode !== "unsupported" && (
+            <>
             {/* 차트 */}
             <div className="mt-5 rounded-[24px] border border-slate-200 bg-white p-4 shadow-soft">
               <PriceChart prices={sliced} up={up} />
@@ -356,6 +359,8 @@ export default function StockDetail({
                   </div>
                 ))}
               </div>
+            )}
+            </>
             )}
 
             {data.meta.warnings.length > 0 && (

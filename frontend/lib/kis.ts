@@ -202,14 +202,18 @@ export async function kisInvestor(code: string): Promise<KisSupply | null> {
     }[];
   };
   if (data.rt_cd !== "0" || !data.output || data.output.length === 0) return null;
-  const o = data.output[0];
+  // KIS 는 장중(09:00~15:30 KST)엔 당일 누적치가 0으로 나오는 경우가 있다.
+  // output[0]가 0,0,0이면 다음 비영(非零) 행을 fallback으로 사용 → 보통 직전 장 마감일.
+  const isZero = (r: { frgn_ntby_qty: string; orgn_ntby_qty: string; prsn_ntby_qty: string }) =>
+    num(r.frgn_ntby_qty) === 0 && num(r.orgn_ntby_qty) === 0 && num(r.prsn_ntby_qty) === 0;
+  const row = data.output.find((r) => !isZero(r)) ?? data.output[0];
   return {
-    date: o.stck_bsop_date
-      ? `${o.stck_bsop_date.slice(0, 4)}-${o.stck_bsop_date.slice(4, 6)}-${o.stck_bsop_date.slice(6, 8)}`
+    date: row.stck_bsop_date
+      ? `${row.stck_bsop_date.slice(0, 4)}-${row.stck_bsop_date.slice(4, 6)}-${row.stck_bsop_date.slice(6, 8)}`
       : "",
-    foreign: num(o.frgn_ntby_qty),
-    institution: num(o.orgn_ntby_qty),
-    individual: num(o.prsn_ntby_qty),
+    foreign: num(row.frgn_ntby_qty),
+    institution: num(row.orgn_ntby_qty),
+    individual: num(row.prsn_ntby_qty),
   };
 }
 
