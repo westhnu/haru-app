@@ -1,8 +1,12 @@
 import type { FinancialRow } from "./stocktypes";
+import { readCache, writeCache } from "./cache";
 
 const BASE = "https://opendart.fss.or.kr/api";
 
 const key = () => process.env.DART_API_KEY || "";
+
+// 분기별로만 갱신되므로 24h TTL 충분. 동시 사용자에서 DART 호출 절감.
+const FIN_TTL_MS = 24 * 60 * 60 * 1000;
 
 const WANTED: { label: string; names: string[] }[] = [
   { label: "매출액", names: ["매출액", "수익(매출액)", "영업수익", "매출"] },
@@ -40,17 +44,26 @@ async function fetchYear(
   return WANTED.map((w) => ({ label: w.label, value: findAmount(w.names) }));
 }
 
-/** 재무제표 핵심 계정 (DART 단일회사 전체 재무제표) — 최신 연도부터 시도 */
+/** 재무제표 핵심 계정 (DART 단일회사 전체 재무제표) — 최신 연도부터 시도. 24h S3 캐싱. */
 export async function fetchFinancials(
   corpCode: string
 ): Promise<{ year: string | null; rows: FinancialRow[]; warning?: string }> {
   if (!key()) return { year: null, rows: [], warning: "DART_API_KEY 없음" };
+
+  const cacheKey = `dart-financials-${corpCode}`;
+  const cached = await readCache<{ year: string; rows: FinancialRow[] }>(
+    cacheKey
+  );
+  if (cached) return cached;
+
   const thisYear = new Date().getFullYear();
   for (const year of [thisYear - 1, thisYear - 2]) {
     try {
       const rows = await fetchYear(corpCode, String(year));
       if (rows && rows.some((r) => r.value !== null)) {
-        return { year: String(year), rows };
+        const result = { year: String(year), rows };
+        await writeCache(cacheKey, result, FIN_TTL_MS);
+        return result;
       }
     } catch {
       // 다음 연도 시도

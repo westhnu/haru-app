@@ -27,13 +27,32 @@ export function kisConfigured(): boolean {
   return !!appKey() && !!appSecret();
 }
 
-// ── 토큰 캐시 (모듈 메모리) ──
-let cachedToken: { token: string; expiresAt: number } | null = null;
+// ── 토큰 캐시 ──
+// 1차 모듈 메모리 (warm Lambda) + 2차 S3 공유 (콜드/멀티 인스턴스).
+// 1분 cooldown 이 있는 KIS 토큰 발급 API 호출을 최소화한다.
+import { readCache, writeCache } from "./cache";
+
+interface TokenEntry {
+  token: string;
+  expiresAt: number;
+}
+let cachedToken: TokenEntry | null = null;
+const TOKEN_CACHE_KEY = "kis-token";
+// 만료 60초 전부터 새로 발급
+const SAFETY_MARGIN_MS = 60_000;
 
 async function getToken(): Promise<string | null> {
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+  // 1) 모듈 메모리 (가장 빠름)
+  if (cachedToken && cachedToken.expiresAt > Date.now() + SAFETY_MARGIN_MS) {
     return cachedToken.token;
   }
+  // 2) S3 공유 캐시 — 다른 Lambda 인스턴스가 이미 발급한 토큰
+  const shared = await readCache<TokenEntry>(TOKEN_CACHE_KEY);
+  if (shared && shared.expiresAt > Date.now() + SAFETY_MARGIN_MS) {
+    cachedToken = shared;
+    return shared.token;
+  }
+  // 3) 새로 발급
   const res = await fetch(`${baseUrl()}/oauth2/tokenP`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -54,6 +73,12 @@ async function getToken(): Promise<string | null> {
     token: data.access_token,
     expiresAt: Date.now() + (data.expires_in ?? 86400) * 1000,
   };
+  // S3 에 공유 — 나머지 인스턴스가 cooldown 위반 안 하도록
+  await writeCache(
+    TOKEN_CACHE_KEY,
+    cachedToken,
+    cachedToken.expiresAt - Date.now()
+  );
   return cachedToken.token;
 }
 
