@@ -7,6 +7,9 @@ import {
   Network,
   ShieldCheck,
   Bot,
+  Clock,
+  MousePointerClick,
+  Building2,
 } from "lucide-react";
 import type { BriefType } from "@/lib/types";
 
@@ -214,6 +217,62 @@ export default function Home() {
                 </p>
               </div>
             </Link>
+          </section>
+
+          {/* 이렇게 써요 — 3-step 안내 (첫 방문자 onboarding) */}
+          <section className="pt-12">
+            <p className="text-sm font-black text-slate-500">이렇게 써요</p>
+            <h2 className="mt-3 text-2xl font-black leading-tight tracking-tight text-slate-950">
+              세 단계면 충분해요.
+            </h2>
+
+            <ol className="mt-6 space-y-3">
+              {[
+                {
+                  num: "01",
+                  icon: Clock,
+                  title: "받기",
+                  desc: "매일 08:00·17:00 KST, 모닝·이브닝 브리핑이 자동으로 갱신돼요.",
+                },
+                {
+                  num: "02",
+                  icon: MousePointerClick,
+                  title: "살펴보기",
+                  desc: "브리핑 → 테마 → 종목 상세까지 한 흐름으로. 어려운 용어엔 점선 — 호버하면 풀이.",
+                },
+                {
+                  num: "03",
+                  icon: Building2,
+                  title: "결정하기",
+                  desc: "최종 매매·판단은 본인 증권사에서. 하루는 추천 대신 정리해 드려요.",
+                },
+              ].map((s) => {
+                const StepIcon = s.icon;
+                return (
+                  <li
+                    key={s.num}
+                    className="group flex items-start gap-4 rounded-[24px] border border-slate-200 bg-white p-5 transition hover:border-slate-300"
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-700 transition group-hover:bg-slate-100">
+                      <StepIcon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[11px] font-black tracking-[0.18em] text-slate-300">
+                          {s.num}
+                        </span>
+                        <p className="text-[15px] font-black text-slate-950">
+                          {s.title}
+                        </p>
+                      </div>
+                      <p className="mt-1.5 text-[13px] font-semibold leading-6 text-slate-500">
+                        {s.desc}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
           </section>
 
           {/* 기능 */}
