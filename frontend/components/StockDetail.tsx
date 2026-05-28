@@ -150,7 +150,7 @@ export default function StockDetail({
                 {data.profile.changePct !== null && (
                   <span className={`text-[15px] font-black ${priceColor}`}>
                     {up ? "+" : ""}
-                    {data.profile.changePct}%
+                    {data.profile.changePct.toFixed(2)}%
                   </span>
                 )}
               </div>
