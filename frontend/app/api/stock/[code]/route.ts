@@ -16,6 +16,7 @@ import {
   indicatorsFromQuote,
   type KisQuote,
 } from "@/lib/kis";
+import { tdConfigured, tdQuote, tdDaily } from "@/lib/twelvedata";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -34,13 +35,19 @@ export async function GET(
   let indicatorsMode: "live" | "mock" | "unsupported" = "mock";
   let supplyMode: "live" | "mock" | "unsupported" = "mock";
   // 해외/비표준 코드는 KIS 가 지원하지 않으므로 데모 데이터를 만들지 않고
-  // 빈 배열로 반환한다. UI 는 빈 상태에서 "지원하지 않음" 안내를 보여준다.
+  // 빈 배열로 반환한다 (TwelveData 가 채워지지 않은 경우엔 UI 에서 "지원 안 됨"으로 안내).
   let prices: PricePoint[] = isKrCode
     ? mockPrices(code, info ? 80000 : 50000)
     : [];
   let indicators = isKrCode ? mockIndicators() : [];
   let supply = isKrCode ? mockSupply() : { date: "", rows: [] };
   let quote: KisQuote | null = null;
+  // 해외 종목 라이브 (TwelveData)에서 채워질 별도 메타
+  let foreignName: string | null = null;
+  let foreignExchange: string | null = null;
+  let foreignCurrency: string | null = null;
+  let foreignPrice: number | null = null;
+  let foreignChangePct: number | null = null;
   if (!isKrCode) {
     priceMode = "unsupported";
     indicatorsMode = "unsupported";
@@ -89,6 +96,54 @@ export async function GET(
     } catch (e) {
       warnings.push(`KIS 수급 실패: ${(e as Error).message} → 데모 수급`);
     }
+  } else if (!isKrCode && tdConfigured()) {
+    // ── 해외 종목: TwelveData 라이브 (NASDAQ/NYSE 등) ──
+    try {
+      const q = await tdQuote(code);
+      if (q) {
+        foreignName = q.name;
+        foreignExchange = q.exchange;
+        foreignCurrency = q.currency;
+        foreignPrice = q.price;
+        foreignChangePct = q.changePct;
+        // KisQuote 가 아닌 별도 지표 생성 — 52주 + 평균 거래량 기반
+        indicators = [
+          {
+            label: "52주 최고",
+            value: q.high52w
+              ? `${q.high52w.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${q.currency}`
+              : "—",
+            tone: "neutral",
+          },
+          {
+            label: "52주 최저",
+            value: q.low52w
+              ? `${q.low52w.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${q.currency}`
+              : "—",
+            tone: "neutral",
+          },
+          {
+            label: "평균 거래량",
+            value: q.avgVolume ? `${(q.avgVolume / 1_000_000).toFixed(1)}M주` : "—",
+            tone: "neutral",
+          },
+        ];
+        indicatorsMode = "live";
+      }
+      const daily = await tdDaily(code, 90);
+      if (daily.length > 1) {
+        prices = daily;
+        priceMode = "live";
+      } else if (q) {
+        warnings.push("TwelveData 일봉 부족 — 차트 미표시");
+      }
+    } catch (e) {
+      warnings.push(`TwelveData 실패: ${(e as Error).message}`);
+    }
+    if (priceMode !== "live") {
+      // TwelveData 도 실패한 경우 — 기본 unsupported 메시지 유지
+      warnings.push("해외 종목 라이브 데이터를 가져오지 못했습니다");
+    }
   } else if (!isKrCode) {
     warnings.push("해외·비표준 코드는 시세·지표·재무 라이브 데이터 미지원");
   } else {
@@ -101,15 +156,16 @@ export async function GET(
   // ── 시세 요약 계산 ──
   const closes = prices.map((p) => p.close);
   const vols = prices.map((p) => p.volume);
-  const last = quote?.price ?? closes[closes.length - 1] ?? null;
+  const last =
+    quote?.price ?? foreignPrice ?? closes[closes.length - 1] ?? null;
   const prev = closes[closes.length - 2] ?? null;
   const first = closes[0] ?? null;
   const changePct =
     quote != null
       ? quote.changePct
-      : last !== null && prev
-        ? Math.round(((last - prev) / prev) * 1000) / 10
-        : null;
+      : foreignChangePct ?? (last !== null && prev
+          ? Math.round(((last - prev) / prev) * 1000) / 10
+          : null);
 
   // 빈 배열이면 Math.max(...[]) === -Infinity 가 되므로 가드.
   const basics: PriceBasics = closes.length
@@ -147,10 +203,11 @@ export async function GET(
   const body: StockResponse = {
     profile: {
       code,
-      name: info?.name || quote?.name || nameParam || code,
+      name: info?.name || quote?.name || foreignName || nameParam || code,
       price: last,
       changePct,
-      market: info?.market,
+      market: info?.market ?? foreignExchange ?? undefined,
+      currency: isKrCode ? "KRW" : foreignCurrency ?? undefined,
     },
     prices,
     basics,

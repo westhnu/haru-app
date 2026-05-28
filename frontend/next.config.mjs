@@ -19,6 +19,7 @@ const nextConfig = {
     CRON_SECRET: process.env.CRON_SECRET,
     STORAGE: process.env.STORAGE,
     S3_BUCKET: process.env.S3_BUCKET,
+    TWELEVE_KEY: process.env.TWELEVE_KEY,
   },
 };
 

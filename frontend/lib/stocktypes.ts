@@ -26,7 +26,8 @@ export interface StockProfile {
   name: string;
   price: number | null;
   changePct: number | null; // 직전 대비 등락률 %
-  market?: string; // KOSPI/KOSDAQ
+  market?: string; // KOSPI/KOSDAQ/NASDAQ 등
+  currency?: string; // "KRW" | "USD" | … (해외 종목에 표시용)
 }
 
 /** 가격 시계열에서 계산한 시세 요약 */

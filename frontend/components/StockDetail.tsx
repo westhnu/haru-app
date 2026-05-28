@@ -46,6 +46,17 @@ function formatNet(v: number): string {
   return `${sign}${body}`;
 }
 
+/** 가격 표시 — 한국은 "원", 외화는 통화 기호/코드 사용 */
+function formatPrice(value: number, currency?: string): string {
+  if (!currency || currency === "KRW") {
+    return `${Math.round(value).toLocaleString()}원`;
+  }
+  if (currency === "USD") {
+    return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${currency}`;
+}
+
 export default function StockDetail({
   code,
   name,
@@ -133,7 +144,7 @@ export default function StockDetail({
               <div className="mt-3 flex flex-wrap items-baseline gap-2">
                 <span className="text-[2rem] font-black text-slate-950">
                   {data.profile.price !== null
-                    ? `${data.profile.price.toLocaleString()}원`
+                    ? formatPrice(data.profile.price, data.profile.currency)
                     : "—"}
                 </span>
                 {data.profile.changePct !== null && (
@@ -183,31 +194,33 @@ export default function StockDetail({
               )}
             </div>
 
-            {/* 탭 */}
-            <div className="mt-4 flex items-center gap-1.5 rounded-full bg-slate-100 p-1">
-              <button
-                onClick={() => setTab("info")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
-                  tab === "info"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500"
-                }`}
-              >
-                <Info className="h-4 w-4" />
-                종목정보
-              </button>
-              <button
-                onClick={() => setTab("financial")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
-                  tab === "financial"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500"
-                }`}
-              >
-                <BarChart3 className="h-4 w-4" />
-                재무제표
-              </button>
-            </div>
+            {/* 탭 — 재무는 DART 라이브가 있을 때만 노출 (해외 종목엔 unsupported) */}
+            {data.meta.dartMode !== "unsupported" && (
+              <div className="mt-4 flex items-center gap-1.5 rounded-full bg-slate-100 p-1">
+                <button
+                  onClick={() => setTab("info")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
+                    tab === "info"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500"
+                  }`}
+                >
+                  <Info className="h-4 w-4" />
+                  종목정보
+                </button>
+                <button
+                  onClick={() => setTab("financial")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
+                    tab === "financial"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500"
+                  }`}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  재무제표
+                </button>
+              </div>
+            )}
 
             {/* 종목정보 */}
             {tab === "info" && (
@@ -221,8 +234,8 @@ export default function StockDetail({
                     </span>
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    <Stat label="기간 최고가" value={`${data.basics.high.toLocaleString()}원`} />
-                    <Stat label="기간 최저가" value={`${data.basics.low.toLocaleString()}원`} />
+                    <Stat label="기간 최고가" value={formatPrice(data.basics.high, data.profile.currency)} />
+                    <Stat label="기간 최저가" value={formatPrice(data.basics.low, data.profile.currency)} />
                     <Stat
                       label="기간 등락률"
                       value={`${data.basics.returnPct >= 0 ? "+" : ""}${data.basics.returnPct}%`}
@@ -237,7 +250,8 @@ export default function StockDetail({
                   </div>
                 </div>
 
-                {/* 수급 동향 */}
+                {/* 수급 동향 — 해외 종목엔 표시하지 않음 */}
+                {data.meta.supplyMode !== "unsupported" && (
                 <div className="rounded-[24px] border border-slate-200 bg-white p-5">
                   <div className="flex items-center justify-between">
                     <p className="text-[13px] font-black text-slate-900">
@@ -280,6 +294,7 @@ export default function StockDetail({
                     </p>
                   )}
                 </div>
+                )}
 
                 {/* 투자 참고 지표 */}
                 <div className="rounded-[24px] border border-slate-200 bg-white p-5">
