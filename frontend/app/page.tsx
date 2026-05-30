@@ -6,7 +6,6 @@ import {
   Sparkles,
   Network,
   ShieldCheck,
-  Bot,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
@@ -113,6 +112,7 @@ export default async function Home() {
   const period = currentPeriod();
   const theme = THEME[period];
   const periodLabel = period === "morning" ? "모닝" : "이브닝";
+  const HeroIcon = period === "morning" ? Sunrise : Sunset;
   // S3에서 저장된 라이브 브리핑을 가져와 메인 카드에 노출.
   const data = await readBrief(period).catch(() => null);
   const briefResp = data && !data.empty ? data : null;
@@ -183,55 +183,77 @@ export default async function Home() {
             {/* Today 카드 — S3에 저장된 실제 라이브 브리핑 사용 */}
             <Link
               href={`/brief/${period}`}
-              className="mt-10 block rounded-[28px] border border-slate-200 bg-white p-5 shadow-card transition hover:border-slate-300"
+              className="group relative mt-10 block overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-card transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg"
             >
-              <div className="flex items-center justify-between">
+              {/* 상단 그라데이션 hint (시간대 색) */}
+              <span
+                aria-hidden
+                className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${theme.grad}`}
+              />
+
+              <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-400">Today 하루</p>
-                  <p className="mt-1 text-xl font-black text-slate-950">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    Today · 하루
+                  </p>
+                  <p className="mt-1.5 text-[22px] font-black tracking-tight text-slate-950">
                     {LABEL[period]}
                   </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {/* editorial inline meta — 점(·)으로 구분 */}
+                  <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] font-bold leading-none">
                     {verifyPassed === true && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                      <span className="inline-flex items-center gap-1 text-emerald-700">
                         <CheckCircle2 className="h-3 w-3" />
                         교차검증 통과
                       </span>
                     )}
                     {verifyPassed === false && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                      <span className="inline-flex items-center gap-1 text-amber-700">
                         <AlertCircle className="h-3 w-3" />
                         검증 주의
                       </span>
                     )}
                     {generatedAt && (
-                      <span className="text-[11px] font-bold text-slate-400">
-                        업데이트 {timeAgo(generatedAt)}
-                      </span>
+                      <>
+                        {verifyPassed !== null && (
+                          <span aria-hidden className="text-slate-300">·</span>
+                        )}
+                        <span className="text-slate-400">
+                          업데이트 {timeAgo(generatedAt)}
+                        </span>
+                      </>
                     )}
                     {!isLive && oneLine && (
-                      <span className="text-[11px] font-bold text-amber-600">
-                        직전 데이터
-                      </span>
+                      <>
+                        <span aria-hidden className="text-slate-300">·</span>
+                        <span className="text-amber-600">직전 라이브 데이터</span>
+                      </>
                     )}
                   </div>
                 </div>
                 <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white ${TILE[period]}`}
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-soft ${TILE[period]}`}
                 >
-                  <Bot className="h-6 w-6" />
+                  <HeroIcon className="h-6 w-6" />
                 </div>
               </div>
 
-              <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-                <p className="text-[14px] font-semibold leading-7 text-slate-700">
-                  {oneLine ?? "곧 첫 갱신이 도착해요. 매일 08:00·17:00 KST에 자동 갱신됩니다."}
+              {/* 본문 — 좌측 accent line + 살짝 editorial 톤 */}
+              <blockquote className="relative mt-6 pl-4">
+                <span
+                  aria-hidden
+                  className={`absolute inset-y-1 left-0 w-[3px] rounded-full bg-gradient-to-b ${theme.grad}`}
+                />
+                <p className="text-[14.5px] font-semibold leading-[1.7] text-slate-700">
+                  {oneLine ??
+                    "곧 첫 갱신이 도착해요. 매일 08:00·17:00 KST에 자동 갱신됩니다."}
                 </p>
-              </div>
+              </blockquote>
 
-              <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-bold text-slate-500">
+              {/* 우측 정렬 CTA */}
+              <div className="mt-5 flex items-center justify-end gap-1.5 text-[12px] font-bold text-slate-500 transition group-hover:text-slate-900">
                 자세히 보기
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
               </div>
             </Link>
           </section>
