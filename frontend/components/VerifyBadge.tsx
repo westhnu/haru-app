@@ -11,7 +11,7 @@ export default function VerifyBadge({
 }) {
   if (!verify) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-bold text-slate-500">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[12px] font-bold text-slate-500 dark:text-slate-400">
         교차검증 미수행
       </span>
     );
@@ -32,7 +32,7 @@ export default function VerifyBadge({
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-bold text-slate-900">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[12px] font-bold text-slate-900 dark:text-slate-100">
       <ShieldAlert className="h-3.5 w-3.5" />
       검증 불일치 {issues}건
     </span>

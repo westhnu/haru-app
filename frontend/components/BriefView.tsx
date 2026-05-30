@@ -27,7 +27,7 @@ function RegionHeader({ region }: { region: Region }) {
       <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-slate-900 text-white">
         <Icon className="h-4 w-4" />
       </div>
-      <span className="text-[14px] font-black text-slate-900">
+      <span className="text-[14px] font-black text-slate-900 dark:text-slate-100">
         {region} 시장
       </span>
       <span className="h-px flex-1 bg-slate-200" />
@@ -119,8 +119,8 @@ export default function BriefView({ type }: { type: BriefType }) {
   const isEmpty = data?.empty || !data?.brief;
 
   return (
-    <div className="min-h-svh bg-slate-50">
-      <div className="relative mx-auto min-h-svh w-full max-w-[480px] overflow-hidden bg-white px-5 pb-12">
+    <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
+      <div className="relative mx-auto min-h-svh w-full max-w-[480px] overflow-hidden bg-white dark:bg-slate-900 px-5 pb-24">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 z-0 h-72"
@@ -133,7 +133,7 @@ export default function BriefView({ type }: { type: BriefType }) {
             <button
               type="button"
               onClick={goBack}
-              className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200"
+              className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200"
             >
               <ArrowLeft className="h-4 w-4" />
               뒤로
@@ -141,7 +141,7 @@ export default function BriefView({ type }: { type: BriefType }) {
             <button
               onClick={generate}
               disabled={generating}
-              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 disabled:opacity-40"
             >
               <RefreshCw
                 className={`h-4 w-4 ${generating ? "animate-spin" : ""}`}
@@ -157,16 +157,16 @@ export default function BriefView({ type }: { type: BriefType }) {
             >
               <HeroIcon className="h-6 w-6" />
             </div>
-            <h1 className="mt-4 text-[2rem] font-black leading-tight tracking-tight text-slate-950">
+            <h1 className="mt-4 text-[2rem] font-black leading-tight tracking-tight text-slate-950 dark:text-white">
               {meta.label}
             </h1>
-            <p className="mt-2 text-[15px] font-medium leading-[1.75] text-slate-600">
+            <p className="mt-2 text-[15px] font-medium leading-[1.75] text-slate-600 dark:text-slate-400">
               {meta.subtitle}
             </p>
 
             {data && data.meta.forDate && (
-              <div className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold tabular-nums text-slate-600">
-                <CalendarDays className="h-4 w-4 text-slate-400" />
+              <div className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold tabular-nums text-slate-600 dark:text-slate-400">
+                <CalendarDays className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                 {data.meta.forDate}
               </div>
             )}
@@ -177,7 +177,7 @@ export default function BriefView({ type }: { type: BriefType }) {
                   className={`inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-bold ${
                     data.meta.mode === "live"
                       ? "bg-slate-900 text-white"
-                      : "bg-slate-100 text-slate-500"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                   }`}
                 >
                   {data.meta.mode === "live"
@@ -189,7 +189,7 @@ export default function BriefView({ type }: { type: BriefType }) {
                   verifyModel={data.meta.verifyModel}
                 />
                 {data.meta.generatedAt && (
-                  <span className="text-[12px] font-semibold text-slate-400">
+                  <span className="text-[12px] font-semibold text-slate-400 dark:text-slate-500">
                     업데이트 {timeAgo(data.meta.generatedAt)}
                   </span>
                 )}
@@ -210,10 +210,10 @@ export default function BriefView({ type }: { type: BriefType }) {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="animate-pulse-soft rounded-[24px] border border-slate-200 bg-white p-5"
+                  className="animate-pulse-soft rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5"
                 >
-                  <div className="mb-3 h-10 w-10 rounded-2xl bg-slate-100" />
-                  <div className="h-14 rounded-xl bg-slate-50" />
+                  <div className="mb-3 h-10 w-10 rounded-2xl bg-slate-100 dark:bg-slate-800" />
+                  <div className="h-14 rounded-xl bg-slate-50 dark:bg-slate-900" />
                 </div>
               ))}
             </div>
@@ -221,16 +221,16 @@ export default function BriefView({ type }: { type: BriefType }) {
 
           {/* 빈 상태 */}
           {!loading && isEmpty && (
-            <div className="mt-8 rounded-[28px] border border-slate-200 bg-white p-7 text-center shadow-card">
+            <div className="mt-8 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-7 text-center shadow-card">
               <div
                 className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white ${accent.tile}`}
               >
                 <Sparkles className="h-7 w-7" />
               </div>
-              <p className="mt-5 text-[17px] font-black text-slate-950">
+              <p className="mt-5 text-[17px] font-black text-slate-950 dark:text-white">
                 아직 생성된 브리핑이 없어요
               </p>
-              <p className="mt-2 text-[14px] font-medium leading-[1.75] text-slate-600">
+              <p className="mt-2 text-[14px] font-medium leading-[1.75] text-slate-600 dark:text-slate-400">
                 매일 {meta.time}에 자동 생성됩니다.
                 <br />
                 잠시 후 새로고침 해주세요.
@@ -247,7 +247,7 @@ export default function BriefView({ type }: { type: BriefType }) {
 
           {/* 에러 */}
           {error && !loading && (
-            <div className="mt-6 rounded-2xl bg-slate-100 p-4 text-[13px] font-semibold text-slate-700">
+            <div className="mt-6 rounded-2xl bg-slate-100 dark:bg-slate-800 p-4 text-[13px] font-semibold text-slate-700 dark:text-slate-300">
               {error}
             </div>
           )}
@@ -284,8 +284,8 @@ export default function BriefView({ type }: { type: BriefType }) {
               })()}
 
               {data.brief.dataGaps && data.brief.dataGaps.length > 0 && (
-                <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-[13px] font-semibold text-slate-500">
-                  <p className="mb-2 text-slate-600">
+                <section className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-5 text-[13px] font-semibold text-slate-500 dark:text-slate-400">
+                  <p className="mb-2 text-slate-600 dark:text-slate-400">
                     정보가 없어 채우지 못한 항목
                   </p>
                   <ul className="space-y-1.5">
@@ -300,8 +300,8 @@ export default function BriefView({ type }: { type: BriefType }) {
               )}
 
               {data.sources.length > 0 && (
-                <details className="rounded-2xl border border-slate-200 bg-white p-5 text-[13px]">
-                  <summary className="cursor-pointer list-none font-black text-slate-900">
+                <details className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-[13px]">
+                  <summary className="cursor-pointer list-none font-black text-slate-900 dark:text-slate-100">
                     근거 뉴스 {data.sources.length}건
                   </summary>
                   <div className="mt-3 space-y-2">
@@ -311,12 +311,12 @@ export default function BriefView({ type }: { type: BriefType }) {
                         href={s.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 transition hover:bg-slate-100"
+                        className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 dark:bg-slate-900 px-4 py-3 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                       >
-                        <span className="min-w-0 flex-1 truncate font-semibold text-slate-700">
+                        <span className="min-w-0 flex-1 truncate font-semibold text-slate-700 dark:text-slate-300">
                           {s.title}
                         </span>
-                        <ExternalLink className="h-4 w-4 shrink-0 text-slate-400" />
+                        <ExternalLink className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
                       </a>
                     ))}
                   </div>
@@ -324,7 +324,7 @@ export default function BriefView({ type }: { type: BriefType }) {
               )}
 
               {data.meta.warnings.length > 0 && (
-                <details className="rounded-2xl border border-slate-200 bg-white p-5 text-[12px] font-semibold text-slate-400">
+                <details className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-[12px] font-semibold text-slate-400 dark:text-slate-500">
                   <summary className="cursor-pointer list-none">
                     동작 진단 {data.meta.warnings.length}건
                   </summary>
@@ -339,7 +339,7 @@ export default function BriefView({ type }: { type: BriefType }) {
                 </details>
               )}
 
-              <p className="px-1 pt-3 text-[11px] font-medium leading-relaxed text-slate-400">
+              <p className="px-1 pt-3 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
                 {DISCLAIMER}
               </p>
             </div>

@@ -12,7 +12,7 @@ type Resp = ThemeResponse & { empty?: boolean };
 
 const CONF: Record<Confidence, { cls: string; label: string }> = {
   high: { cls: "bg-emerald-50 text-emerald-700", label: "신뢰도 높음" },
-  medium: { cls: "bg-slate-100 text-slate-500", label: "신뢰도 보통" },
+  medium: { cls: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400", label: "신뢰도 보통" },
   low: { cls: "bg-amber-50 text-amber-700", label: "신뢰도 낮음" },
 };
 
@@ -29,12 +29,12 @@ function StockChip({ s }: { s: ThemeStock }) {
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
         <span
           title={s.name}
-          className="truncate text-[14px] font-black text-slate-900"
+          className="truncate text-[14px] font-black text-slate-900 dark:text-slate-100"
         >
           {s.name}
         </span>
         {s.symbol && (
-          <span className="shrink-0 text-[11px] font-bold text-slate-400">
+          <span className="shrink-0 text-[11px] font-bold text-slate-400 dark:text-slate-500">
             {s.symbol}
           </span>
         )}
@@ -43,13 +43,13 @@ function StockChip({ s }: { s: ThemeStock }) {
         {s.reason && (
           <span
             title={s.reason}
-            className="truncate text-right text-[12px] font-semibold text-slate-500"
+            className="truncate text-right text-[12px] font-semibold text-slate-500 dark:text-slate-400"
           >
             {s.reason}
           </span>
         )}
         {target && (
-          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
         )}
       </div>
     </>
@@ -57,12 +57,12 @@ function StockChip({ s }: { s: ThemeStock }) {
   return target ? (
     <Link
       href={`/stock/${encodeURIComponent(target)}?name=${encodeURIComponent(s.name)}`}
-      className={`${baseCls} bg-slate-50 transition hover:bg-slate-100`}
+      className={`${baseCls} bg-slate-50 dark:bg-slate-900 transition hover:bg-slate-100 dark:hover:bg-slate-800`}
     >
       {inner}
     </Link>
   ) : (
-    <div className={`${baseCls} bg-slate-50/60 cursor-default`}>{inner}</div>
+    <div className={`${baseCls} bg-slate-50 dark:bg-slate-900/60 cursor-default`}>{inner}</div>
   );
 }
 
@@ -114,14 +114,14 @@ export default function ThemesView() {
   const isEmpty = data?.empty || (data?.items?.length ?? 0) === 0;
 
   return (
-    <div className="min-h-svh bg-slate-50">
-      <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white px-5 pb-12">
+    <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
+      <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white dark:bg-slate-900 px-5 pb-24">
         {/* 상단 바 */}
         <div className="flex items-center justify-between py-5">
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200"
+            className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200"
           >
             <ArrowLeft className="h-4 w-4" />
             뒤로
@@ -129,7 +129,7 @@ export default function ThemesView() {
           <button
             onClick={generate}
             disabled={generating}
-            className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200 disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 disabled:opacity-40"
           >
             <RefreshCw className={`h-4 w-4 ${generating ? "animate-spin" : ""}`} />
             {generating ? "분석 중" : "다시 분석"}
@@ -141,14 +141,14 @@ export default function ThemesView() {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-soft">
             <Network className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 text-[2rem] font-black leading-tight tracking-tight text-slate-950">
+          <h1 className="mt-4 text-[2rem] font-black leading-tight tracking-tight text-slate-950 dark:text-white">
             이슈·테마 매핑
           </h1>
-          <p className="mt-2 text-[15px] font-semibold leading-7 text-slate-500">
+          <p className="mt-2 text-[15px] font-semibold leading-7 text-slate-500 dark:text-slate-400">
             오늘의 이슈가 어떤 테마·종목으로 번지는지 연결해 드려요.
           </p>
           {data && !isEmpty && data.meta.forDate && (
-            <p className="mt-3 text-[13px] font-bold text-slate-400">
+            <p className="mt-3 text-[13px] font-bold text-slate-400 dark:text-slate-500">
               {data.meta.forDate} 기준
             </p>
           )}
@@ -160,10 +160,10 @@ export default function ThemesView() {
             {[0, 1].map((i) => (
               <div
                 key={i}
-                className="animate-pulse-soft rounded-[24px] border border-slate-200 bg-white p-5"
+                className="animate-pulse-soft rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5"
               >
-                <div className="mb-3 h-5 w-32 rounded bg-slate-100" />
-                <div className="h-14 rounded-xl bg-slate-50" />
+                <div className="mb-3 h-5 w-32 rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-14 rounded-xl bg-slate-50 dark:bg-slate-900" />
               </div>
             ))}
           </div>
@@ -171,14 +171,14 @@ export default function ThemesView() {
 
         {/* 빈 상태 */}
         {!loading && isEmpty && (
-          <div className="mt-8 rounded-[28px] border border-slate-200 bg-white p-7 text-center shadow-card">
+          <div className="mt-8 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-7 text-center shadow-card">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 text-white">
               <Network className="h-7 w-7" />
             </div>
-            <p className="mt-5 text-[17px] font-black text-slate-950">
+            <p className="mt-5 text-[17px] font-black text-slate-950 dark:text-white">
               아직 분석된 테마가 없어요
             </p>
-            <p className="mt-2 text-[14px] font-semibold leading-6 text-slate-500">
+            <p className="mt-2 text-[14px] font-semibold leading-6 text-slate-500 dark:text-slate-400">
               매일 08:00·17:00 KST에 자동 분석됩니다.
               <br />
               잠시 후 새로고침 해주세요.
@@ -194,7 +194,7 @@ export default function ThemesView() {
         )}
 
         {error && !loading && (
-          <div className="mt-6 rounded-2xl bg-slate-100 p-4 text-[13px] font-semibold text-slate-700">
+          <div className="mt-6 rounded-2xl bg-slate-100 dark:bg-slate-800 p-4 text-[13px] font-semibold text-slate-700 dark:text-slate-300">
             {error}
           </div>
         )}
@@ -207,11 +207,11 @@ export default function ThemesView() {
               return (
                 <section
                   key={i}
-                  className="animate-fade-up rounded-[24px] border border-slate-200 bg-white p-5 shadow-soft"
+                  className="animate-fade-up rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-soft"
                   style={{ animationDelay: `${i * 50}ms` }}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="text-[17px] font-black tracking-tight text-slate-950">
+                    <h2 className="text-[17px] font-black tracking-tight text-slate-950 dark:text-white">
                       {item.theme}
                     </h2>
                     <span
@@ -223,7 +223,7 @@ export default function ThemesView() {
 
                   <GlossaryText
                     text={item.summary}
-                    className="mt-2 block text-[15px] font-medium leading-[1.8] text-slate-700"
+                    className="mt-2 block text-[15px] font-medium leading-[1.8] text-slate-700 dark:text-slate-300"
                   />
 
                   {item.drivers && item.drivers.length > 0 && (
@@ -231,7 +231,7 @@ export default function ThemesView() {
                       {item.drivers.map((d, k) => (
                         <span
                           key={k}
-                          className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600"
+                          className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-slate-600 dark:text-slate-400"
                         >
                           {d}
                         </span>
@@ -251,8 +251,8 @@ export default function ThemesView() {
             })}
 
             {data.sources.length > 0 && (
-              <details className="rounded-2xl border border-slate-200 bg-white p-5 text-[13px]">
-                <summary className="cursor-pointer list-none font-black text-slate-900">
+              <details className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-[13px]">
+                <summary className="cursor-pointer list-none font-black text-slate-900 dark:text-slate-100">
                   근거 이슈 {data.sources.length}건
                 </summary>
                 <div className="mt-3 space-y-2">
@@ -262,7 +262,7 @@ export default function ThemesView() {
                       href={s.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block truncate rounded-2xl bg-slate-50 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
+                      className="block truncate rounded-2xl bg-slate-50 dark:bg-slate-900 px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                       {s.title}
                     </a>
@@ -271,7 +271,7 @@ export default function ThemesView() {
               </details>
             )}
 
-            <p className="px-1 pt-3 text-[11px] font-medium leading-relaxed text-slate-400">
+            <p className="px-1 pt-3 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
               이슈→테마 매핑은 AI(zero-shot)가 공개 이슈를 정리한 참고 자료이며, 특정
               종목 매수·매도 권유가 아닙니다.
             </p>

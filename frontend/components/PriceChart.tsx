@@ -19,7 +19,7 @@ export default function PriceChart({
 
   if (prices.length < 2) {
     return (
-      <div className="flex h-[180px] items-center justify-center text-[13px] font-semibold text-slate-400">
+      <div className="flex h-[180px] items-center justify-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
         표시할 시세가 없어요
       </div>
     );
@@ -126,7 +126,7 @@ export default function PriceChart({
       </div>
 
       {/* x축 날짜 표기 (시작·중간·끝) */}
-      <div className="mt-2 flex items-center justify-between text-[11px] font-semibold text-slate-400">
+      <div className="mt-2 flex items-center justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-500">
         <span>{fmtDate(prices[0].date)}</span>
         <span>{fmtDate(prices[Math.floor((n - 1) / 2)].date)}</span>
         <span>{fmtDate(prices[n - 1].date)}</span>

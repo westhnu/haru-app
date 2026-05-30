@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
   title: "하루 HARU · 마켓 브리핑",
@@ -21,8 +22,17 @@ export default function RootLayout({
           crossOrigin="anonymous"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
         />
+        {/* prefers-color-scheme 기반 다크모드 자동 적용을 위한 html.dark 토글 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{const m=window.matchMedia('(prefers-color-scheme: dark)');const apply=()=>document.documentElement.classList.toggle('dark',m.matches);apply();m.addEventListener('change',apply);}catch(e){}`,
+          }}
+        />
       </head>
-      <body className="font-sans">{children}</body>
+      <body className="bg-white font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        {children}
+        <BottomNav />
+      </body>
     </html>
   );
 }

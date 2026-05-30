@@ -64,23 +64,23 @@ function Term({ word, entry }: { word: string; entry: GlossaryEntry }) {
         ref={triggerRef}
         type="button"
         onFocus={measure}
-        className="cursor-help border-b border-dashed border-slate-400 font-bold text-slate-900 outline-none"
+        className="cursor-help border-b border-dashed border-slate-400 font-bold text-slate-900 dark:text-slate-100 outline-none"
       >
         {word}
       </button>
       <span
         role="tooltip"
-        className={`invisible absolute ${positionCls} top-full z-40 mt-2 w-64 max-w-[calc(100vw-32px)] rounded-2xl border border-slate-200 bg-white p-3.5 text-left opacity-0 shadow-card transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100`}
+        className={`invisible absolute ${positionCls} top-full z-40 mt-2 w-64 max-w-[calc(100vw-32px)] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 text-left opacity-0 shadow-card transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100`}
       >
-        <span className="block text-[14px] font-black text-slate-900">
+        <span className="block text-[14px] font-black text-slate-900 dark:text-slate-100">
           {entry.name || word}
           {entry.en && (
-            <span className="ml-1 text-[11px] font-medium tabular-nums text-slate-400">
+            <span className="ml-1 text-[11px] font-medium tabular-nums text-slate-400 dark:text-slate-500">
               {entry.en}
             </span>
           )}
         </span>
-        <span className="mt-1.5 block text-[13px] font-medium leading-[1.7] text-slate-700">
+        <span className="mt-1.5 block text-[13px] font-medium leading-[1.7] text-slate-700 dark:text-slate-300">
           {entry.desc}
         </span>
       </span>

@@ -9,7 +9,7 @@ import GlossaryText from "@/components/GlossaryText";
 
 const TONE: Record<IndicatorTone, { cls: string; label: string }> = {
   good: { cls: "bg-emerald-50 text-emerald-700", label: "양호" },
-  neutral: { cls: "bg-slate-100 text-slate-500", label: "보통" },
+  neutral: { cls: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400", label: "보통" },
   caution: { cls: "bg-rose-50 text-rose-700", label: "주의" },
 };
 
@@ -106,13 +106,13 @@ export default function StockDetail({
   const priceColor = up ? "text-rose-600" : "text-blue-600";
 
   return (
-    <div className="min-h-svh bg-slate-50">
-      <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white px-5 pb-12">
+    <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
+      <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white dark:bg-slate-900 px-5 pb-24">
         <div className="flex items-center justify-between py-5">
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 transition hover:bg-slate-200"
+            className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200"
           >
             <ArrowLeft className="h-4 w-4" />
             뒤로
@@ -121,28 +121,28 @@ export default function StockDetail({
 
         {loading || !data ? (
           <div className="mt-4 space-y-3">
-            <div className="h-8 w-40 animate-pulse-soft rounded bg-slate-100" />
-            <div className="h-[180px] animate-pulse-soft rounded-2xl bg-slate-50" />
+            <div className="h-8 w-40 animate-pulse-soft rounded bg-slate-100 dark:bg-slate-800" />
+            <div className="h-[180px] animate-pulse-soft rounded-2xl bg-slate-50 dark:bg-slate-900" />
           </div>
         ) : (
           <>
             {/* 헤더 */}
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[1.7rem] font-black tracking-tight text-slate-950">
+                <h1 className="text-[1.7rem] font-black tracking-tight text-slate-950 dark:text-white">
                   {data.profile.name}
                 </h1>
                 {data.profile.market && (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
                     {data.profile.market}
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-[13px] font-semibold text-slate-400">
+              <p className="mt-0.5 text-[13px] font-semibold text-slate-400 dark:text-slate-500">
                 {data.profile.code}
               </p>
               <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                <span className="text-[2rem] font-black tabular-nums text-slate-950">
+                <span className="text-[2rem] font-black tabular-nums text-slate-950 dark:text-white">
                   {data.profile.price !== null
                     ? formatPrice(data.profile.price, data.profile.currency)
                     : "—"}
@@ -170,17 +170,17 @@ export default function StockDetail({
             {data.meta.priceMode !== "unsupported" && (
             <>
             {/* 차트 */}
-            <div className="mt-5 rounded-[24px] border border-slate-200 bg-white p-4 shadow-soft">
+            <div className="mt-5 rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft">
               <PriceChart prices={sliced} up={up} />
-              <div className="mt-3 flex items-center gap-1.5 rounded-full bg-slate-100 p-1">
+              <div className="mt-3 flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 p-1">
                 {RANGES.map((r) => (
                   <button
                     key={r.key}
                     onClick={() => setRange(r.key)}
                     className={`flex-1 rounded-full px-3 py-1.5 text-[12px] font-bold transition ${
                       range === r.key
-                        ? "bg-white text-slate-900 shadow-sm"
-                        : "text-slate-500"
+                        ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm"
+                        : "text-slate-500 dark:text-slate-400"
                     }`}
                   >
                     {r.label}
@@ -188,7 +188,7 @@ export default function StockDetail({
                 ))}
               </div>
               {data.meta.priceMode === "mock" && (
-                <p className="mt-2.5 text-center text-[11px] font-medium text-slate-400">
+                <p className="mt-2.5 text-center text-[11px] font-medium text-slate-400 dark:text-slate-500">
                   데모 시세 · 실시간 시세 연동 예정
                 </p>
               )}
@@ -196,13 +196,13 @@ export default function StockDetail({
 
             {/* 탭 — 재무는 DART 라이브가 있을 때만 노출 (해외 종목엔 unsupported) */}
             {data.meta.dartMode !== "unsupported" && (
-              <div className="mt-4 flex items-center gap-1.5 rounded-full bg-slate-100 p-1">
+              <div className="mt-4 flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 p-1">
                 <button
                   onClick={() => setTab("info")}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
                     tab === "info"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm"
+                      : "text-slate-500 dark:text-slate-400"
                   }`}
                 >
                   <Info className="h-4 w-4" />
@@ -212,8 +212,8 @@ export default function StockDetail({
                   onClick={() => setTab("financial")}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
                     tab === "financial"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm"
+                      : "text-slate-500 dark:text-slate-400"
                   }`}
                 >
                   <BarChart3 className="h-4 w-4" />
@@ -226,10 +226,10 @@ export default function StockDetail({
             {tab === "info" && (
               <div className="mt-4 space-y-3">
                 {/* 시세 요약 */}
-                <div className="rounded-[24px] border border-slate-200 bg-white p-5">
-                  <p className="text-[13px] font-black text-slate-900">
+                <div className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+                  <p className="text-[13px] font-black text-slate-900 dark:text-slate-100">
                     시세 요약
-                    <span className="ml-1.5 text-[11px] font-bold text-slate-400">
+                    <span className="ml-1.5 text-[11px] font-bold text-slate-400 dark:text-slate-500">
                       최근 {data.basics.periodDays}거래일
                     </span>
                   </p>
@@ -252,16 +252,16 @@ export default function StockDetail({
 
                 {/* 수급 동향 — 해외 종목엔 표시하지 않음 */}
                 {data.meta.supplyMode !== "unsupported" && (
-                <div className="rounded-[24px] border border-slate-200 bg-white p-5">
+                <div className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
                   <div className="flex items-center justify-between">
-                    <p className="text-[13px] font-black text-slate-900">
+                    <p className="text-[13px] font-black text-slate-900 dark:text-slate-100">
                       수급 동향
-                      <span className="ml-1.5 text-[11px] font-bold text-slate-400">
+                      <span className="ml-1.5 text-[11px] font-bold text-slate-400 dark:text-slate-500">
                         순매수 / 순매도
                       </span>
                     </p>
                     {data.meta.supplyMode === "mock" && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-400">
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-400 dark:text-slate-500">
                         데모
                       </span>
                     )}
@@ -270,8 +270,8 @@ export default function StockDetail({
                     {data.supply.rows.map((r, i) => {
                       const buy = r.netQty >= 0;
                       return (
-                        <div key={i} className="rounded-2xl bg-slate-50 px-3 py-3 text-center">
-                          <p className="text-[12px] font-semibold text-slate-500">
+                        <div key={i} className="rounded-2xl bg-slate-50 dark:bg-slate-900 px-3 py-3 text-center">
+                          <p className="text-[12px] font-semibold text-slate-500 dark:text-slate-400">
                             {r.label}
                           </p>
                           <p
@@ -281,7 +281,7 @@ export default function StockDetail({
                           >
                             {formatNet(r.netQty)}
                           </p>
-                          <p className="mt-0.5 text-[10px] font-bold text-slate-400">
+                          <p className="mt-0.5 text-[10px] font-bold text-slate-400 dark:text-slate-500">
                             {buy ? "순매수" : "순매도"}
                           </p>
                         </div>
@@ -289,7 +289,7 @@ export default function StockDetail({
                     })}
                   </div>
                   {data.supply.date && (
-                    <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                    <p className="mt-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                       {data.supply.date} 기준
                     </p>
                   )}
@@ -297,27 +297,27 @@ export default function StockDetail({
                 )}
 
                 {/* 투자 참고 지표 */}
-                <div className="rounded-[24px] border border-slate-200 bg-white p-5">
+                <div className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
                   <div className="flex items-center justify-between">
-                    <p className="text-[13px] font-black text-slate-900">
+                    <p className="text-[13px] font-black text-slate-900 dark:text-slate-100">
                       투자 참고 지표
                     </p>
                     {data.meta.indicatorsMode === "mock" && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-400">
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-400 dark:text-slate-500">
                         데모
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-[11px] font-semibold text-slate-400">
+                  <p className="mt-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                     양호·보통·주의는 업종(섹터) 평균 대비 참고 평가예요.
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {data.indicators.map((ind, i) => (
-                      <div key={i} className="rounded-2xl bg-slate-50 px-4 py-3">
+                      <div key={i} className="rounded-2xl bg-slate-50 dark:bg-slate-900 px-4 py-3">
                         <div className="flex items-center justify-between gap-2">
                           <GlossaryText
                             text={ind.label}
-                            className="text-[12px] font-semibold text-slate-500"
+                            className="text-[12px] font-semibold text-slate-500 dark:text-slate-400"
                           />
                           {ind.tone && (
                             <span
@@ -327,16 +327,16 @@ export default function StockDetail({
                             </span>
                           )}
                         </div>
-                        <p className="mt-0.5 text-[15px] font-black tabular-nums text-slate-900">
+                        <p className="mt-0.5 text-[15px] font-black tabular-nums text-slate-900 dark:text-slate-100">
                           {ind.value}
                         </p>
                         {ind.context && (
-                          <p className="mt-0.5 text-[11px] font-bold leading-snug text-slate-500">
+                          <p className="mt-0.5 text-[11px] font-bold leading-snug text-slate-500 dark:text-slate-400">
                             {ind.context}
                           </p>
                         )}
                         {ind.hint && (
-                          <p className="mt-0.5 text-[11px] font-medium leading-snug text-slate-400">
+                          <p className="mt-0.5 text-[11px] font-medium leading-snug text-slate-400 dark:text-slate-500">
                             {ind.hint}
                           </p>
                         )}
@@ -349,12 +349,12 @@ export default function StockDetail({
 
             {/* 재무 */}
             {tab === "financial" && (
-              <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 bg-white">
-                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-                  <span className="text-[13px] font-black text-slate-900">
+              <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-3">
+                  <span className="text-[13px] font-black text-slate-900 dark:text-slate-100">
                     핵심 재무
                   </span>
-                  <span className="text-[12px] font-bold text-slate-400">
+                  <span className="text-[12px] font-bold text-slate-400 dark:text-slate-500">
                     {data.financials.year ? `${data.financials.year} 연간` : "—"}
                     {data.meta.dartMode === "live" ? " · DART" : " · 데모"}
                   </span>
@@ -362,13 +362,13 @@ export default function StockDetail({
                 {data.financials.rows.map((r, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between gap-3 px-5 py-3.5 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-slate-100"
+                    className="flex items-center justify-between gap-3 px-5 py-3.5 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-slate-100 dark:border-slate-800"
                   >
                     <GlossaryText
                       text={r.label}
-                      className="text-[14px] font-semibold text-slate-500"
+                      className="text-[14px] font-semibold text-slate-500 dark:text-slate-400"
                     />
-                    <span className="text-right text-[14px] font-black text-slate-900">
+                    <span className="text-right text-[14px] font-black text-slate-900 dark:text-slate-100">
                       {formatKRW(r.value)}
                     </span>
                   </div>
@@ -379,7 +379,7 @@ export default function StockDetail({
             )}
 
             {data.meta.warnings.length > 0 && (
-              <details className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-[12px] font-semibold text-slate-400">
+              <details className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 text-[12px] font-semibold text-slate-400 dark:text-slate-500">
                 <summary className="cursor-pointer list-none">
                   데이터 안내 {data.meta.warnings.length}건
                 </summary>
@@ -394,7 +394,7 @@ export default function StockDetail({
               </details>
             )}
 
-            <p className="px-1 pt-5 text-[11px] font-medium leading-relaxed text-slate-400">
+            <p className="px-1 pt-5 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
               재무 데이터 출처: DART(전자공시시스템). 본 정보는 투자 참고용이며 특정
               종목 매수·매도 권유가 아닙니다.
             </p>
@@ -415,9 +415,9 @@ function Stat({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3">
-      <p className="text-[12px] font-semibold text-slate-500">{label}</p>
-      <p className={`mt-0.5 text-[15px] font-black tabular-nums text-slate-900 ${valueClass ?? ""}`}>
+    <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 px-4 py-3">
+      <p className="text-[12px] font-semibold text-slate-500 dark:text-slate-400">{label}</p>
+      <p className={`mt-0.5 text-[15px] font-black tabular-nums text-slate-900 dark:text-slate-100 ${valueClass ?? ""}`}>
         {value}
       </p>
     </div>

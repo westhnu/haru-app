@@ -122,8 +122,8 @@ export default async function Home() {
   const isLive = briefResp?.meta?.mode === "live";
 
   return (
-    <div className="min-h-svh bg-slate-50">
-      <div className="relative mx-auto min-h-svh w-full max-w-[480px] overflow-hidden bg-white px-5 pb-12">
+    <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
+      <div className="relative mx-auto min-h-svh w-full max-w-[480px] overflow-hidden bg-white dark:bg-slate-900 px-5 pb-24">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 z-0 h-80"
@@ -134,14 +134,14 @@ export default async function Home() {
           {/* 상단 바 */}
           <header className="flex items-center justify-between py-5">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-black tracking-tight text-slate-950">
+              <span className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
                 하루
               </span>
-              <span className="text-[13px] font-bold tracking-[0.18em] text-slate-300">
+              <span className="text-[13px] font-bold tracking-[0.18em] text-slate-300 dark:text-slate-600">
                 HARU
               </span>
             </div>
-            <span className="rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600">
+            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400">
               Daily 2-Brief
             </span>
           </header>
@@ -149,13 +149,13 @@ export default async function Home() {
           {/* 히어로 */}
           <section className="pt-8 pb-4">
             <div
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-slate-700 ${theme.badge}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 ${theme.badge}`}
             >
               <Sparkles className={`h-3.5 w-3.5 ${theme.badgeIcon}`} />
               AI 마켓 브리핑
             </div>
 
-            <h1 className="mt-5 text-[2.4rem] font-black leading-[1.12] tracking-tight text-slate-950">
+            <h1 className="mt-5 text-[2.4rem] font-black leading-[1.12] tracking-tight text-slate-950 dark:text-white">
               매일 아침과 저녁,
               <br />
               시장을 읽는 시간을
@@ -167,7 +167,7 @@ export default async function Home() {
               </span>
             </h1>
 
-            <p className="mt-5 text-[1.05rem] font-semibold leading-8 text-slate-500">
+            <p className="mt-5 text-[1.05rem] font-semibold leading-8 text-slate-500 dark:text-slate-400">
               흩어진 뉴스와 시세를 모아, 무엇에 왜 투자할지 판단할 맥락만 정리해
               드려요.
             </p>
@@ -183,7 +183,7 @@ export default async function Home() {
             {/* Today 카드 — S3에 저장된 실제 라이브 브리핑 사용 */}
             <Link
               href={`/brief/${period}`}
-              className="group relative mt-10 block overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-card transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg"
+              className="group relative mt-10 block overflow-hidden rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-card transition hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg"
             >
               {/* 상단 그라데이션 hint (시간대 색) */}
               <span
@@ -193,10 +193,10 @@ export default async function Home() {
 
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                     Today · 하루
                   </p>
-                  <p className="mt-1.5 text-[22px] font-black tracking-tight text-slate-950">
+                  <p className="mt-1.5 text-[22px] font-black tracking-tight text-slate-950 dark:text-white">
                     {LABEL[period]}
                   </p>
                   {/* editorial inline meta — 점(·)으로 구분 */}
@@ -216,16 +216,16 @@ export default async function Home() {
                     {generatedAt && (
                       <>
                         {verifyPassed !== null && (
-                          <span aria-hidden className="text-slate-300">·</span>
+                          <span aria-hidden className="text-slate-300 dark:text-slate-600">·</span>
                         )}
-                        <span className="text-slate-400">
+                        <span className="text-slate-400 dark:text-slate-500">
                           업데이트 {timeAgo(generatedAt)}
                         </span>
                       </>
                     )}
                     {!isLive && oneLine && (
                       <>
-                        <span aria-hidden className="text-slate-300">·</span>
+                        <span aria-hidden className="text-slate-300 dark:text-slate-600">·</span>
                         <span className="text-amber-600">직전 라이브 데이터</span>
                       </>
                     )}
@@ -244,14 +244,14 @@ export default async function Home() {
                   aria-hidden
                   className={`absolute inset-y-1 left-0 w-[3px] rounded-full bg-gradient-to-b ${theme.grad}`}
                 />
-                <p className="text-[14.5px] font-semibold leading-[1.7] text-slate-700">
+                <p className="text-[14.5px] font-semibold leading-[1.7] text-slate-700 dark:text-slate-300">
                   {oneLine ??
                     "곧 첫 갱신이 도착해요. 매일 08:00·17:00 KST에 자동 갱신됩니다."}
                 </p>
               </blockquote>
 
               {/* 우측 정렬 CTA */}
-              <div className="mt-5 flex items-center justify-end gap-1.5 text-[12px] font-bold text-slate-500 transition group-hover:text-slate-900">
+              <div className="mt-5 flex items-center justify-end gap-1.5 text-[12px] font-bold text-slate-500 transition group-hover:text-slate-900 dark:hover:text-slate-100">
                 자세히 보기
                 <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
               </div>
@@ -260,14 +260,14 @@ export default async function Home() {
 
           {/* 기능 */}
           <section className="pt-12 pb-4">
-            <p className="text-sm font-black text-slate-500">기능</p>
-            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950">
+            <p className="text-sm font-black text-slate-500 dark:text-slate-400">기능</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white">
               투자 판단에 필요한 화면을
               <br />
               하나로 모았어요.
             </h2>
 
-            <div className="mt-7 divide-y divide-slate-100 rounded-[28px] border border-slate-200 bg-white">
+            <div className="mt-7 divide-y divide-slate-100 dark:divide-slate-800 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
               {features.map((f) => {
                 const Icon = f.icon;
                 const Inner = (
@@ -275,8 +275,8 @@ export default async function Home() {
                     <div
                       className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
                         f.active
-                          ? "bg-slate-100 text-slate-700"
-                          : "bg-slate-50 text-slate-300"
+                          ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                          : "bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600"
                       }`}
                     >
                       <Icon className="h-6 w-6" />
@@ -285,7 +285,7 @@ export default async function Home() {
                       <div className="flex items-center gap-2">
                         <h3
                           className={`text-base font-black ${
-                            f.active ? "text-slate-950" : "text-slate-400"
+                            f.active ? "text-slate-950 dark:text-white" : "text-slate-400 dark:text-slate-500"
                           }`}
                         >
                           {f.title}
@@ -293,19 +293,19 @@ export default async function Home() {
                         <span
                           className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
                             f.active
-                              ? "bg-slate-100 text-slate-600"
-                              : "bg-slate-50 text-slate-400"
+                              ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                              : "bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500"
                           }`}
                         >
                           {f.time}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
+                      <p className="mt-1 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
                         {f.description}
                       </p>
                     </div>
                     {f.active && (
-                      <ArrowRight className="h-5 w-5 shrink-0 text-slate-300" />
+                      <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 dark:text-slate-600" />
                     )}
                   </div>
                 );
@@ -313,7 +313,7 @@ export default async function Home() {
                   <Link
                     key={f.title}
                     href={f.href}
-                    className="block transition hover:bg-slate-50/60"
+                    className="block transition hover:bg-slate-50 dark:hover:bg-slate-900/60"
                   >
                     {Inner}
                   </Link>
@@ -326,8 +326,8 @@ export default async function Home() {
 
           {/* 사용법 — 매거진 스타일 numbered */}
           <section className="pt-12 pb-14">
-            <p className="text-sm font-black text-slate-500">사용법</p>
-            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950">
+            <p className="text-sm font-black text-slate-500 dark:text-slate-400">사용법</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white">
               세 단계면
               <br />
               충분해요.
@@ -365,10 +365,10 @@ export default async function Home() {
                     {s.num}
                   </span>
                   <div>
-                    <p className="text-[17px] font-black tracking-tight text-slate-950">
+                    <p className="text-[17px] font-black tracking-tight text-slate-950 dark:text-white">
                       {s.title}
                     </p>
-                    <p className="mt-2 whitespace-pre-line text-[14px] font-medium leading-7 text-slate-500">
+                    <p className="mt-2 whitespace-pre-line text-[14px] font-medium leading-7 text-slate-500 dark:text-slate-400">
                       {s.desc}
                     </p>
                   </div>
@@ -378,24 +378,24 @@ export default async function Home() {
           </section>
 
           {/* 마무리 메시지 */}
-          <section className="rounded-[32px] bg-slate-100 p-6">
+          <section className="rounded-[32px] bg-slate-100 dark:bg-slate-800 p-6">
             <div
               className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white ${theme.close}`}
             >
               <Sparkles className="h-6 w-6" />
             </div>
-            <h2 className="mt-5 text-2xl font-black leading-tight text-slate-950">
+            <h2 className="mt-5 text-2xl font-black leading-tight text-slate-950 dark:text-white">
               읽고, 판단은
               <br />
               본인 증권사에서.
             </h2>
-            <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
+            <p className="mt-3 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
               하루는 자동매매나 종목 추천을 하지 않아요. 매일 두 번, 결정에
               필요한 맥락만 전해드릴게요.
             </p>
           </section>
 
-          <p className="px-1 pt-8 text-[11px] font-medium leading-relaxed text-slate-400">
+          <p className="px-1 pt-8 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
             본 브리핑은 공개 정보를 AI가 정리한 참고 자료이며, 특정 종목
             매수·매도 권유가 아닙니다. 모든 투자 판단과 책임은 본인에게 있습니다.
           </p>

@@ -26,25 +26,25 @@ export default function SectionCard({
 
   return (
     <section
-      className="animate-fade-up rounded-[24px] border border-slate-200 bg-white p-5 shadow-soft"
+      className="animate-fade-up rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-soft"
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="flex items-start gap-3.5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black tabular-nums text-slate-400">
+            <span className="text-[11px] font-black tabular-nums text-slate-400 dark:text-slate-500">
               {String(index + 1).padStart(2, "0")}
             </span>
-            <h2 className="text-[15.5px] font-black tracking-tight text-slate-950">
+            <h2 className="text-[15.5px] font-black tracking-tight text-slate-950 dark:text-white">
               {section.title}
             </h2>
           </div>
           <GlossaryText
             text={section.summary}
-            className="mt-3 block text-[15px] font-medium leading-[1.85] text-slate-800"
+            className="mt-3 block text-[15px] font-medium leading-[1.85] text-slate-800 dark:text-slate-200"
           />
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function SectionCard({
       {section.bullets && section.bullets.length > 0 && (
         <ul className="mt-4 space-y-3 pl-[54px]">
           {section.bullets.map((b, i) => (
-            <li key={i} className="flex gap-2.5 text-[14.5px] font-medium leading-[1.8] text-slate-800">
+            <li key={i} className="flex gap-2.5 text-[14.5px] font-medium leading-[1.8] text-slate-800 dark:text-slate-200">
               <span className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-900" />
               <GlossaryText text={b} />
             </li>
@@ -76,12 +76,12 @@ export default function SectionCard({
                 <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
                   <span
                     title={t.name}
-                    className="truncate text-[14px] font-bold text-slate-900"
+                    className="truncate text-[14px] font-bold text-slate-900 dark:text-slate-100"
                   >
                     {t.name}
                   </span>
                   {t.symbol && (
-                    <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-400">
+                    <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">
                       {t.symbol}
                     </span>
                   )}
@@ -90,13 +90,13 @@ export default function SectionCard({
                   {t.note && (
                     <span
                       title={t.note}
-                      className="truncate text-right text-[12px] font-semibold text-slate-500"
+                      className="truncate text-right text-[12px] font-semibold text-slate-500 dark:text-slate-400"
                     >
                       {t.note}
                     </span>
                   )}
                   {target && (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
                   )}
                 </div>
               </>
@@ -107,7 +107,7 @@ export default function SectionCard({
               <Link
                 key={i}
                 href={`/stock/${encodeURIComponent(target)}?name=${encodeURIComponent(t.name)}`}
-                className={`${baseCls} bg-slate-50 transition hover:bg-slate-100`}
+                className={`${baseCls} bg-slate-50 dark:bg-slate-900 transition hover:bg-slate-100 dark:hover:bg-slate-800`}
               >
                 {Inner}
               </Link>
@@ -115,7 +115,7 @@ export default function SectionCard({
               // 메타 항목 — 클릭 불가, 살짝 옅은 톤으로 정보 카드 인상
               <div
                 key={i}
-                className={`${baseCls} bg-slate-50/60 cursor-default`}
+                className={`${baseCls} bg-slate-50 dark:bg-slate-900/60 cursor-default`}
               >
                 {Inner}
               </div>
