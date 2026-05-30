@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 }
 
 html,
@@ -15,6 +15,44 @@ body {
   /* 한글은 단어 단위로 줄바꿈(어색한 음절 분리 방지), 긴 토큰은 넘치지 않게 */
   word-break: keep-all;
   overflow-wrap: break-word;
+}
+
+html.dark,
+html.dark body {
+  background: #020617; /* slate-950 */
+  color: #f1f5f9; /* slate-100 */
+}
+
+/* ── View Transitions API (Chrome 111+, fallback OK) ──
+   페이지 라우팅(브리핑 ↔ 종목 등) 시 부드러운 fade-slide. 모션 민감 사용자는 OS 설정 존중. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 220ms cubic-bezier(0.4, 0, 0.2, 1) both fadeOut;
+  }
+  ::view-transition-new(root) {
+    animation: 260ms cubic-bezier(0.4, 0, 0.2, 1) both fadeIn;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeUp {

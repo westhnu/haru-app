@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Info, BarChart3 } from "lucide-react";
 import type { IndicatorTone, StockResponse } from "@/lib/stocktypes";
 import PriceChart from "@/components/PriceChart";
@@ -78,6 +78,19 @@ export default function StockDetail({
     }
   }, [router]);
   const [tab, setTab] = useState<"info" | "financial">("info");
+  // 스크롤 시 종목명이 화면에서 사라지면 mini 종목명을 sticky bar 에 표시
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+  const [showMini, setShowMini] = useState(false);
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setShowMini(!entry.isIntersecting),
+      { threshold: 0, rootMargin: "-56px 0px 0px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [data]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -108,7 +121,9 @@ export default function StockDetail({
   return (
     <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white dark:bg-slate-900 px-5 pb-24">
-        <div className="flex items-center justify-between py-5">
+        {/* 상단 바 — sticky. 스크롤 시 mini 종목명 fade-in */}
+        <div className="sticky top-0 z-30 -mx-5 px-5 backdrop-blur-md bg-white/85 dark:bg-slate-900/85">
+        <div className="flex items-center justify-between gap-3 py-4">
           <button
             type="button"
             onClick={goBack}
@@ -117,19 +132,57 @@ export default function StockDetail({
             <ArrowLeft className="h-4 w-4" />
             뒤로
           </button>
+          {/* mini 종목명 */}
+          <p
+            aria-hidden={!showMini}
+            className={`pointer-events-none flex-1 truncate text-center text-[14px] font-black text-slate-950 dark:text-white transition-opacity duration-200 ${
+              showMini ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {data?.profile.name ?? ""}
+          </p>
+          {/* placeholder 우측 spacer (좌우 균형) */}
+          <span className="w-[64px] shrink-0" aria-hidden />
+        </div>
         </div>
 
         {loading || !data ? (
-          <div className="mt-4 space-y-3">
-            <div className="h-8 w-40 animate-pulse-soft rounded bg-slate-100 dark:bg-slate-800" />
-            <div className="h-[180px] animate-pulse-soft rounded-2xl bg-slate-50 dark:bg-slate-900" />
+          <div className="mt-4 space-y-5 animate-pulse-soft">
+            {/* 헤더 — 종목명 + 가격 */}
+            <div className="space-y-2">
+              <div className="h-7 w-40 rounded bg-slate-100 dark:bg-slate-800" />
+              <div className="h-3 w-20 rounded bg-slate-100 dark:bg-slate-800" />
+              <div className="mt-3 h-9 w-48 rounded bg-slate-100 dark:bg-slate-800" />
+            </div>
+            {/* 차트 카드 */}
+            <div className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+              <div className="h-[180px] rounded-2xl bg-slate-50 dark:bg-slate-900" />
+              <div className="mt-3 h-9 rounded-full bg-slate-100 dark:bg-slate-800" />
+            </div>
+            {/* 탭 */}
+            <div className="h-10 rounded-full bg-slate-100 dark:bg-slate-800" />
+            {/* 시세 요약 (2-col grid) */}
+            <div className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+              <div className="h-3 w-24 rounded bg-slate-100 dark:bg-slate-800" />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-14 rounded-2xl bg-slate-50 dark:bg-slate-900"
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <>
             {/* 헤더 */}
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[1.7rem] font-black tracking-tight text-slate-950 dark:text-white">
+                <h1
+                  ref={titleRef}
+                  className="text-[1.7rem] font-black tracking-tight text-slate-950 dark:text-white"
+                >
                   {data.profile.name}
                 </h1>
                 {data.profile.market && (

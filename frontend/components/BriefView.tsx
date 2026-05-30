@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   RefreshCw,
@@ -76,6 +76,19 @@ export default function BriefView({ type }: { type: BriefType }) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 스크롤 시 메인 타이틀이 화면에서 사라지면 mini 타이틀을 sticky bar 에 노출
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+  const [showMini, setShowMini] = useState(false);
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setShowMini(!entry.isIntersecting),
+      { threshold: 0, rootMargin: "-56px 0px 0px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   // 브라우저 히스토리가 있으면 뒤로가기, 없으면 홈
   const goBack = useCallback(() => {
@@ -128,26 +141,37 @@ export default function BriefView({ type }: { type: BriefType }) {
         />
 
         <div className="relative z-10">
-          {/* 상단 바 */}
-          <div className="flex items-center justify-between py-5">
-            <button
-              type="button"
-              onClick={goBack}
-              className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              뒤로
-            </button>
-            <button
-              onClick={generate}
-              disabled={generating}
-              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 disabled:opacity-40"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${generating ? "animate-spin" : ""}`}
-              />
-              {generating ? "갱신 중" : "새로고침"}
-            </button>
+          {/* 상단 바 — sticky. 스크롤 시 mini 타이틀 fade-in */}
+          <div className="sticky top-0 z-30 -mx-5 px-5 backdrop-blur-md bg-white/85 dark:bg-slate-900/85">
+            <div className="flex items-center justify-between gap-3 py-4">
+              <button
+                type="button"
+                onClick={goBack}
+                className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                뒤로
+              </button>
+              {/* mini 타이틀 */}
+              <p
+                aria-hidden={!showMini}
+                className={`pointer-events-none flex-1 truncate text-center text-[14px] font-black text-slate-950 dark:text-white transition-opacity duration-200 ${
+                  showMini ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                {meta.label}
+              </p>
+              <button
+                onClick={generate}
+                disabled={generating}
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 disabled:opacity-40"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${generating ? "animate-spin" : ""}`}
+                />
+                {generating ? "갱신 중" : "새로고침"}
+              </button>
+            </div>
           </div>
 
           {/* 타이틀 */}
@@ -157,7 +181,10 @@ export default function BriefView({ type }: { type: BriefType }) {
             >
               <HeroIcon className="h-6 w-6" />
             </div>
-            <h1 className="mt-4 text-[2rem] font-black leading-tight tracking-tight text-slate-950 dark:text-white">
+            <h1
+              ref={titleRef}
+              className="mt-4 text-[2rem] font-black leading-tight tracking-tight text-slate-950 dark:text-white"
+            >
               {meta.label}
             </h1>
             <p className="mt-2 text-[15px] font-medium leading-[1.75] text-slate-600 dark:text-slate-400">
@@ -207,13 +234,28 @@ export default function BriefView({ type }: { type: BriefType }) {
           {/* 로딩 */}
           {loading && (
             <div className="mt-8 space-y-3">
+              {/* 오늘 한 줄 카드 모양 */}
+              <div className="animate-pulse-soft rounded-[28px] bg-slate-900/90 dark:bg-slate-800 p-6">
+                <div className="h-3 w-16 rounded-full bg-white/10" />
+                <div className="mt-4 h-4 rounded bg-white/10" />
+                <div className="mt-2 h-4 w-4/5 rounded bg-white/10" />
+              </div>
+              {/* 본문 섹션 카드 (SectionCard 모양) — 아이콘 + 제목 + 본문 + 불릿 */}
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
                   className="animate-pulse-soft rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5"
+                  style={{ animationDelay: `${i * 100}ms` }}
                 >
-                  <div className="mb-3 h-10 w-10 rounded-2xl bg-slate-100 dark:bg-slate-800" />
-                  <div className="h-14 rounded-xl bg-slate-50 dark:bg-slate-900" />
+                  <div className="flex items-start gap-3.5">
+                    <div className="h-10 w-10 shrink-0 rounded-2xl bg-slate-100 dark:bg-slate-800" />
+                    <div className="min-w-0 flex-1 space-y-2 pt-1">
+                      <div className="h-3 w-32 rounded bg-slate-100 dark:bg-slate-800" />
+                      <div className="h-3 rounded bg-slate-100 dark:bg-slate-800" />
+                      <div className="h-3 w-11/12 rounded bg-slate-100 dark:bg-slate-800" />
+                      <div className="h-3 w-3/4 rounded bg-slate-100 dark:bg-slate-800" />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
