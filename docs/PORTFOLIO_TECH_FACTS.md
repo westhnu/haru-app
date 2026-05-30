@@ -1,7 +1,7 @@
 # 하루 HARU — 포트폴리오용 기술 팩트 시트
 
 > 측정된 수치·코드 위치·결정 근거만 정리. 마케팅 표현 X.
-> 데이터 수집 일자: 2026-05-28
+> 데이터 수집 일자: 2026-05-30 (최초 작성 2026-05-28)
 > 라이브: https://main.dlz2aim8js0bv.amplifyapp.com
 
 ---
@@ -28,10 +28,10 @@
 
 | 엔드포인트 | 1회차 (cold) | 2회차 | 3회차 |
 | --- | --- | --- | --- |
-| `GET /api/brief?type=morning` (S3 read-only) | **0.297 s** | **0.194 s** | **0.136 s** |
-| `GET /api/stock/005930` (KIS 라이브 + DART 라이브) | **0.934 s** | **0.203 s** | **0.230 s** |
+| `GET /api/brief?type=morning` (S3 read-only) | **0.146 s** | **0.106 s** | **0.101 s** |
+| `GET /api/stock/005930` (KIS 라이브 + DART 라이브) | **0.686 s** | **0.185 s** | **0.162 s** |
 
-페이지 조회 시 LLM 을 호출하지 않는 **생성·조회 분리** 설계 덕에 사용자 응답은 200 ms 대 유지. 종목 페이지는 KIS + DART 실시간이지만 S3 토큰 캐시 적중 후 200 ms.
+페이지 조회 시 LLM 을 호출하지 않는 **생성·조회 분리** 설계 덕에 사용자 응답은 100~200 ms 대 유지. 종목 페이지는 KIS + DART 실시간이지만 S3 토큰 캐시 적중 후 < 200 ms.
 
 ---
 
@@ -150,16 +150,92 @@
 
 ## 12. 코드 규모
 
-- TS/TSX 파일: **37 개**
-- 총 라인 수: **4,078** (lib + components + app/api + scripts)
+- TS/TSX 파일: **41 개**
+- 총 라인 수: **4,746** (lib + components + app/api + scripts)
 - API route handlers: **4 개** (brief / brief/generate / themes / stock/[code])
-- lib 모듈: **19 개**
+- lib 모듈: **20 개** (cache · pipeline · kis · dart · twelvedata · llm · tavily · store · themestore · s3 · corpcodes · glossary · usePullToRefresh 등)
+- React 컴포넌트: **9 개** (BriefView · ThemesView · StockDetail · PriceChart · SectionCard · BottomNav · SearchDialog · VerifyBadge · GlossaryText)
+
+---
+
+## 13. 외부 의존성 장애 회복 패턴 (resilience)
+
+LLM·외부 API 가 일과성 장애를 일으켜도 사용자 화면이 mock 으로 떨어지지 않게 설계.
+
+**케이스 1 — LLM 둘 다 실패 시 직전 라이브 유지**
+
+이전: cron → GPT 429 + Gemini 503 → mock 결과를 S3 에 덮어쓰기 → 사용자 12시간 동안 mock 화면.
+현재: `lambda-handler.ts` 가 `brief.meta.mode === "mock"` 이면 S3 의 직전 객체를 읽어보고, **이전 라이브가 있으면 덮어쓰기 skip**. 첫 실행이라 S3 가 비어있을 때만 mock 저장. 사용자에겐 stale 한 직전 라이브가 그대로 보임. 다음 cron 또는 수동 invoke 에서 회복. (테마도 동일 패턴)
+
+**케이스 2 — KIS 토큰 발급 cooldown** (§4 참조)
+
+**케이스 3 — KIS 장중 수급 0주** (§6 참조)
+
+**케이스 4 — KRX 컬럼 변경** (§6 참조)
+
+코드: [frontend/scripts/lambda-handler.ts](frontend/scripts/lambda-handler.ts)
+
+---
+
+## 14. 모바일 UX 패턴 (4종)
+
+| 패턴 | 구현 | 위치 |
+| --- | --- | --- |
+| **Bottom navigation** | 4탭 (홈/브리핑/테마/검색), 현재 시각으로 브리핑 destination 결정, `env(safe-area-inset-bottom)` 대응 | [components/BottomNav.tsx](frontend/components/BottomNav.tsx) |
+| **Pull-to-refresh** | 자체 hook. `scrollY === 0` 에서 아래로 당기면 √-resistance 적용 → 60 px 임계 → 콜백. 떠 있는 회전 인디케이터 | [lib/usePullToRefresh.ts](frontend/lib/usePullToRefresh.ts) |
+| **Sticky mini-header** | `IntersectionObserver` 로 h1 추적, 사라지면 `backdrop-blur` 상단 바에 mini 타이틀 fade-in. -56px rootMargin | BriefView + StockDetail |
+| **Page transitions** | `app/template.tsx` — 라우트 마다 remount → CSS `animate-fade-up` 재실행. Chrome View Transitions API rule 도 함께 정의 | [app/template.tsx](frontend/app/template.tsx) + [globals.css](frontend/app/globals.css) |
+
+---
+
+## 15. 다크 모드 (system pref auto-sync)
+
+- `tailwind.config.darkMode: 'class'`
+- `layout.tsx` 의 inline script 가 SSR 출력 직전 `prefers-color-scheme` 매칭 → `html.dark` 토글. `change` 이벤트도 listen → OS 다크모드 변경 실시간 반응. 토글 UI 불필요.
+- **288 개 `dark:` 변형 적용** (10 컴포넌트). Python 스크립트로 일괄 적용 + 후처리 (중복 dark: 제거, `hover:X dark:Y` → `hover:X dark:hover:Y` 정정).
+- 외부 컨테이너 `slate-950`, 내부 컨테이너 `slate-900` 으로 톤 분리.
+
+---
+
+## 16. 종목 검색 (KRX 2,765 + 미국 주요 15)
+
+- `lib/krx-codes.json` (빌드 시 KRX 스크레이핑으로 생성) + 하드코딩 US 티커 리스트 (NVDA, AAPL, MSFT, GOOGL, TSLA, …)
+- 검색 매칭: 이름 substring + 코드/심볼 prefix
+- 다이얼로그 — backdrop 클릭 / ESC 닫힘, body scroll lock, auto-focus, 키보드/터치 인터랙션
+- 검색 결과 클릭 → `/stock/[code]?name=…` 이동
+- 코드: [components/SearchDialog.tsx](frontend/components/SearchDialog.tsx)
+
+---
+
+## 17. 가독성 디테일 (typography pass)
+
+| 항목 | 변경 |
+| --- | --- |
+| 본문 contrast | `text-slate-500` → `text-slate-600~800` (한글 본문 가독성 ↑) |
+| 위계 (weight) | 작은 라벨·칩의 `font-black` → `bold/semibold`. 헤딩만 black 유지 |
+| 행간 | `leading-6 (1.5)` → `leading-7 / leading-[1.85]`. 한글 본문 호흡 |
+| 숫자 정렬 | 가격·등락률·수급·지표·52주 등 모든 수치에 `tabular-nums` (세로 정렬) |
+| Glossary 툴팁 | 본문 12 → 13 px, contrast slate-600 → 700, leading 1.7 |
+| Viewport-aware 툴팁 | 단어 위치 측정 후 좌/중/우 자동 정렬 + `max-w-[calc(100vw-32px)]` |
+
+---
+
+## 18. 시각 polish (디테일)
+
+| 항목 | 구현 |
+| --- | --- |
+| **테마 색조 태그** | 6색 팔레트 (sky/emerald/violet/amber/rose/indigo). theme name 해시 → 색상. 같은 테마는 항상 같은 색 유지. 카드 좌측 3px strip + 제목 옆 dot |
+| **수치 magnitude 압축** | 시가총액 표기 `"1,748조 373억"` → `"1,748조"` (100조 이상 정수, 미만 1소수점) |
+| **Currency-aware 차트 hover** | PriceChart 가 currency prop 받음. 툴팁: KRW `"원"` / USD `"$xx.xx"` / 기타 `"n EUR"` 자동 |
+| **Skeleton screens** | 실제 카드 형태와 일치 — BriefView 는 hero + 3 섹션 (아이콘 칩 + 4줄), ThemesView 는 테마 헤더 + 종목 칩 2개, StockDetail 은 헤더 + 차트 + 탭 + 2x2 grid. stagger 100ms |
+| **Editorial Home Today 카드** | 정적 PREVIEW 제거 → S3 직접 읽기. oneLine + verifyPassed 배지 + 업데이트 시간. 시간대별 Sunrise/Sunset 아이콘, 좌측 그라데이션 quote line |
+| **Non-stock 메타 항목** | 브리핑 본문의 ticker 영역에서 "미국 실적(예시)" 같은 비-종목 항목은 strict 검증 (KR 6자리 또는 US 티커 패턴 매칭) 실패 시 클릭 비활성 정보 카드로 렌더 |
 
 ---
 
 ## 포트폴리오 후크 (각 항목 1줄로 쓸 때)
 
-> 한국 + 해외 시장 멀티 소스 (KIS · DART · TwelveData · Tavily · OpenAI · Gemini) 를 통합한 Next.js + AWS Lambda 풀스택. KIS OAuth 토큰을 S3 에 공유 캐싱해 다중 인스턴스 환경의 1분 cooldown 위반을 회피했고, Amplify SSR 의 30초 게이트웨이 한계는 EventBridge → Lambda 분리로 해소함. 평균 116초 걸리는 LLM 작업을 백엔드로 옮긴 결과, 사용자 페이지 응답은 200ms 대 유지.
+> 한국 + 해외 시장 멀티 소스 (KIS · DART · TwelveData · Tavily · OpenAI · Gemini) 를 통합한 Next.js + AWS Lambda 풀스택. KIS OAuth 토큰을 S3 에 공유 캐싱해 다중 인스턴스 환경의 1분 cooldown 위반을 회피했고, Amplify SSR 의 30초 게이트웨이 한계는 EventBridge → Lambda 분리로 해소함. 평균 116초 걸리는 LLM 작업을 백엔드로 옮긴 결과, 사용자 페이지 응답은 100~200ms 대 유지. 다크 모드(system pref auto-sync), 풀-투-리프레시, 종목 검색(2,780+ 티커), sticky mini-header 등 모바일 UX 패턴 + 외부 의존성 장애에 대비한 mock-skip resilience 패턴 적용.
 
 ---
 
