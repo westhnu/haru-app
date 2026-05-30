@@ -17,12 +17,15 @@ const CONF: Record<Confidence, { cls: string; label: string }> = {
 };
 
 function StockChip({ s }: { s: ThemeStock }) {
-  const target = s.code || nameToCode(s.name) || s.symbol || s.name;
-  return (
-    <Link
-      href={`/stock/${encodeURIComponent(target)}?name=${encodeURIComponent(s.name)}`}
-      className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 transition hover:bg-slate-100"
-    >
+  // 진짜 종목으로 매핑되는 경우만 링크. 메타 항목 (예: '대형주', '美 CPI')은 정보 카드.
+  const krCode = s.code || nameToCode(s.name);
+  const usTicker =
+    s.symbol && /^[A-Z]{1,5}$/.test(s.symbol) ? s.symbol : null;
+  const target = krCode || usTicker;
+  const baseCls =
+    "flex items-center justify-between gap-3 rounded-2xl px-4 py-3";
+  const inner = (
+    <>
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
         <span
           title={s.name}
@@ -45,9 +48,21 @@ function StockChip({ s }: { s: ThemeStock }) {
             {s.reason}
           </span>
         )}
-        <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+        {target && (
+          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+        )}
       </div>
+    </>
+  );
+  return target ? (
+    <Link
+      href={`/stock/${encodeURIComponent(target)}?name=${encodeURIComponent(s.name)}`}
+      className={`${baseCls} bg-slate-50 transition hover:bg-slate-100`}
+    >
+      {inner}
     </Link>
+  ) : (
+    <div className={`${baseCls} bg-slate-50/60 cursor-default`}>{inner}</div>
   );
 }
 

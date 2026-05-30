@@ -63,9 +63,14 @@ export default function SectionCard({
       {section.tickers && section.tickers.length > 0 && (
         <div className="mt-4 space-y-2 pl-[54px]">
           {section.tickers.map((t, i) => {
-            // 코드 우선 → 이름으로 코드 해석 → 심볼 → 이름 (항상 이동 가능)
-            const target =
-              t.code || nameToCode(t.name) || t.symbol || t.name;
+            // 클릭 가능 조건을 엄격히 — 진짜 종목 코드가 있어야 함.
+            // - 한국: 6자리 code 또는 nameToCode 매핑 성공
+            // - 해외: 미국식 티커 (영문 대문자 1~5자)
+            // 그 외 ("미국 실적(예시)", "美 CPI 발표" 같은 메타 항목)는 정보 카드로만.
+            const krCode = t.code || nameToCode(t.name);
+            const usTicker =
+              t.symbol && /^[A-Z]{1,5}$/.test(t.symbol) ? t.symbol : null;
+            const target = krCode || usTicker;
             const Inner = (
               <>
                 <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
@@ -96,18 +101,22 @@ export default function SectionCard({
                 </div>
               </>
             );
-            const cls =
-              "flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3";
+            const baseCls =
+              "flex items-center justify-between gap-3 rounded-2xl px-4 py-3";
             return target ? (
               <Link
                 key={i}
                 href={`/stock/${encodeURIComponent(target)}?name=${encodeURIComponent(t.name)}`}
-                className={`${cls} transition hover:bg-slate-100`}
+                className={`${baseCls} bg-slate-50 transition hover:bg-slate-100`}
               >
                 {Inner}
               </Link>
             ) : (
-              <div key={i} className={cls}>
+              // 메타 항목 — 클릭 불가, 살짝 옅은 톤으로 정보 카드 인상
+              <div
+                key={i}
+                className={`${baseCls} bg-slate-50/60 cursor-default`}
+              >
                 {Inner}
               </div>
             );
