@@ -7,8 +7,11 @@ import {
   Network,
   ShieldCheck,
   Bot,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import type { BriefType } from "@/lib/types";
+import { readBrief } from "@/lib/store";
 
 // 현재 시각을 반영해야 하므로 매 요청 렌더
 export const dynamic = "force-dynamic";
@@ -63,31 +66,27 @@ function currentPeriod(): BriefType {
   return hour >= 8 && hour < 17 ? "morning" : "evening";
 }
 
-const PREVIEW: Record<
-  BriefType,
-  { label: string; tile: string; rows: { label: string; value: string }[]; note: string }
-> = {
-  morning: {
-    label: "모닝 브리핑",
-    tile: "bg-gradient-to-br from-amber-400 to-orange-500",
-    rows: [
-      { label: "오늘 한 줄", value: "반도체 강세 동조" },
-      { label: "교차검증", value: "통과" },
-      { label: "주목 테마", value: "HBM · 2차전지" },
-    ],
-    note: "간밤 미국 반도체 강세에 동조해 국내 반도체 대형주가 주목받는 흐름이에요. 금리·환율 변수는 함께 확인하세요.",
-  },
-  evening: {
-    label: "이브닝 브리핑",
-    tile: "bg-gradient-to-br from-indigo-400 to-violet-500",
-    rows: [
-      { label: "오늘 한 줄", value: "외국인 순매수 마감" },
-      { label: "교차검증", value: "통과" },
-      { label: "밤 체크", value: "美 CPI 발표" },
-    ],
-    note: "오늘 코스피는 외국인 순매수로 강보합 마감했어요. 오늘 밤 미국 CPI 발표를 앞두고 변동성에 유의하세요.",
-  },
+const TILE: Record<BriefType, string> = {
+  morning: "bg-gradient-to-br from-amber-400 to-orange-500",
+  evening: "bg-gradient-to-br from-indigo-400 to-violet-500",
 };
+
+const LABEL: Record<BriefType, string> = {
+  morning: "모닝 브리핑",
+  evening: "이브닝 브리핑",
+};
+
+function timeAgo(iso?: string): string {
+  if (!iso) return "";
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 0) return "";
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return "방금";
+  if (m < 60) return `${m}분 전`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  return `${Math.floor(h / 24)}일 전`;
+}
 
 // 현재 시간대(아침/밤)에 따른 색상 테마
 const THEME: Record<
@@ -110,11 +109,17 @@ const THEME: Record<
   },
 };
 
-export default function Home() {
+export default async function Home() {
   const period = currentPeriod();
-  const pv = PREVIEW[period];
   const theme = THEME[period];
   const periodLabel = period === "morning" ? "모닝" : "이브닝";
+  // S3에서 저장된 라이브 브리핑을 가져와 메인 카드에 노출.
+  const data = await readBrief(period).catch(() => null);
+  const briefResp = data && !data.empty ? data : null;
+  const oneLine = briefResp?.brief?.oneLine ?? null;
+  const verifyPassed = briefResp?.verify?.passed ?? null;
+  const generatedAt = briefResp?.meta?.generatedAt;
+  const isLive = briefResp?.meta?.mode === "live";
 
   return (
     <div className="min-h-svh bg-slate-50">
@@ -175,43 +180,58 @@ export default function Home() {
               <ArrowRight className="h-5 w-5" />
             </Link>
 
-            {/* Today 프리뷰 카드 — 현재 시간대에 맞춰 표시 */}
+            {/* Today 카드 — S3에 저장된 실제 라이브 브리핑 사용 */}
             <Link
               href={`/brief/${period}`}
               className="mt-10 block rounded-[28px] border border-slate-200 bg-white p-5 shadow-card transition hover:border-slate-300"
             >
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-400">Today 하루</p>
                   <p className="mt-1 text-xl font-black text-slate-950">
-                    {pv.label}
+                    {LABEL[period]}
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {verifyPassed === true && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                        <CheckCircle2 className="h-3 w-3" />
+                        교차검증 통과
+                      </span>
+                    )}
+                    {verifyPassed === false && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                        <AlertCircle className="h-3 w-3" />
+                        검증 주의
+                      </span>
+                    )}
+                    {generatedAt && (
+                      <span className="text-[11px] font-bold text-slate-400">
+                        업데이트 {timeAgo(generatedAt)}
+                      </span>
+                    )}
+                    {!isLive && oneLine && (
+                      <span className="text-[11px] font-bold text-amber-600">
+                        직전 데이터
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white ${pv.tile}`}
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white ${TILE[period]}`}
                 >
                   <Bot className="h-6 w-6" />
                 </div>
               </div>
-              <div className="mt-5 space-y-2.5">
-                {pv.rows.map((r) => (
-                  <div
-                    key={r.label}
-                    className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"
-                  >
-                    <span className="text-sm font-semibold text-slate-500">
-                      {r.label}
-                    </span>
-                    <span className="text-sm font-black text-slate-900">
-                      {r.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm font-semibold leading-6 text-slate-700">
-                  {pv.note}
+
+              <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                <p className="text-[14px] font-semibold leading-7 text-slate-700">
+                  {oneLine ?? "곧 첫 갱신이 도착해요. 매일 08:00·17:00 KST에 자동 갱신됩니다."}
                 </p>
+              </div>
+
+              <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-bold text-slate-500">
+                자세히 보기
+                <ArrowRight className="h-3.5 w-3.5" />
               </div>
             </Link>
           </section>
