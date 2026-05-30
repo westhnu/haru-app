@@ -142,13 +142,13 @@ export default function StockDetail({
                 {data.profile.code}
               </p>
               <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                <span className="text-[2rem] font-black text-slate-950">
+                <span className="text-[2rem] font-black tabular-nums text-slate-950">
                   {data.profile.price !== null
                     ? formatPrice(data.profile.price, data.profile.currency)
                     : "—"}
                 </span>
                 {data.profile.changePct !== null && (
-                  <span className={`text-[15px] font-black ${priceColor}`}>
+                  <span className={`text-[15px] font-black tabular-nums ${priceColor}`}>
                     {up ? "+" : ""}
                     {data.profile.changePct.toFixed(2)}%
                   </span>
@@ -275,7 +275,7 @@ export default function StockDetail({
                             {r.label}
                           </p>
                           <p
-                            className={`mt-1 text-[14px] font-black ${
+                            className={`mt-1 text-[14px] font-black tabular-nums ${
                               buy ? "text-rose-600" : "text-blue-600"
                             }`}
                           >
@@ -327,7 +327,7 @@ export default function StockDetail({
                             </span>
                           )}
                         </div>
-                        <p className="mt-0.5 text-[15px] font-black text-slate-900">
+                        <p className="mt-0.5 text-[15px] font-black tabular-nums text-slate-900">
                           {ind.value}
                         </p>
                         {ind.context && (
@@ -417,7 +417,7 @@ function Stat({
   return (
     <div className="rounded-2xl bg-slate-50 px-4 py-3">
       <p className="text-[12px] font-semibold text-slate-500">{label}</p>
-      <p className={`mt-0.5 text-[15px] font-black text-slate-900 ${valueClass ?? ""}`}>
+      <p className={`mt-0.5 text-[15px] font-black tabular-nums text-slate-900 ${valueClass ?? ""}`}>
         {value}
       </p>
     </div>

@@ -160,12 +160,12 @@ export default function BriefView({ type }: { type: BriefType }) {
             <h1 className="mt-4 text-[2rem] font-black leading-tight tracking-tight text-slate-950">
               {meta.label}
             </h1>
-            <p className="mt-2 text-[15px] font-semibold leading-7 text-slate-500">
+            <p className="mt-2 text-[15px] font-medium leading-[1.75] text-slate-600">
               {meta.subtitle}
             </p>
 
             {data && data.meta.forDate && (
-              <div className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-500">
+              <div className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold tabular-nums text-slate-600">
                 <CalendarDays className="h-4 w-4 text-slate-400" />
                 {data.meta.forDate}
               </div>
@@ -230,7 +230,7 @@ export default function BriefView({ type }: { type: BriefType }) {
               <p className="mt-5 text-[17px] font-black text-slate-950">
                 아직 생성된 브리핑이 없어요
               </p>
-              <p className="mt-2 text-[14px] font-semibold leading-6 text-slate-500">
+              <p className="mt-2 text-[14px] font-medium leading-[1.75] text-slate-600">
                 매일 {meta.time}에 자동 생성됩니다.
                 <br />
                 잠시 후 새로고침 해주세요.
@@ -257,11 +257,11 @@ export default function BriefView({ type }: { type: BriefType }) {
             <div className="mt-8 space-y-3">
               {/* 오늘 한 줄 */}
               <section className="animate-fade-up rounded-[28px] bg-gradient-to-br from-slate-950 to-slate-900 p-6 shadow-card">
-                <p className="inline-flex items-center gap-1.5 text-[12px] font-bold text-white/50">
+                <p className="inline-flex items-center gap-1.5 text-[12px] font-bold tracking-wide text-white/60">
                   <Sparkles className={`h-3.5 w-3.5 ${accent.label}`} />
                   오늘 한 줄
                 </p>
-                <p className="mt-3 text-[17px] font-bold leading-8 text-white">
+                <p className="mt-3 text-[17.5px] font-bold leading-[1.7] text-white">
                   {data.brief.oneLine}
                 </p>
               </section>

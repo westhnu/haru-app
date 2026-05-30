@@ -35,24 +35,24 @@ export default function SectionCard({
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black tabular-nums text-slate-300">
+            <span className="text-[11px] font-black tabular-nums text-slate-400">
               {String(index + 1).padStart(2, "0")}
             </span>
-            <h2 className="text-[15px] font-black tracking-tight text-slate-950">
+            <h2 className="text-[15.5px] font-black tracking-tight text-slate-950">
               {section.title}
             </h2>
           </div>
           <GlossaryText
             text={section.summary}
-            className="mt-2.5 block text-[15px] font-medium leading-[1.85] text-slate-700"
+            className="mt-3 block text-[15px] font-medium leading-[1.85] text-slate-800"
           />
         </div>
       </div>
 
       {section.bullets && section.bullets.length > 0 && (
-        <ul className="mt-4 space-y-2.5 pl-[54px]">
+        <ul className="mt-4 space-y-3 pl-[54px]">
           {section.bullets.map((b, i) => (
-            <li key={i} className="flex gap-2.5 text-[14px] font-medium leading-7 text-slate-700">
+            <li key={i} className="flex gap-2.5 text-[14.5px] font-medium leading-[1.8] text-slate-800">
               <span className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-900" />
               <GlossaryText text={b} />
             </li>
@@ -76,12 +76,12 @@ export default function SectionCard({
                 <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
                   <span
                     title={t.name}
-                    className="truncate text-[14px] font-black text-slate-900"
+                    className="truncate text-[14px] font-bold text-slate-900"
                   >
                     {t.name}
                   </span>
                   {t.symbol && (
-                    <span className="shrink-0 text-[11px] font-bold text-slate-400">
+                    <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-400">
                       {t.symbol}
                     </span>
                   )}
