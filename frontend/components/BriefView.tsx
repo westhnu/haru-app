@@ -19,6 +19,7 @@ import type { BriefResponse, BriefType, Region } from "@/lib/types";
 import { BRIEF_META, DISCLAIMER } from "@/lib/types";
 import SectionCard from "@/components/SectionCard";
 import VerifyBadge from "@/components/VerifyBadge";
+import { usePullToRefresh } from "@/lib/usePullToRefresh";
 
 function RegionHeader({ region }: { region: Region }) {
   const Icon = region === "해외" ? Globe : Landmark;
@@ -129,10 +130,31 @@ export default function BriefView({ type }: { type: BriefType }) {
     load();
   }, [load]);
 
+  // 모바일 풀-투-리프레시
+  const { progress: pullProgress, refreshing: pulling } = usePullToRefresh(load);
+
   const isEmpty = data?.empty || !data?.brief;
 
   return (
     <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
+      {/* 풀-투-리프레시 인디케이터 */}
+      {(pullProgress > 0 || pulling) && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center"
+          style={{
+            transform: `translateY(${Math.min(50, pullProgress * 60)}px)`,
+            opacity: Math.min(1, pullProgress),
+          }}
+        >
+          <div className="mt-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg dark:bg-slate-800">
+            <RefreshCw
+              className={`h-4 w-4 text-slate-700 dark:text-slate-300 ${pulling ? "animate-spin" : ""}`}
+              style={!pulling ? { transform: `rotate(${pullProgress * 360}deg)` } : undefined}
+            />
+          </div>
+        </div>
+      )}
       <div className="relative mx-auto min-h-svh w-full max-w-[480px] overflow-hidden bg-white dark:bg-slate-900 px-5 pb-24">
         <div
           aria-hidden

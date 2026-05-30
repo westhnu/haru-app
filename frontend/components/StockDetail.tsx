@@ -22,15 +22,25 @@ const RANGES = [
 function formatKRW(v: number | null): string {
   if (v === null) return "—";
   const neg = v < 0;
-  let n = Math.abs(v);
-  const jo = Math.floor(n / 1_0000_0000_0000);
-  n -= jo * 1_0000_0000_0000;
-  const eok = Math.floor(n / 1_0000_0000);
-  const parts: string[] = [];
-  if (jo > 0) parts.push(`${jo.toLocaleString()}조`);
-  if (eok > 0 || jo > 0) parts.push(`${eok.toLocaleString()}억`);
-  if (parts.length === 0) parts.push(`${Math.round(v).toLocaleString()}원`);
-  return (neg ? "-" : "") + parts.join(" ");
+  const n = Math.abs(v);
+  const JO = 1_0000_0000_0000;
+  const EOK = 1_0000_0000;
+  const sign = neg ? "-" : "";
+  // 조 단위면 소숫점 1자리로 압축 ('1,748조 373억' → '1,748.0조')
+  // 100조 이상은 정수 — 더 간결.
+  if (n >= JO) {
+    const joVal = n / JO;
+    const precision = joVal >= 100 ? 0 : 1;
+    return `${sign}${joVal.toLocaleString(undefined, { maximumFractionDigits: precision })}조`;
+  }
+  // 억 단위 — 1억 이상이면 억 표기 (소숫점 1자리)
+  if (n >= EOK) {
+    const eokVal = n / EOK;
+    const precision = eokVal >= 100 ? 0 : 1;
+    return `${sign}${eokVal.toLocaleString(undefined, { maximumFractionDigits: precision })}억`;
+  }
+  // 그 외 원 단위
+  return `${sign}${Math.round(n).toLocaleString()}원`;
 }
 
 function formatVol(v: number): string {
@@ -224,7 +234,11 @@ export default function StockDetail({
             <>
             {/* 차트 */}
             <div className="mt-5 rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-soft">
-              <PriceChart prices={sliced} up={up} />
+              <PriceChart
+                prices={sliced}
+                up={up}
+                currency={data.profile.currency}
+              />
               <div className="mt-3 flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 p-1">
                 {RANGES.map((r) => (
                   <button

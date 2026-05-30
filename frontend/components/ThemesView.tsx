@@ -7,6 +7,7 @@ import { ArrowLeft, RefreshCw, Network, ChevronRight } from "lucide-react";
 import type { Confidence, ThemeResponse, ThemeStock } from "@/lib/thememap";
 import { nameToCode } from "@/lib/corpcodes";
 import GlossaryText from "@/components/GlossaryText";
+import { usePullToRefresh } from "@/lib/usePullToRefresh";
 
 type Resp = ThemeResponse & { empty?: boolean };
 
@@ -15,6 +16,21 @@ const CONF: Record<Confidence, { cls: string; label: string }> = {
   medium: { cls: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400", label: "신뢰도 보통" },
   low: { cls: "bg-amber-50 text-amber-700", label: "신뢰도 낮음" },
 };
+
+// 테마명 → 일관된 색 (해시) — 같은 테마는 항상 같은 색.
+const PALETTE = [
+  "bg-sky-500",
+  "bg-emerald-500",
+  "bg-violet-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-indigo-500",
+] as const;
+function paletteOf(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  return PALETTE[Math.abs(h) % PALETTE.length];
+}
 
 function StockChip({ s }: { s: ThemeStock }) {
   // 진짜 종목으로 매핑되는 경우만 링크. 메타 항목 (예: '대형주', '美 CPI')은 정보 카드.
@@ -111,10 +127,30 @@ export default function ThemesView() {
     load();
   }, [load]);
 
+  // 모바일 풀-투-리프레시
+  const { progress: pullProgress, refreshing: pulling } = usePullToRefresh(load);
+
   const isEmpty = data?.empty || (data?.items?.length ?? 0) === 0;
 
   return (
     <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
+      {(pullProgress > 0 || pulling) && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center"
+          style={{
+            transform: `translateY(${Math.min(50, pullProgress * 60)}px)`,
+            opacity: Math.min(1, pullProgress),
+          }}
+        >
+          <div className="mt-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg dark:bg-slate-800">
+            <RefreshCw
+              className={`h-4 w-4 text-slate-700 dark:text-slate-300 ${pulling ? "animate-spin" : ""}`}
+              style={!pulling ? { transform: `rotate(${pullProgress * 360}deg)` } : undefined}
+            />
+          </div>
+        </div>
+      )}
       <div className="mx-auto min-h-svh w-full max-w-[480px] bg-white dark:bg-slate-900 px-5 pb-24">
         {/* 상단 바 */}
         <div className="flex items-center justify-between py-5">
@@ -218,16 +254,28 @@ export default function ThemesView() {
           <div className="mt-8 space-y-3">
             {data.items.map((item, i) => {
               const conf = CONF[item.confidence] ?? CONF.medium;
+              const palette = paletteOf(item.theme);
               return (
                 <section
                   key={i}
-                  className="animate-fade-up rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-soft"
+                  className="animate-fade-up relative overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-soft"
                   style={{ animationDelay: `${i * 50}ms` }}
                 >
+                  {/* 좌측 컬러 strip — 같은 테마는 항상 같은 색 */}
+                  <span
+                    aria-hidden
+                    className={`absolute inset-y-0 left-0 w-[3px] ${palette}`}
+                  />
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="text-[17px] font-black tracking-tight text-slate-950 dark:text-white">
-                      {item.theme}
-                    </h2>
+                    <div className="flex items-center gap-2">
+                      <span
+                        aria-hidden
+                        className={`h-2 w-2 shrink-0 rounded-full ${palette}`}
+                      />
+                      <h2 className="text-[17px] font-black tracking-tight text-slate-950 dark:text-white">
+                        {item.theme}
+                      </h2>
+                    </div>
                     <span
                       className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${conf.cls}`}
                     >

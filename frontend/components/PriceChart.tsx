@@ -3,14 +3,29 @@
 import { useState } from "react";
 import type { PricePoint } from "@/lib/stocktypes";
 
+function formatPriceLabel(value: number, currency?: string): string {
+  if (!currency || currency === "KRW") {
+    return `${Math.round(value).toLocaleString()}원`;
+  }
+  if (currency === "USD") {
+    return `$${value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  }
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${currency}`;
+}
+
 /** 인터랙티브 SVG 영역 차트. 마우스/터치 호버 시 날짜·가격 툴팁 + 크로스헤어.
- *  상승=빨강, 하락=파랑(국내 관례). */
+ *  상승=빨강, 하락=파랑(국내 관례). currency 가 주어지면 그 통화 표기. */
 export default function PriceChart({
   prices,
   up,
+  currency,
 }: {
   prices: PricePoint[];
   up: boolean;
+  currency?: string;
 }) {
   const W = 440;
   const H = 180;
@@ -118,8 +133,8 @@ export default function PriceChart({
             <div className="text-[10px] font-semibold text-white/60">
               {active.date}
             </div>
-            <div className="text-[12px] font-black text-white">
-              {active.close.toLocaleString()}원
+            <div className="text-[12px] font-black tabular-nums text-white">
+              {formatPriceLabel(active.close, currency)}
             </div>
           </div>
         )}
