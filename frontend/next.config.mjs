@@ -6,9 +6,7 @@ const nextConfig = {
   env: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_MODEL: process.env.OPENAI_MODEL,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-    GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
-    GEMINI_MODEL: process.env.GEMINI_MODEL,
+    VERIFY_MODEL: process.env.VERIFY_MODEL,
     TAVILY_API_KEY: process.env.TAVILY_API_KEY,
     DART_API_KEY: process.env.DART_API_KEY,
     KIS_APP_KEY: process.env.KIS_APP_KEY,

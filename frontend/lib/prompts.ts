@@ -10,7 +10,7 @@ const FRAMING: Record<BriefType, string> = {
     "지금은 한국 시각 저녁, 국내 장 마감 후입니다. 오늘 국내 장의 핵심 이슈와, 오늘 밤 미국 장에서 주목할 포인트를 정리합니다.",
 };
 
-/** 브리핑 생성 프롬프트 — 메인 LLM(GPT) & fallback(Gemini) 공용 */
+/** 브리핑 생성 프롬프트 — gpt-5-mini 호출 시 사용 */
 export function buildBriefPrompt(
   sources: Source[],
   type: BriefType,
@@ -72,7 +72,7 @@ ${sectionList}
 ${sourceBlock || "(소스 없음 — dataGaps에 '수집된 소스 없음'을 명시하고 일반적 안내만 작성)"}`;
 }
 
-/** Gemini 교차검증 프롬프트 (LLM-as-judge) */
+/** 교차검증 프롬프트 (LLM-as-judge) — gpt-4o-mini 로 호출 */
 export function buildVerifyPrompt(sources: Source[], briefJson: string): string {
   return `당신은 금융 AI 출력물의 품질 검증자입니다.
 아래 [브리핑]이 [원본 소스]에만 근거하는지 엄격히 검증하세요.

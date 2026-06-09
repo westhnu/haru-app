@@ -1,14 +1,6 @@
 import OpenAI from "openai";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Source } from "./types";
-import {
-  OPENAI_MODEL,
-  GEMINI_MODEL,
-  hasOpenAI,
-  hasGemini,
-  geminiKey,
-  extractJson,
-} from "./llm";
+import { OPENAI_MODEL, hasOpenAI, extractJson } from "./llm";
 import { searchIssues } from "./tavily";
 import { getMarketDateInfo } from "./market";
 
@@ -108,38 +100,39 @@ function buildThemePrompt(sources: Source[], dateLabel: string): string {
 ${block || "(수집된 이슈 없음 — 일반적 테마 위주로 작성)"}`;
 }
 
-async function genGPT(sources: Source[], dateLabel: string): Promise<ThemeItem[]> {
-  const openai = new OpenAI();
-  const r = await openai.chat.completions.create({
-    model: OPENAI_MODEL,
-    messages: [{ role: "user", content: buildThemePrompt(sources, dateLabel) }],
-    response_format: { type: "json_object" },
-  });
-  const parsed = extractJson<{ items: ThemeItem[] }>(
-    r.choices[0]?.message?.content ?? ""
-  );
-  return parsed.items ?? [];
-}
-
-async function genGemini(
+/** gpt-5-mini 호출 + retry × 2 (1.5s, 4s exponential backoff) */
+async function genGPTWithRetry(
   sources: Source[],
   dateLabel: string
-): Promise<ThemeItem[]> {
-  const genAI = new GoogleGenerativeAI(geminiKey()!);
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-    generationConfig: { responseMimeType: "application/json" },
-  });
-  const res = await model.generateContent(buildThemePrompt(sources, dateLabel));
-  const parsed = extractJson<{ items: ThemeItem[] }>(res.response.text());
-  return parsed.items ?? [];
+): Promise<{ items: ThemeItem[]; retried: boolean }> {
+  const openai = new OpenAI();
+  const prompt = buildThemePrompt(sources, dateLabel);
+  const delays = [0, 1500, 4000];
+  let lastErr: Error | null = null;
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i] > 0) await new Promise((r) => setTimeout(r, delays[i]));
+    try {
+      const r = await openai.chat.completions.create({
+        model: OPENAI_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      });
+      const parsed = extractJson<{ items: ThemeItem[] }>(
+        r.choices[0]?.message?.content ?? ""
+      );
+      return { items: parsed.items ?? [], retried: i > 0 };
+    } catch (e) {
+      lastErr = e as Error;
+    }
+  }
+  throw lastErr ?? new Error("GPT 테마 매핑 실패 (재시도 3회 모두 실패)");
 }
 
-/** 이슈 수집 → LLM zero-shot 테마 매핑 (graceful degradation) */
+/** 이슈 수집 → gpt-5-mini zero-shot 테마 매핑 (retry × 2 → 모킹 폴백) */
 export async function generateThemeMap(): Promise<ThemeResponse> {
   const warnings: string[] = [];
   let mode: "live" | "mock" = "live";
-  let fallbackUsed = false;
+  let retried = false;
   const dateInfo = getMarketDateInfo();
 
   let sources: Source[] = [];
@@ -158,22 +151,17 @@ export async function generateThemeMap(): Promise<ThemeResponse> {
   let items: ThemeItem[] | null = null;
   if (mode === "live" && hasOpenAI()) {
     try {
-      items = await genGPT(sources, dateInfo.label);
+      const result = await genGPTWithRetry(sources, dateInfo.label);
+      items = result.items;
+      retried = result.retried;
+      if (retried) {
+        warnings.push("메인 모델 일과성 실패 → 재시도 후 회복");
+      }
     } catch (e) {
-      warnings.push(`GPT 매핑 실패: ${(e as Error).message}`);
+      warnings.push(`GPT 매핑 실패 (3회 재시도 모두): ${(e as Error).message}`);
     }
   } else if (!hasOpenAI()) {
     warnings.push("OPENAI_API_KEY 없음");
-  }
-
-  if ((!items || items.length === 0) && mode === "live" && hasGemini()) {
-    try {
-      items = await genGemini(sources, dateInfo.label);
-      fallbackUsed = true;
-      warnings.push("GPT 불가 → Gemini로 매핑(fallback)");
-    } catch (e) {
-      warnings.push(`Gemini 매핑(fallback) 실패: ${(e as Error).message}`);
-    }
   }
 
   if (!items || items.length === 0) {
@@ -189,7 +177,8 @@ export async function generateThemeMap(): Promise<ThemeResponse> {
     meta: {
       mode,
       mainModel: OPENAI_MODEL,
-      fallbackUsed,
+      // 의미 재정의: 메인 모델 retry 가 일어났는지
+      fallbackUsed: retried,
       warnings,
       generatedAt: new Date().toISOString(),
       forDate: dateInfo.label,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { BriefResponse, BriefType } from "@/lib/types";
-import { OPENAI_MODEL, GEMINI_MODEL } from "@/lib/llm";
+import { OPENAI_MODEL, VERIFY_MODEL } from "@/lib/llm";
 import { readBrief } from "@/lib/store";
 import { getMarketDateInfo } from "@/lib/market";
 
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     meta: {
       mode: "mock",
       mainModel: OPENAI_MODEL,
-      verifyModel: GEMINI_MODEL,
+      verifyModel: VERIFY_MODEL,
       fallbackUsed: false,
       warnings: ["아직 생성된 브리핑이 없습니다. 생성이 필요합니다."],
       generatedAt: "",

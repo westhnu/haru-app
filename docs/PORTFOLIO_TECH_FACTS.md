@@ -1,7 +1,7 @@
 # 하루 HARU — 포트폴리오용 기술 팩트 시트
 
 > 측정된 수치·코드 위치·결정 근거만 정리. 마케팅 표현 X.
-> 데이터 수집 일자: 2026-05-30 (최초 작성 2026-05-28)
+> 데이터 수집 일자: 2026-06-09 (최초 작성 2026-05-28)
 > 라이브: https://main.dlz2aim8js0bv.amplifyapp.com
 
 ---
@@ -35,16 +35,24 @@
 
 ---
 
-## 3. 이중 LLM 교차검증 (LLM-as-judge)
+## 3. LLM 교차검증 (LLM-as-judge) — 단일 vendor · 다른 모델 family
 
 | 단계 | 모델 | 역할 |
 | --- | --- | --- |
 | 생성 | OpenAI `gpt-5-mini` | 브리핑 작성 |
-| 검증 | Google `gemini-2.5-flash` | hallucination·원본 불일치·투자권유 표현 cross-check |
-| Fallback | Gemini 단독 생성 | GPT 호출 실패 시 |
-| 최종 fallback | mock | 두 LLM 모두 실패 시 graceful degradation |
+| 검증 | OpenAI `gpt-4o-mini` | hallucination·원본 불일치·투자권유 표현 cross-check (다른 model family로 confirmation bias 완화) |
+| 메인 일과성 장애 대비 | retry × 2 (1.5 s, 4 s exponential backoff) | rate-limit/timeout/일과성 503 회복 |
+| 최종 fallback | mock + S3 skip 패턴 | 3회 재시도 모두 실패 시. 다음 cron 까지 직전 라이브 유지 (§13) |
 
-코드: [frontend/lib/pipeline.ts](frontend/lib/pipeline.ts), [frontend/lib/llm.ts](frontend/lib/llm.ts)
+**왜 멀티 vendor (Gemini) 가 아니라 단일 vendor (OpenAI) + 모델 family 다양화?**
+
+- 운영 단순화 — API key/SDK/응답 schema 1개. 1인 운영에 fit.
+- Vendor 자체 outage 는 드물고 짧음. 일과성 rate-limit/timeout 이 압도적으로 흔하며 — 같은 vendor 안의 retry + backoff 가 가성비 좋음.
+- 모델 family 다양화(gpt-5-mini ↔ gpt-4o-mini) 만으로도 LLM-as-judge confirmation bias 가 상당 부분 완화.
+- Vendor 자체 outage 가 발생하면 어차피 mock-skip 패턴(§13)이 사용자에겐 직전 라이브 노출.
+- 실측: 어제 OpenAI quota 초과 + Gemini 503 동시 장애도 mock-skip 으로 정상 처리. 멀티 vendor 의 장점이 실전에선 잘 드러나지 않았음.
+
+코드: [frontend/lib/pipeline.ts](frontend/lib/pipeline.ts), [frontend/lib/llm.ts](frontend/lib/llm.ts), [frontend/lib/thememap.ts](frontend/lib/thememap.ts)
 
 ---
 
@@ -65,7 +73,7 @@
 
 ---
 
-## 5. 외부 API 통합 — 6종 직접 연결
+## 5. 외부 API 통합 — 5종 직접 연결
 
 | API | 용도 | 특이사항 |
 | --- | --- | --- |
@@ -73,10 +81,9 @@
 | DART | 재무제표 (fnlttSinglAcntAll) | `corp_code` 매핑 직접 (`lib/corpcodes.ts`) |
 | TwelveData | 해외 시세·일봉 | NASDAQ/NYSE 등 |
 | Tavily | 이슈 수집 (브리핑 입력) | LLM zero-shot 검색 |
-| OpenAI | 브리핑 본문 생성 | gpt-5-mini |
-| Google Gemini | 교차검증 / Fallback | gemini-2.5-flash |
+| OpenAI | 브리핑 생성(`gpt-5-mini`) + 교차검증(`gpt-4o-mini`) | 단일 vendor / 모델 family 다양화 (§3) |
 
-총 19개 라이브러리 모듈 ([frontend/lib/](frontend/lib/)).
+총 20개 라이브러리 모듈 ([frontend/lib/](frontend/lib/)).
 
 ---
 
@@ -162,18 +169,22 @@
 
 LLM·외부 API 가 일과성 장애를 일으켜도 사용자 화면이 mock 으로 떨어지지 않게 설계.
 
-**케이스 1 — LLM 둘 다 실패 시 직전 라이브 유지**
+**케이스 1 — 메인 모델 일과성 장애 → retry × 2 with exponential backoff**
 
-이전: cron → GPT 429 + Gemini 503 → mock 결과를 S3 에 덮어쓰기 → 사용자 12시간 동안 mock 화면.
+가장 흔한 케이스 — 같은 vendor 안의 rate-limit / timeout / 일과성 503. `lib/llm.ts` 의 `generateBriefWithGPT` 와 `lib/thememap.ts` 의 `genGPTWithRetry` 가 즉시 → 1.5 s → 4 s 간격으로 3번 시도. retry 가 발생했는지는 `meta.fallbackUsed` 로 응답에 노출.
+
+**케이스 2 — LLM 3회 재시도 모두 실패 시 직전 라이브 유지**
+
+이전: cron → 메인 모델 실패 → mock 결과를 S3 에 덮어쓰기 → 사용자 12시간 동안 mock 화면.
 현재: `lambda-handler.ts` 가 `brief.meta.mode === "mock"` 이면 S3 의 직전 객체를 읽어보고, **이전 라이브가 있으면 덮어쓰기 skip**. 첫 실행이라 S3 가 비어있을 때만 mock 저장. 사용자에겐 stale 한 직전 라이브가 그대로 보임. 다음 cron 또는 수동 invoke 에서 회복. (테마도 동일 패턴)
 
-**케이스 2 — KIS 토큰 발급 cooldown** (§4 참조)
+**케이스 3 — KIS 토큰 발급 cooldown** (§4 참조)
 
-**케이스 3 — KIS 장중 수급 0주** (§6 참조)
+**케이스 4 — KIS 장중 수급 0주** (§6 참조)
 
-**케이스 4 — KRX 컬럼 변경** (§6 참조)
+**케이스 5 — KRX 컬럼 변경** (§6 참조)
 
-코드: [frontend/scripts/lambda-handler.ts](frontend/scripts/lambda-handler.ts)
+코드: [frontend/lib/llm.ts](frontend/lib/llm.ts), [frontend/scripts/lambda-handler.ts](frontend/scripts/lambda-handler.ts)
 
 ---
 
@@ -235,7 +246,7 @@ LLM·외부 API 가 일과성 장애를 일으켜도 사용자 화면이 mock �
 
 ## 포트폴리오 후크 (각 항목 1줄로 쓸 때)
 
-> 한국 + 해외 시장 멀티 소스 (KIS · DART · TwelveData · Tavily · OpenAI · Gemini) 를 통합한 Next.js + AWS Lambda 풀스택. KIS OAuth 토큰을 S3 에 공유 캐싱해 다중 인스턴스 환경의 1분 cooldown 위반을 회피했고, Amplify SSR 의 30초 게이트웨이 한계는 EventBridge → Lambda 분리로 해소함. 평균 116초 걸리는 LLM 작업을 백엔드로 옮긴 결과, 사용자 페이지 응답은 100~200ms 대 유지. 다크 모드(system pref auto-sync), 풀-투-리프레시, 종목 검색(2,780+ 티커), sticky mini-header 등 모바일 UX 패턴 + 외부 의존성 장애에 대비한 mock-skip resilience 패턴 적용.
+> 한국 + 해외 시장 5종 API (KIS · DART · TwelveData · Tavily · OpenAI) 를 통합한 Next.js + AWS Lambda 풀스택. **OpenAI 단일 vendor 안에서 모델 family 다양화** (gpt-5-mini 생성 ↔ gpt-4o-mini 교차검증) 로 LLM-as-judge confirmation bias 를 완화하면서 운영 단순도(키·SDK·schema 1개)도 유지. 일과성 장애는 메인 모델 retry × 2 (exponential backoff) + S3 mock-skip 패턴으로 흡수. KIS OAuth 토큰 S3 공유 캐시로 다중 인스턴스 1분 cooldown 위반 회피. Amplify SSR 30초 게이트웨이 한계는 EventBridge → Lambda 분리로 해소 (평균 116 초 LLM 작업이 가능해짐). 사용자 페이지 응답은 100~200 ms 유지. 다크 모드(system pref auto-sync), 풀-투-리프레시, 종목 검색(2,780+ 티커), sticky mini-header 등 모바일 UX 패턴 적용.
 
 ---
 

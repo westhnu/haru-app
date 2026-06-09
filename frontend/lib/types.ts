@@ -67,7 +67,7 @@ export interface Brief {
   dataGaps?: string[];
 }
 
-/** Gemini 교차검증 결과 (LLM-as-judge) */
+/** 교차검증 결과 (LLM-as-judge) — gpt-4o-mini 산출 */
 export interface VerifyResult {
   hallucinations: string[];
   inconsistencies: string[];
