@@ -15,7 +15,8 @@ uv run pytest                                   # 테스트
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | GET | `/health` | 헬스체크 |
-| POST | `/api/v1/poc/ask` | Bedrock KB RetrieveAndGenerate PoC. `BEDROCK_KB_ID`가 비어 있으면 mock 응답 |
+| POST | `/api/v1/poc/ask` | Bedrock KB RetrieveAndGenerate PoC. `context_type`: `stock` / `glossary` / `general`. `BEDROCK_KB_ID`가 비어 있으면 mock 응답 |
+| GET | `/api/v1/stock/{code}/summary` | DART 재무 + AI 요약 + DART 원문 출처. `DART_API_KEY`가 비어 있으면 mock 데이터 |
 
 ```bash
 curl -X POST localhost:8000/api/v1/poc/ask -H 'Content-Type: application/json' -d '{"query":"PER이 뭐야?"}'
