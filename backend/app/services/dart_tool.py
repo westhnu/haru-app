@@ -1,7 +1,7 @@
-"""DART Open API 조회 도구 — jutopia_data/dart_client.py 재사용 래퍼.
+"""DART Open API 조회 도구.
 
-jutopia에서 재사용: 계정과목 이름 변형 매핑·핵심 지표 계산(`_compute_metrics`)과
-보고서 시도 순서(`_determine_report_attempts`). 순수 계산이라 네트워크·디스크를 쓰지 않는다.
+jutopia_data/dart_client.py에서는 보고서 시도 순서(`_determine_report_attempts`)만 빌려 쓴다.
+금액 매핑은 `dart_financials`에서 누적 기준으로 새로 구현했다 (KI-008).
 
 HTTP·오류 처리·캐시는 여기서 구현한다. jutopia 구현은 서버에서 그대로 쓰기 부적합하다 (KI-006):
 오류를 print 후 삼키고, 예외 속 URL의 crtfc_key가 로그로 새고, 캐시를 jutopia_data 안에 쓰며,
@@ -26,12 +26,14 @@ import structlog
 from app.config import Settings, get_settings
 from app.core.cache import TTLCache
 from app.models.stock import STATEMENT_LABELS, DartResult, StockFinancials, StockSource
+from app.services.dart_financials import build_financials
 from app.services.jutopia_loader import load_jutopia_module
 
 DART_API_BASE = "https://opendart.fss.or.kr/api"
 DART_VIEWER_URL = "https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}"
 DART_HOME_URL = "https://opendart.fss.or.kr/"
 REQUEST_TIMEOUT_SECONDS = 10
+DEFAULT_CACHE_TTL_SECONDS = 1800
 CORP_INDEX_FILE = "corp_codes.json"
 CORP_INDEX_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 STATUS_OK = "000"
@@ -39,21 +41,6 @@ STATUS_NO_DATA = "013"
 STATUS_RATE_LIMITED = "020"
 # 연결재무제표가 없는 회사는 개별재무제표로 조회한다.
 STATEMENT_TYPES = ("CFS", "OFS")
-METRIC_FIELDS = (
-    "revenue",
-    "operating_income",
-    "net_income",
-    "total_liabilities",
-    "total_equity",
-    "operating_cf",
-    "investing_cf",
-    "financing_cf",
-    "debt_ratio",
-    "operating_margin",
-    "revenue_series",
-    "operating_income_series",
-    "net_income_series",
-)
 _XML_STATUS = re.compile(rb"<status>(\d{3})</status>")
 
 HttpGet = Callable[..., Any]
@@ -96,14 +83,18 @@ class LiveDartTool:
         self,
         api_key: str,
         calculator: Any,
-        cache: TTLCache[StatementLookup],
         cache_dir: Path,
+        cache_ttl_seconds: float = DEFAULT_CACHE_TTL_SECONDS,
         http_get: HttpGet = requests.get,
     ) -> None:
         self._api_key = api_key
-        # jutopia DartClient 인스턴스. 순수 계산 메서드만 호출한다.
+        # jutopia DartClient 인스턴스. 보고서 시도 순서 계산에만 쓴다.
         self._calculator = calculator
-        self._cache = cache
+        self._statement_cache: TTLCache[StatementLookup] = TTLCache(
+            "dart_statements", cache_ttl_seconds
+        )
+        # 결산월(acc_mt). 없으면 빈 문자열로 저장한다 (None은 캐시 미스를 뜻하므로).
+        self._company_cache: TTLCache[str] = TTLCache("dart_company", cache_ttl_seconds)
         self._corp_index_path = cache_dir / CORP_INDEX_FILE
         self._http_get = http_get
         self._corp_index: dict[str, CorpInfo] = {}
@@ -127,37 +118,38 @@ class LiveDartTool:
         lookup: StatementLookup,
         report: tuple[int, str, str],
     ) -> DartResult:
-        year, reprt_code, label = report
-        metrics = self._calculator._compute_metrics(lookup.items, year, reprt_code, label)
-        first_item = lookup.items[0]
-        financials = StockFinancials(
-            report_year=year,
-            report_code=reprt_code,
-            report_label=label,
-            statement_type=lookup.statement_type,
-            currency=first_item.get("currency") or "KRW",
-            **{field: metrics[field] for field in METRIC_FIELDS if metrics.get(field) is not None},
-        )
-        rcept_no = str(first_item["rcept_no"])
+        fiscal_month = self._fiscal_month(corp["corp_code"])
+        financials = build_financials(lookup.items, report, lookup.statement_type, fiscal_month)
+        rcept_no = str(lookup.items[0]["rcept_no"])
         return DartResult(
             code=stock_code,
             name=corp["corp_name"],
             corp_code=corp["corp_code"],
             rcept_no=rcept_no,
             financials=financials,
-            source=dart_source(label, lookup.statement_type, rcept_no),
+            source=dart_source(report[2], lookup.statement_type, rcept_no),
         )
+
+    def _fiscal_month(self, corp_code: str) -> str | None:
+        """결산월(MM). period_covered 계산에 쓴다 (12월 결산이 아니면 기간을 추정하지 않음)."""
+        cached = self._company_cache.get(corp_code)
+        if cached is not None:
+            return cached or None
+        data = self._get_json("company.json", {"corp_code": corp_code})
+        fiscal_month = str(data.get("acc_mt") or "")
+        self._company_cache.set(corp_code, fiscal_month)
+        return fiscal_month or None
 
     # --- 재무제표 (TTL 캐시) ------------------------------------------------------------
 
     def _statements(self, corp_code: str, year: int, reprt_code: str) -> StatementLookup:
         key = (corp_code, year, reprt_code)
-        cached = self._cache.get(key)
+        cached = self._statement_cache.get(key)
         if cached is not None:
             return cached
         lookup = self._fetch_statements(corp_code, year, reprt_code)
         # "데이터 없음"도 캐시해 아직 공시되지 않은 보고서를 반복 조회하지 않는다.
-        self._cache.set(key, lookup)
+        self._statement_cache.set(key, lookup)
         return lookup
 
     def _fetch_statements(self, corp_code: str, year: int, reprt_code: str) -> StatementLookup:
@@ -294,6 +286,8 @@ class MockDartTool:
             report_year=2026,
             report_code="11012",
             report_label="2026년 반기보고서",
+            report_type="half_cumulative",
+            period_covered="2026-01-01 ~ 2026-06-30",
             statement_type="CFS",
             revenue=1_000_000_000_000.0,
             operating_income=100_000_000_000.0,
@@ -321,10 +315,12 @@ def build_live_dart_tool(settings: Settings) -> LiveDartTool:
     dart_client = load_jutopia_module("dart_client", settings.jutopia_data_dir)
     # __init__을 건너뛴다: jutopia 쪽 디스크 캐시 생성·로드 없이 순수 계산 메서드만 빌려 쓴다.
     calculator = object.__new__(dart_client.DartClient)
-    cache: TTLCache[StatementLookup] = TTLCache(
-        "dart_statements", ttl_seconds=settings.dart_cache_ttl_seconds
+    return LiveDartTool(
+        settings.dart_api_key,
+        calculator,
+        settings.dart_cache_dir,
+        cache_ttl_seconds=settings.dart_cache_ttl_seconds,
     )
-    return LiveDartTool(settings.dart_api_key, calculator, cache, settings.dart_cache_dir)
 
 
 @lru_cache

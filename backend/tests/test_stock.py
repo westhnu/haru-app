@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.config import Settings
 from app.core.guardrail import DISCLAIMER, SAFE_REPLACEMENT
 from app.main import app
-from app.models.stock import DartResult, SeriesPoint, StockFinancials, StockSource
+from app.models.stock import DartResult, StockFinancials, StockSource
 from app.services.dart_tool import (
     DartError,
     DartNoFinancialsError,
@@ -35,20 +35,19 @@ LIVE_RESULT = DartResult(
         report_year=2026,
         report_code="11012",
         report_label="2026년 반기보고서",
+        report_type="half_cumulative",
+        period_covered="2026-01-01 ~ 2026-06-30",
         statement_type="CFS",
         revenue=877.0,
         debt_ratio=40.0,
         operating_margin=10.0,
-        revenue_series=[
-            SeriesPoint(label="제 56 기 반기", amount=1000.0),
-            SeriesPoint(label="제 57 기 반기", amount=877.0),
-        ],
+        revenue_growth=-12.3,
     ),
     source=StockSource(name=SOURCE_NAME, url=DART_URL),
 )
 GROUNDED_SUMMARY = (
     "DART 2026년 반기보고서 기준 부채비율은 40.0%, 영업이익률은 10.0%입니다. "
-    "매출액은 전기 대비 12.3% 감소했습니다."
+    "매출액은 전년 동기 대비 12.3% 감소했습니다."
 )
 
 
@@ -123,9 +122,11 @@ def test_grounded_ai_summary_is_returned_with_dart_source(client: TestClient) ->
     assert body["summary"] == f"{GROUNDED_SUMMARY}\n\n{DISCLAIMER}"
     assert body["sources"] == [{"name": SOURCE_NAME, "url": DART_URL}]
     assert (body["code"], body["name"], body["is_mock"]) == ("005930", "삼성전자", False)
-    assert body["financials"]["debt_ratio"] == 40.0
+    assert body["financials"]["report_type"] == "half_cumulative"
+    assert body["financials"]["period_covered"] == "2026-01-01 ~ 2026-06-30"
     prompt = runtime.requests[0]["messages"][0]["content"][0]["text"]
-    assert '"매출액 증감률(%)": -12.3' in prompt
+    assert '"매출액 전년 대비 증감률(%)": -12.3' in prompt
+    assert '"기간(누적)": "2026-01-01 ~ 2026-06-30"' in prompt
 
 
 def test_ungrounded_ai_figures_fall_back_to_template(client: TestClient) -> None:
@@ -137,6 +138,7 @@ def test_ungrounded_ai_figures_fall_back_to_template(client: TestClient) -> None
     assert body["summary_source"] == "template"
     assert "302조" not in body["summary"]
     assert "부채비율 40.0%" in body["summary"]
+    assert "2026-01-01 ~ 2026-06-30 누적" in body["summary"]
 
 
 def test_forbidden_phrase_in_ai_summary_is_replaced(client: TestClient) -> None:

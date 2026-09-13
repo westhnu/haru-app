@@ -1,19 +1,15 @@
 """jutopia_data 파일 단위 로더 — allowlist, .env 유출 차단, jutopia 계약 테스트."""
 
 import importlib.util
-import json
 import os
 from pathlib import Path
 
 import pytest
 
-from app.models.stock import StockFinancials
-from app.services.dart_tool import METRIC_FIELDS
 from app.services.jutopia_loader import JutopiaModuleError, load_jutopia_module
 
 CANARY = "HARU_TEST_DOTENV_CANARY"
 JUTOPIA_DIR = Path("/Users/westhnu/Agent/Claude/jutopia_data")
-SAMSUNG_2024_ANNUAL = JUTOPIA_DIR / "data" / "dart_cache" / "fin_00126380_2024_11011_CFS.json"
 
 requires_jutopia = pytest.mark.skipif(
     not (JUTOPIA_DIR / "dart_client.py").is_file(), reason="로컬 jutopia_data 저장소 없음"
@@ -78,34 +74,14 @@ def test_real_jutopia_import_adds_no_env_vars() -> None:
 
 @requires_jutopia
 def test_jutopia_dart_client_contract() -> None:
-    """Haru가 기대는 jutopia 비공개 메서드가 그대로 있는지 (KI-006)."""
+    """Haru가 기대는 jutopia 비공개 메서드가 그대로 있는지 (KI-006).
+
+    재무 매핑은 KI-008 이후 Haru(dart_financials)로 옮겼고, 보고서 시도 순서만 빌려 쓴다.
+    """
     dart_client = load_jutopia_module("dart_client", JUTOPIA_DIR)
     calculator = object.__new__(dart_client.DartClient)
 
     attempts = calculator._determine_report_attempts()
 
     assert attempts and all(len(attempt) == 3 for attempt in attempts)
-    assert callable(calculator._compute_metrics)
-
-
-@pytest.mark.skipif(not SAMSUNG_2024_ANNUAL.is_file(), reason="jutopia DART 캐시 파일 없음")
-def test_jutopia_metrics_on_real_dart_response_fit_haru_schema() -> None:
-    """실제 DART 응답(삼성전자 2024 사업보고서)으로 계산·스키마 호환을 확인한다."""
-    items = json.loads(SAMSUNG_2024_ANNUAL.read_text(encoding="utf-8"))
-    dart_client = load_jutopia_module("dart_client", JUTOPIA_DIR)
-    calculator = object.__new__(dart_client.DartClient)
-
-    metrics = calculator._compute_metrics(items, 2024, "11011", "2024년 사업보고서")
-    financials = StockFinancials(
-        report_year=2024,
-        report_code="11011",
-        report_label="2024년 사업보고서",
-        statement_type="CFS",
-        **{field: metrics[field] for field in METRIC_FIELDS if metrics.get(field) is not None},
-    )
-
-    assert items[0]["rcept_no"] == "20250311001085"
-    assert financials.revenue == 300_870_903_000_000.0
-    assert financials.debt_ratio is not None
-    assert financials.operating_margin is not None
-    assert len(financials.revenue_series) >= 2
+    assert all(reprt_code in {"11011", "11012", "11013", "11014"} for _, reprt_code, _ in attempts)

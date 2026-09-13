@@ -18,7 +18,6 @@ from app.core.prompts import SYSTEM_PROMPT_STOCK_SUMMARY
 from app.models.stock import (
     STATEMENT_LABELS,
     DartResult,
-    SeriesPoint,
     StockFinancials,
     StockSummaryResponse,
     SummarySource,
@@ -27,6 +26,7 @@ from app.services.bedrock_client import get_runtime_client
 from app.services.dart_tool import DartTool, get_dart_tool
 
 SUMMARY_MAX_TOKENS = 1024
+AMOUNT_BASIS = "손익·현금흐름은 기간 누적, 재무상태표는 기간 종료일 시점"
 
 logger = structlog.get_logger(__name__)
 
@@ -102,30 +102,25 @@ def ratio_facts(financials: StockFinancials) -> dict[str, float]:
     candidates = {
         "부채비율(%)": financials.debt_ratio,
         "영업이익률(%)": financials.operating_margin,
-        "매출액 증감률(%)": growth_rate(financials.revenue_series),
-        "영업이익 증감률(%)": growth_rate(financials.operating_income_series),
-        "당기순이익 증감률(%)": growth_rate(financials.net_income_series),
+        "매출액 전년 대비 증감률(%)": financials.revenue_growth,
+        "영업이익 전년 대비 증감률(%)": financials.operating_income_growth,
+        "순이익 전년 대비 증감률(%)": financials.net_income_growth,
     }
     return {label: value for label, value in candidates.items() if value is not None}
 
 
-def growth_rate(series: list[SeriesPoint]) -> float | None:
-    """직전 기간 대비 증감률(%). 시계열은 전전기 → 전기 → 당기 순서다."""
-    if len(series) < 2 or series[-2].amount == 0:
-        return None
-    previous, current = series[-2].amount, series[-1].amount
-    return round((current - previous) / abs(previous) * 100, 1)
-
-
 def build_stock_prompt(dart: DartResult) -> str:
-    statement = STATEMENT_LABELS[dart.financials.statement_type]
+    financials = dart.financials
     facts: dict[str, Any] = {
         "회사명": dart.name,
         "종목코드": dart.code,
-        "보고서": f"DART {dart.financials.report_label}",
-        "재무제표 구분": f"{statement}재무제표",
-        **ratio_facts(dart.financials),
+        "보고서": f"DART {financials.report_label}",
+        "재무제표 구분": f"{STATEMENT_LABELS[financials.statement_type]}재무제표",
     }
+    if financials.period_covered:
+        facts["기간(누적)"] = financials.period_covered
+    facts["금액 기준"] = AMOUNT_BASIS
+    facts.update(ratio_facts(financials))
     data = json.dumps(facts, ensure_ascii=False, indent=2)
     instruction = "위 DART 데이터만으로 이 회사의 재무 상태를 3~4문장으로 요약하세요."
     return f"<dart_data>\n{data}\n</dart_data>\n\n{instruction}"
@@ -134,8 +129,10 @@ def build_stock_prompt(dart: DartResult) -> str:
 def template_summary(dart: DartResult) -> str:
     """모델 없이 코드가 만드는 요약. DART 원본에서 계산한 비율만 쓴다."""
     financials = dart.financials
-    statement = STATEMENT_LABELS[financials.statement_type]
-    basis = f"DART {financials.report_label}({statement}재무제표) 기준"
+    scope = f"{STATEMENT_LABELS[financials.statement_type]}재무제표"
+    if financials.period_covered:
+        scope = f"{scope}, {financials.period_covered} 누적"
+    basis = f"DART {financials.report_label}({scope}) 기준"
     facts = ratio_facts(financials)
     if not facts:
         return f"{basis} 핵심 비율을 계산할 수 있는 계정과목을 찾지 못했습니다."

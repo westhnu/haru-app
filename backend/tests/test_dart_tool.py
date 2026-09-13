@@ -8,20 +8,19 @@ from typing import Any
 import pytest
 import requests
 
-from app.core.cache import TTLCache
 from app.services.dart_tool import (
     DartNoFinancialsError,
     DartRateLimitError,
     DartStockNotFoundError,
     DartUnavailableError,
     LiveDartTool,
-    StatementLookup,
 )
 
 API_KEY = "test-dart-key-0123456789abcdef"
 RCEPT_NO = "20260814000123"
 STATEMENTS_ENDPOINT = "fnlttSinglAcntAll.json"
 NO_DATA = {"status": "013", "message": "조회된 데이타가 없습니다."}
+COMPANY = {"status": "000", "message": "정상", "corp_code": "00126380", "acc_mt": "12"}
 
 
 def corp_code_zip() -> bytes:
@@ -40,13 +39,17 @@ def corp_code_zip() -> bytes:
 
 
 def statements() -> dict[str, Any]:
-    item = {
-        "rcept_no": RCEPT_NO,
-        "currency": "KRW",
-        "account_nm": "매출액",
-        "thstrm_amount": "1000",
-    }
-    return {"status": "000", "message": "정상", "list": [item]}
+    """반기 손익 행: 3개월(thstrm_amount=300)과 누적(thstrm_add_amount=1000)이 다르다."""
+    common = {"rcept_no": RCEPT_NO, "currency": "KRW"}
+    rows = [
+        {**common, "sj_div": "BS", "account_id": "ifrs-full_Liabilities", "account_nm": "부채총계"}
+        | {"thstrm_amount": "400"},
+        {**common, "sj_div": "BS", "account_id": "ifrs-full_Equity", "account_nm": "자본총계"}
+        | {"thstrm_amount": "1000"},
+        {**common, "sj_div": "IS", "account_id": "ifrs-full_Revenue", "account_nm": "매출액"}
+        | {"thstrm_amount": "300", "thstrm_add_amount": "1000", "frmtrm_add_amount": "800"},
+    ]
+    return {"status": "000", "message": "정상", "list": rows}
 
 
 class FakeResponse:
@@ -75,6 +78,8 @@ class FakeDartHttp:
         self.calls.append((endpoint, params))
         if endpoint == "corpCode.xml":
             return FakeResponse(content=corp_code_zip())
+        if endpoint == "company.json":
+            return FakeResponse(payload=COMPANY)
         key = (params["bsns_year"], params["reprt_code"], params["fs_div"])
         return FakeResponse(payload=self.reports.get(key, NO_DATA))
 
@@ -83,34 +88,27 @@ class FakeDartHttp:
 
 
 class FakeCalculator:
-    """jutopia DartClient의 순수 계산 메서드 두 개만 흉내 낸다."""
+    """jutopia DartClient에서 빌려 쓰는 보고서 시도 순서만 흉내 낸다."""
 
     def _determine_report_attempts(self) -> list[tuple[int, str, str]]:
         return [(2026, "11012", "2026년 반기보고서"), (2025, "11011", "2025년 사업보고서")]
 
-    def _compute_metrics(
-        self, items: list[dict[str, Any]], year: int, reprt_code: str, label: str
-    ) -> dict[str, Any]:
-        return {
-            "revenue": float(items[0]["thstrm_amount"]),
-            "debt_ratio": 40.0,
-            "revenue_series": [],
-        }
-
 
 def make_tool(tmp_path: Path, http: Any) -> LiveDartTool:
-    cache: TTLCache[StatementLookup] = TTLCache("test_dart_statements", ttl_seconds=1800)
-    return LiveDartTool(API_KEY, FakeCalculator(), cache, tmp_path, http_get=http)
+    return LiveDartTool(API_KEY, FakeCalculator(), tmp_path, http_get=http)
 
 
-def test_fetch_returns_dart_numbers_with_viewer_source(tmp_path: Path) -> None:
+def test_fetch_returns_cumulative_dart_numbers_with_viewer_source(tmp_path: Path) -> None:
     http = FakeDartHttp({("2026", "11012", "CFS"): statements()})
 
     result = make_tool(tmp_path, http).fetch_dart_financial("005930")
 
     assert (result.name, result.corp_code, result.rcept_no) == ("삼성전자", "00126380", RCEPT_NO)
     assert result.financials.revenue == 1000.0
-    assert result.financials.report_label == "2026년 반기보고서"
+    assert result.financials.revenue_growth == 25.0
+    assert result.financials.debt_ratio == 40.0
+    assert result.financials.report_type == "half_cumulative"
+    assert result.financials.period_covered == "2026-01-01 ~ 2026-06-30"
     assert result.source.url == f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={RCEPT_NO}"
     assert result.source.name == "DART 2026년 반기보고서 (연결재무제표)"
     assert all(params["crtfc_key"] == API_KEY for _, params in http.calls)
@@ -131,9 +129,10 @@ def test_uses_older_report_when_latest_is_not_filed(tmp_path: Path) -> None:
     result = make_tool(tmp_path, http).fetch_dart_financial("005930")
 
     assert result.financials.report_year == 2025
+    assert result.financials.report_type == "annual"
 
 
-def test_repeated_fetch_hits_statement_cache(tmp_path: Path) -> None:
+def test_repeated_fetch_hits_statement_and_company_cache(tmp_path: Path) -> None:
     http = FakeDartHttp({("2025", "11011", "CFS"): statements()})
     tool = make_tool(tmp_path, http)
 
@@ -144,6 +143,7 @@ def test_repeated_fetch_hits_statement_cache(tmp_path: Path) -> None:
     # 2026 반기 CFS·OFS(데이터 없음) + 2025 사업 CFS. 빈 결과까지 캐시되어 두 번째는 0회.
     assert calls_after_first == 3
     assert http.count(STATEMENTS_ENDPOINT) == calls_after_first
+    assert http.count("company.json") == 1
 
 
 def test_corp_index_is_reused_from_disk_after_restart(tmp_path: Path) -> None:
