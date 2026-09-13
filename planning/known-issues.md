@@ -46,6 +46,8 @@
 - **내용**: `dart_client.py`가 `import os`, `from dotenv import load_dotenv`를 사용한다. 모듈 import 시점에 `.env`를 읽거나 `os.getenv`로 키를 직접 참조할 가능성이 있다.
 - **위험**: Haru 규칙 "환경변수는 `Settings` 하나로만 관리"와 충돌하고, `python-dotenv` 의존성이 추가된다.
 - **조치**: Sprint 2에서 실제 동작을 확인한 뒤 래퍼(`dart_tool.py`)에서 키를 명시적으로 주입하는 방식을 결정한다.
+- **실측 (2026-09-13, Sprint 2)**: 우려보다 심각했다. `dart_client.py`를 **import만 해도** `load_dotenv()`가 `jutopia_data/.env`를 읽어 **13개 변수가 Haru 프로세스 환경변수로 들어온다**. `DART_API_KEY`, `KIS_APP_KEY`, `KIS_APP_SECRET`, `KIS_APP_KEY_PROD`, `KIS_APP_SECRET_PROD`, `KIS_ACCOUNT_ID`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `TAVILY_API_KEY` 등 (값은 보지 않고 이름만 수집)
+- **해결 (Sprint 2)**: `services/jutopia_loader.py`가 모듈을 실행하는 동안 `dotenv.load_dotenv`를 무력화한다. DART 키는 `Settings.dart_api_key`에서 명시적으로 주입한다. 회귀 테스트 `tests/test_jutopia_loader.py`로 보장 (차단하지 않으면 실제로 새는지 확인하는 대조군 포함)
 
 ## KI-005 — 데이터 처리 리전 이슈 (`global.` 추론 프로파일)
 
@@ -62,3 +64,14 @@
   - 사용자별 데이터(투자 저널, 한투·키움 잔고/거래내역)를 프롬프트에 넣기 시작할 때 (Sprint 2.5 이후)
   - 서울 리전 native 또는 `apac.` 프로파일로 4.5+ 모델이 제공될 때
   - 개인정보 국외 이전 고지·동의 필요 여부 법무 검토 시 (퍼블릭 런칭 M6 전)
+
+## KI-006 — `dart_client.py`의 HTTP 경로는 서버에서 그대로 쓰기 부적합
+
+- **발견**: 2026-09-13, Sprint 2
+- **내용**
+  - 오류를 `print` 후 `None`/`{"error": ...}`로 삼킨다 → 네트워크 장애와 "데이터 없음"을 구분할 수 없음
+  - `requests` 예외 메시지에 `crtfc_key=<API 키>`가 든 URL이 포함되어, `print`·트레이스백을 통해 **키가 로그에 남을 수 있음**
+  - 디스크 캐시를 `jutopia_data/data/dart_cache/`에 쓴다 → 원칙 4(jutopia 수정 금지) 위반
+  - 상태 코드 `020`(요청 제한 초과)을 `013`(데이터 없음)과 같이 취급해 개별재무제표로 재요청 → 한도 초과 상황에서 호출을 더 소모
+  - 결과에서 `rcept_no`(접수번호)와 회사명을 버린다 → DART 원문 URL과 응답의 `name`을 만들 수 없음
+- **조치 (Sprint 2)**: jutopia에서는 순수 계산 로직(`_compute_metrics`, `_determine_report_attempts`, 계정과목 이름 매핑)만 재사용하고, HTTP·오류 처리·캐시는 `services/dart_tool.py`에서 구현. jutopia의 비공개 메서드에 의존하므로 계약 테스트(`tests/test_jutopia_loader.py`)로 시그니처 변경을 감지한다
