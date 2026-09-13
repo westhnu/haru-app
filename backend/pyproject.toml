@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-settings>=2.3",
     "structlog>=24.1",
     "boto3>=1.43.93",
+    "requests>=2.34.2",
 ]
 
 [dependency-groups]
