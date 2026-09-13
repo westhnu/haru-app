@@ -196,11 +196,59 @@ $ curl -o /dev/null -w '%{http_code}' http://localhost:8000/api/v1/stock/abc/sum
    - 키움 통합(§14.5 회귀 방지 4단)과 같은 기준을 쓰려면 **② 권장**. 참고로 `HantuStock.py`에도 import 시점 `load_dotenv` 패턴이 있을 가능성이 높아 진입 전에 확인하겠음
 3. **jutopia 파일의 배포 방식 (M3 대비)**: Lambda 번들에 jutopia 경로를 넣으려면 ① 배포 시 `dart_client.py`를 스냅샷 복사하고 해시를 기록하거나, ② 계산 로직을 Haru로 이관해야 함. 지금 결정할 필요는 없고 M3 전에만 정하면 됨
 
-## PO 액션 아이템 (Sprint 2 마무리용)
+## 11. 실측 결과 (2026-09-13, DART_API_KEY 적용 후)
 
-```bash
-cd /Users/westhnu/Agent/Claude/haru_web/backend
-cp .env.example .env        # 처음 한 번만
-# .env 에서 DART_API_KEY=발급받은키 입력 (JUTOPIA_DATA_DIR은 기본값 그대로)
-```
-→ "DART_API_KEY 준비 완료"라고 알려 주시면 삼성전자 1건으로 실제 DART + Bedrock 요약을 검증하고, §2 체크리스트와 캐시 히트율 실측을 이 로그에 추가하겠습니다.
+### 키 적용 방법
+- `backend/.env`가 gitignore 대상인지 먼저 확인함 (`git check-ignore` → `.gitignore:13:.env`). 확인이 실패하면 중단하도록 묶어서 실행
+- jutopia `.env`에서 **`DART_API_KEY`만** `dotenv_values`로 읽어 `backend/.env`(권한 600)에 기록. 프로세스 환경변수에는 올리지 않음. 값은 출력하지 않고 길이(40)만 확인. 나머지 12개 변수는 복사하지 않음
+- `JUTOPIA_DATA_DIR`은 `.env`에 쓰지 않고 서버를 띄울 때 환경변수로만 전달함 ("DART_API_KEY만 추가" 지시 준수)
+- **키 노출 검사**: 서버 로그, 응답 2건, `.cache/dart/corp_codes.json`에서 키 문자열이 나온 횟수 **0회**
+
+### 요약
+
+| 확인 항목 | 결과 | 판정 |
+|---|---|---|
+| `GET /api/v1/stock/005930/summary` 2회 | 둘 다 HTTP 200 (4.13초 / 0.16초) | ✅ |
+| `sources[]` URL | `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814003699`. DART 원본 응답의 `rcept_no`와 일치 | ✅ |
+| 캐시 히트/미스 | 1회차 `cache_miss`(key `('00126380', 2026, '11012')`) → DART 재무제표 1회 호출. 2회차 `cache_hit`(hit_rate 0.5) → **DART 호출 0회**. corpCode.xml은 1회차에만 받음 (3,990개, 3.4초) | ✅ |
+| 반기 손익 금액 기준 | **3개월(2분기 단독) 금액**. 누적은 별도 필드에 있음 | ⚠️ 기간 표기 없음 → 오해 소지 |
+| Bedrock 요약 (`summary_source`) | 2회 모두 **`template`**. Bedrock 호출 자체가 계정 설정 오류로 실패해 폴백됨 | ❌ **검증 불가** |
+
+2026-09-13 기준 보고서 시도 순서의 첫 번째(2026 반기보고서)에서 바로 조회되어, 캐시 키는 1개만 사용됨.
+
+### 반기보고서 손익: 3개월치인가, 누적인가
+같은 요청을 DART에 직접 보내 원본 필드를 확인함 (삼성전자 2026 반기, 연결, 223행).
+
+| 계정 (IS) | `thstrm_amount` (제58기 반기) | `thstrm_add_amount` (당기 누적) | `frmtrm_q_amount` (전년 동기) | `frmtrm_add_amount` (전년 누적) |
+|---|---|---|---|---|
+| 매출액 | 171,499,470,000,000 | 305,372,914,000,000 | 74,566,317,000,000 | 153,706,820,000,000 |
+| 영업이익 | 89,492,412,000,000 | 146,725,209,000,000 | 4,676,057,000,000 | 11,361,329,000,000 |
+| 반기순이익 | 71,624,461,000,000 | 118,849,733,000,000 | 5,116,435,000,000 | 13,339,313,000,000 |
+
+- **결론: `thstrm_amount`는 3개월(2분기 단독) 금액이고, 누적 6개월은 `thstrm_add_amount`에 있다.** Haru 응답의 `revenue`(171,499,470,000,000)는 jutopia `_compute_metrics`가 쓰는 `thstrm_amount`, 즉 **3개월치**다
+- `operating_margin` 52.2%도 2분기 3개월 기준이다. 분자·분모의 기간은 같아서 계산 자체는 맞다
+- **한 응답 안에 기간이 섞인다**: 손익은 3개월, 현금흐름표 `thstrm_amount`(영업활동현금흐름 145,355,192,000,000)는 반기 **누적 6개월**, 재무상태표는 **반기말 시점** 값이다. 그런데 `financials`에는 "2026년 반기보고서" 라벨 하나뿐이다
+- 필드 구조가 행마다 다름: 첫 행(BS)에는 누적·전년 동기 필드가 없고 IS·CIS 행에만 있음. Sprint 2 §2의 사업보고서 캐시에서 누적 필드가 보이지 않았던 이유
+- 부수 발견 2건
+  - **`net_income: null`**: 반기 계정명이 `반기순이익`(account_id `ifrs-full_ProfitLoss`)이어서 jutopia의 이름 목록(`당기순이익`, `당기순이익(손실)` 등)에 매칭되지 않음. 분기보고서도 `분기순이익`으로 같은 문제가 있을 것으로 추정
+  - **손익 시계열이 1개뿐**: 반기 IS 행에는 `frmtrm_amount`가 비어 있고 비교값은 `frmtrm_q_amount`에 있음 → jutopia 시계열이 당기 1점만 만들어져 증감률을 계산할 수 없음 → Bedrock 프롬프트에도 증감률이 빠짐
+- 연간 사업보고서는 해당 없음 (전기·전전기 금액이 `frmtrm_amount`·`bfefrmtrm_amount`에 있음)
+
+### Bedrock 요약 검증 불가
+- 오류: `ResourceNotFoundException: Model use case details have not been submitted for this account. Fill out the Anthropic use case details form before using the model.`
+- 최소 호출로 재시도 1회 → 같은 오류. `aws bedrock get-use-case-for-model-access` → *"You have not filled out the request form."*
+- Sprint 1(같은 날 더 이른 시각)에는 같은 모델·같은 자격증명의 Converse 호출이 성공했었음. 그 사이 계정에 사용 사례 양식 요구가 적용된 것으로 보이지만 원인은 확정할 수 없음. **Sprint 1 로그의 "모델 접근 확인"은 현재 유효하지 않음**
+- 코드는 설계대로 동작함: `stock_summary_bedrock_failed` 로그 → 템플릿 요약(`summary_source: "template"`) → DART 수치·출처·면책 문구는 정상 반환. 요약에 들어간 수치는 코드가 계산한 부채비율 31.1%와 영업이익률 52.2%뿐
+- **"Bedrock 요약이 실제 비율만 사용했는가"는 이번 실측으로 확인하지 못함** → 양식 제출 후 재검증 필요
+
+### 판정: main 병합 보류
+PO 승인 조건은 "실측 정상이면 병합"이었다. 확인 항목 4개 중 **출처 URL과 캐시만 정상**이고, Bedrock 요약은 검증하지 못했으며 반기 손익 기간 표기 문제가 새로 발견됐다. 그래서 `sprint/2-dart-integration` → `main` 병합을 **보류**하고 PO 결정을 요청한다 (§12).
+
+## 12. 병합 전 PO 결정 요청
+
+1. **Bedrock Anthropic 사용 사례 양식 제출 (PO 액션)**: AWS 콘솔 → Amazon Bedrock → Anthropic 모델 접근 화면에서 use case details 양식 제출. AWS 안내상 제출 후 15분 뒤부터 사용 가능 → 알려 주시면 같은 curl로 `summary_source: "bedrock"`과 수치 검증 통과 여부를 재확인
+2. **반기·분기 손익 기간 처리**
+   - ① **기간 라벨만 추가**: `financials`에 손익·현금흐름·재무상태의 기간 표기 필드를 추가하고 수치는 그대로 둠. 오해만 없앰 (작업 적음)
+   - ② **누적 기준으로 통일**: 손익을 `thstrm_add_amount`(누적) 기준으로 바꾸고, 전년 동기(`frmtrm_q_amount`/`frmtrm_add_amount`)로 증감률을 복원하고, 순이익은 account_id(`ifrs-full_ProfitLoss`)로 매칭. jutopia `_compute_metrics`는 수정할 수 없어(원칙 4) Haru 쪽 후처리가 필요함 (작업 중간)
+   - **② 권장**: "반기보고서 기준"이라고 표시하면 사용자는 누적 값으로 읽는 것이 자연스럽고, 현금흐름(누적)과 기간도 맞음. 순이익 null과 증감률 누락도 함께 해결됨
+3. **병합 시점**: (a) 1·2 반영과 재실측 후 병합 **(권장)** / (b) 지금 병합하고 Sprint 2.5 첫 작업으로 수정

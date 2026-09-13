@@ -75,3 +75,21 @@
   - 상태 코드 `020`(요청 제한 초과)을 `013`(데이터 없음)과 같이 취급해 개별재무제표로 재요청 → 한도 초과 상황에서 호출을 더 소모
   - 결과에서 `rcept_no`(접수번호)와 회사명을 버린다 → DART 원문 URL과 응답의 `name`을 만들 수 없음
 - **조치 (Sprint 2)**: jutopia에서는 순수 계산 로직(`_compute_metrics`, `_determine_report_attempts`, 계정과목 이름 매핑)만 재사용하고, HTTP·오류 처리·캐시는 `services/dart_tool.py`에서 구현. jutopia의 비공개 메서드에 의존하므로 계약 테스트(`tests/test_jutopia_loader.py`)로 시그니처 변경을 감지한다
+
+## KI-007 — Bedrock Anthropic 모델 사용 사례 양식 미제출
+
+- **발견**: 2026-09-13, Sprint 2 실측
+- **내용**: `global.anthropic.claude-sonnet-4-5-20250929-v1:0` Converse 호출이 `ResourceNotFoundException: Model use case details have not been submitted for this account`로 실패함. `GetUseCaseForModelAccess` 결과는 "You have not filled out the request form". Sprint 1에서는 같은 호출이 성공했었음
+- **영향**: 종목 요약이 항상 템플릿으로 폴백됨(`summary_source: "template"`). KB를 연결하면 RetrieveAndGenerate도 같은 이유로 실패할 것으로 예상
+- **조치**: PO가 AWS 콘솔에서 Anthropic use case 양식을 제출한 뒤 재검증
+
+## KI-008 — 반기·분기보고서 손익의 기간 혼재와 계정 매칭 누락
+
+- **발견**: 2026-09-13, Sprint 2 실측 (삼성전자 2026 반기)
+- **내용**
+  - 손익 `thstrm_amount`는 **3개월(분기 단독)** 금액이고 누적은 `thstrm_add_amount`에 있음. jutopia는 `thstrm_amount`를 사용
+  - 현금흐름은 누적, 재무상태는 기말 시점 값인데 `financials`에는 보고서 라벨 하나뿐이라 **기간이 섞여 보임**
+  - 순이익 계정명이 `반기순이익`/`분기순이익`이라 jutopia 이름 목록에 매칭되지 않음 → `net_income: null`
+  - 반기·분기 IS의 비교값은 `frmtrm_q_amount`에 있어 시계열이 1점뿐 → 증감률 계산 불가
+- **영향**: 원칙 2(정확한 수치 전달) 측면에서 오해 소지. 체크리스트 채점(§5.2)에 그대로 쓰면 3개월 기준으로 판정됨
+- **조치**: PO 결정 대기 (sprint-2-log §12의 ① 기간 라벨 추가 / ② 누적 기준 통일, ② 권장)
