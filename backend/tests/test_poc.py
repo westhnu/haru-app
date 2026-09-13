@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.core.guardrail import DISCLAIMER, SAFE_REPLACEMENT
+from app.core.guardrail import DISCLAIMER, NO_EVIDENCE_STOCK_ANSWER, SAFE_REPLACEMENT
 from app.main import app
 from app.services.rag_service import RagService, get_rag_service
 
@@ -58,6 +58,12 @@ def s3_citation(excerpt: str, uri: str) -> dict[str, Any]:
     }
 
 
+def prompt_template(fake: FakeAgentRuntimeClient) -> str:
+    config = fake.requests[0]["retrieveAndGenerateConfiguration"]["knowledgeBaseConfiguration"]
+    template: str = config["generationConfiguration"]["promptTemplate"]["textPromptTemplate"]
+    return template
+
+
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     yield TestClient(app)
@@ -80,6 +86,7 @@ def test_ask_without_kb_returns_mock_with_disclaimer(client: TestClient) -> None
     assert response.status_code == 200
     body = response.json()
     assert body["model_id"] == "mock"
+    assert body["source"] == "mock"
     assert body["answer"].endswith(DISCLAIMER)
     assert body["disclaimer"] == DISCLAIMER
     assert body["citations"] == []
@@ -98,13 +105,11 @@ def test_ask_with_kb_returns_answer_citations_and_disclaimer(client: TestClient)
     body = response.json()
     assert body["answer"] == f"PER은 주가를 주당순이익으로 나눈 값입니다.\n\n{DISCLAIMER}"
     assert body["citations"] == [{"excerpt": PER_EXCERPT, "source": S3_SOURCE}]
+    assert body["source"] == "knowledge_base"
     assert body["model_id"] == MODEL_ID
     kb_config = fake.requests[0]["retrieveAndGenerateConfiguration"]["knowledgeBaseConfiguration"]
     assert kb_config["knowledgeBaseId"] == KB_ID
-    assert (
-        "$search_results$"
-        in kb_config["generationConfiguration"]["promptTemplate"]["textPromptTemplate"]
-    )
+    assert "$search_results$" in prompt_template(fake)
 
 
 def test_forbidden_phrase_from_model_is_replaced(client: TestClient) -> None:
@@ -136,3 +141,53 @@ def test_bedrock_failure_returns_502_without_internal_details(client: TestClient
 
     assert response.status_code == 502
     assert "arn:aws" not in response.text
+
+
+# --- 결정 1: context_type 분기 --------------------------------------------------------------
+
+
+def test_stock_context_without_citations_refuses_to_answer(client: TestClient) -> None:
+    use_service(FakeAgentRuntimeClient("삼성전자 매출은 300조원입니다."))
+
+    response = client.post(ASK_URL, json={"query": "삼성전자 매출", "context_type": "stock"})
+
+    body = response.json()
+    assert body["answer"] == f"{NO_EVIDENCE_STOCK_ANSWER}\n\n{DISCLAIMER}"
+    assert body["source"] == "no_evidence"
+    assert "300조" not in body["answer"]
+
+
+@pytest.mark.parametrize("context_type", ["glossary", "general"])
+def test_non_stock_context_without_citations_is_tagged_general_knowledge(
+    client: TestClient, context_type: str
+) -> None:
+    use_service(FakeAgentRuntimeClient("일반적인 정의에 따르면 PER은 주가수익비율입니다."))
+
+    response = client.post(ASK_URL, json={"query": "PER", "context_type": context_type})
+
+    body = response.json()
+    assert body["source"] == "general_knowledge"
+    assert body["answer"].startswith("일반적인 정의에 따르면")
+
+
+@pytest.mark.parametrize(
+    ("context_type", "marker"),
+    [("stock", "[종목·재무 질의]"), ("glossary", "[용어 설명]"), ("general", "[일반 문의]")],
+)
+def test_prompt_template_follows_context_type(
+    client: TestClient, context_type: str, marker: str
+) -> None:
+    fake = FakeAgentRuntimeClient("답변")
+    use_service(fake)
+
+    client.post(ASK_URL, json={"query": "질문", "context_type": context_type})
+
+    assert marker in prompt_template(fake)
+
+
+def test_unknown_context_type_is_rejected(client: TestClient) -> None:
+    use_service(ExplodingClient())
+
+    response = client.post(ASK_URL, json={"query": "질문", "context_type": "crypto"})
+
+    assert response.status_code == 422
