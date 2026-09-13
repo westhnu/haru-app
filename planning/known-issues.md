@@ -46,3 +46,19 @@
 - **내용**: `dart_client.py`가 `import os`, `from dotenv import load_dotenv`를 사용한다. 모듈 import 시점에 `.env`를 읽거나 `os.getenv`로 키를 직접 참조할 가능성이 있다.
 - **위험**: Haru 규칙 "환경변수는 `Settings` 하나로만 관리"와 충돌하고, `python-dotenv` 의존성이 추가된다.
 - **조치**: Sprint 2에서 실제 동작을 확인한 뒤 래퍼(`dart_tool.py`)에서 키를 명시적으로 주입하는 방식을 결정한다.
+
+## KI-005 — 데이터 처리 리전 이슈 (`global.` 추론 프로파일)
+
+> Sprint 1 브리핑에서는 "KI-002"로 지정했으나, KI-002는 HantuStock 항목이 이미 사용 중이라 KI-005로 기록한다.
+
+- **발견**: 2026-09-13, Sprint 0 모델 ID 확인 중
+- **내용**: 서울 리전(`ap-northeast-2`)에서 Claude Sonnet/Haiku 4.5 이상은 ON_DEMAND 호출이 불가하고, `apac.` 프로파일도 없어 **`global.` 크로스 리전 추론 프로파일만** 사용 가능하다. 요청이 한국 밖 리전에서 처리될 수 있다.
+- **결정 (PO, 2026-09-13)**: 승인. MVP는 공개 정보(DART·용어사전) 위주이고 PII는 마스킹하므로 리스크 낮음.
+- **완화 조치**
+  - Sprint 1: `core/guardrail.py`의 `mask_pii()`를 RAG 호출 직전에 적용 — 주민등록번호·카드·휴대전화·계좌번호를 라벨 토큰으로 치환한 뒤에만 Bedrock으로 전송
+  - Sprint 1: 로그에는 질의 원문 대신 길이만 기록
+  - 예정: Bedrock Guardrail Sensitive Information 필터(입력·출력 마스킹, 기획안 §13.5)
+- **재검토 트리거**
+  - 사용자별 데이터(투자 저널, 한투·키움 잔고/거래내역)를 프롬프트에 넣기 시작할 때 (Sprint 2.5 이후)
+  - 서울 리전 native 또는 `apac.` 프로파일로 4.5+ 모델이 제공될 때
+  - 개인정보 국외 이전 고지·동의 필요 여부 법무 검토 시 (퍼블릭 런칭 M6 전)
