@@ -1,7 +1,7 @@
 # 하루 HARU — 개인 투자자용 Daily 2-Brief
 
 > 매일 아침·저녁 두 번, **간밤 글로벌 → 오늘 국내 장** 흐름을 자동 브리핑.
-> 메인 LLM (GPT) 이 만든 브리핑을 보조 LLM (Gemini) 이 즉시 교차검증해 hallucination·투자권유 표현을 걸러낸다.
+> 메인 LLM (GPT) 이 만든 브리핑을 보조 LLM (Gemini) 이 즉시 교차검증해 hallucination·투자권유 표현을 찾아 화면에 표시한다.
 
 [![Live Demo](https://img.shields.io/badge/Live-main.dlz2aim8js0bv.amplifyapp.com-000000?logo=awsamplify)](https://main.dlz2aim8js0bv.amplifyapp.com)
 [![Brief API](https://img.shields.io/badge/API-/api/brief-009688?logo=fastapi)](https://main.dlz2aim8js0bv.amplifyapp.com/api/brief?type=morning)
