@@ -393,6 +393,15 @@
 - **DoD**: 파일 저장 후 자동 실행 로그 확인
 - **HITL**: Allow Session
 
+### T-603 · `teardown.py --scope` 플래그 리팩토링 (KI-012 근본해결)
+
+- [ ] `scripts/kb/teardown.py`에 `--scope {kb-only, vector-only, s3-only, all}` 플래그 추가
+- [ ] 삭제할 KB id를 settings 외에 `--kb-id` 인자로도 받도록 (부분 롤백 지원)
+- [ ] 기본 scope는 `all`(기존 동작 유지), 선택 scope로 부분 롤백
+- **DoD**: `--scope kb-only`가 vector store·S3를 건드리지 않음을 mock 유닛으로 검증
+- **HITL**: Allow Session (dry-run), 필수 승인 (--confirm)
+- **근거**: KI-012 — teardown all-or-nothing 설계, 운영에선 부분 롤백이 더 흔함
+
 ---
 
 ## 완료 정의 (Definition of Done for this Spec)

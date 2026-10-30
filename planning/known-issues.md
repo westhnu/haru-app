@@ -126,3 +126,14 @@
 - **교훈**: 생성 직후의 ID를 그대로 흘려보내지 않고 재조회하면 (1) 중복 왕복, (2) 불필요한 read 권한 요구가 발생한다. create→sync를 한 실행에서 할 때는 반환값을 스레딩하는 게 최소권한·최소호출.
 - **회귀 방지**: `test_sync_uses_create_result_ds_id_ki011`
 - **관련**: T-405, KI-010, Phase 4 ⑥
+
+## KI-012 — teardown.py가 all-or-nothing 설계 — 부분 롤백 불가
+
+- **발견**: 2026-10-31, Phase ⑥ 2차 실패 후 KB만 롤백하려 했으나 `teardown.py --dry-run`이 vector store·S3까지 삭제 대상에 포함
+- **상태**: resolved-ad-hoc / 근본해결-deferred-to-phase6 (T-603)
+- **증상**: 2차 생성물(KB `XBBETDQEY4`)만 지우려는데, teardown dry-run은 vector index·vector bucket·S3 객체·S3 버킷을 전부 삭제 대상으로 표시. 게다가 KB는 `.env`에 `BEDROCK_KB_ID`가 없어 `skip_empty`로 정작 안 지워짐.
+- **원인**: 스크립트가 `settings.bedrock_kb_id` 하나로 "스택 전체" 역순 삭제를 가정. 선택적 삭제 범위(scope)를 지원하지 않음.
+- **임시 완화 (resolved-ad-hoc)**: `aws bedrock-agent delete-knowledge-base --knowledge-base-id XBBETDQEY4`로 KB만 직접 삭제. vector store·S3는 보존해 멱등성 재사용.
+- **근본 완화 (deferred, T-603 / Phase 6)**: teardown에 `--scope {kb-only, vector-only, s3-only, all}` + `--kb-id` 인자 추가.
+- **교훈**: IaC의 "되돌리기"는 생성과 대칭적이어야 하지만, 운영에선 부분 롤백 요구가 더 흔하다. teardown은 전체/부분 둘 다 지원해야 한다.
+- **관련**: T-451, T-603, KI-011
