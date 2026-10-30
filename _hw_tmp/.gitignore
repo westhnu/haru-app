@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.cache/
+
+# Secrets — 절대 커밋 금지 (원칙 3). 키 목록은 .env.example로만 공유
+.env
+.env.*
+!.env.example
+
+# AWS
+.aws/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# 실험·임시 코드는 최종 산출물이 아니다 (원칙 4)
+planning/tmp/
+
+# KB 변환 산출물 — convert_glossary.py가 재생성하는 중간 파일 (소스 아님)
+backend/data/kb/
