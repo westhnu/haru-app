@@ -37,5 +37,23 @@ def get_bedrock_agent_client() -> Any:
     return _make_client("bedrock-agent")
 
 
+@lru_cache
+def get_bedrock_client() -> Any:
+    """Guardrail 리소스 관리용(get·delete) bedrock 제어 평면 클라이언트."""
+    return _make_client("bedrock")
+
+
+@lru_cache
+def get_s3vectors_client() -> Any:
+    """S3 Vector Store(벡터 버킷·인덱스) 관리 클라이언트."""
+    return _make_client("s3vectors")
+
+
+@lru_cache
+def get_s3_client() -> Any:
+    """데이터소스용 일반 S3 버킷·객체 관리 클라이언트."""
+    return _make_client("s3")
+
+
 def _make_client(service_name: str) -> Any:
     return boto3.client(service_name, region_name=get_settings().aws_region, config=BOTO_CONFIG)

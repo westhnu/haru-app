@@ -266,25 +266,25 @@
 
 ### T-451 · `scripts/kb/teardown.py`
 
-- [ ] 역순 삭제: `delete_knowledge_base` → `s3vectors.delete_index` → `s3vectors.delete_vector_bucket` → S3 객체 삭제 → 일반 S3 버킷 삭제
-- [ ] 각 리소스 삭제 전 존재 확인 (get/head 후 없으면 skip)
-- [ ] `--dry-run` 기본, `--confirm`으로만 실제 삭제
+- [x] 역순 삭제: `delete_knowledge_base` → `s3vectors.delete_index` → `s3vectors.delete_vector_bucket` → S3 객체 삭제 → 일반 S3 버킷 삭제
+- [x] 각 리소스 삭제 전 존재 확인 / 빈 설정·NotFound는 skip·성공 처리
+- [x] `--dry-run` 기본(AWS 무호출), `--confirm`으로만 실제 삭제
 - **DoD**: `--dry-run`(기본)에서 어떤 삭제 API도 호출되지 않음 (mock 유닛으로 검증, T-453)
 - **HITL**: 필수 승인 (`--confirm` 실행 시)
 - **타임아웃**: 600초
 
 ### T-452 · `scripts/guardrail/teardown.py`
 
-- [ ] `get_guardrail`로 존재 확인 후 `delete_guardrail`
-- [ ] `--dry-run` 기본, `--confirm`으로만 실제 삭제
+- [x] `get_guardrail`로 존재 확인 후 `delete_guardrail`
+- [x] `--dry-run` 기본, `--confirm`으로만 실제 삭제
 - **DoD**: `--dry-run`에서 삭제 API 미호출 (mock 유닛, T-453)
 - **HITL**: 필수 승인
 - **타임아웃**: 120초
 
 ### T-453 · `tests/unit/test_teardown_dry_run.py`
 
-- [ ] 두 teardown이 `--dry-run` 모드에서 어떤 AWS API도 실제 호출하지 않음을 mock으로 검증
-- [ ] `--confirm` 없이 호출 시 실삭제가 일어나지 않음을 검증
+- [x] 두 teardown이 `--dry-run` 모드에서 어떤 AWS API도 실제 호출하지 않음을 Spy로 검증 (delete·list 모두 0회)
+- [x] `--confirm` 없이(플래그 생략 포함) 호출 시 dry-run으로 동작 + confirm 역순 호출 검증
 - **DoD**: `pytest tests/unit/test_teardown_dry_run.py` 통과
 - **HITL**: Allow Session
 
