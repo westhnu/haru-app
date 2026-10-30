@@ -187,6 +187,12 @@
 - **HITL**: 필수 승인
 - **타임아웃**: 120초
 
+> **[설계 drift KI-016 — ⑥ 4차 ingestion 부분 실패]**
+> - 증상: ingestion status=COMPLETE지만 302 중 158개 `Filterable metadata must have at most 2048 bytes`로 실패(144 색인).
+> - 원인: index 생성 시 `nonFilterableMetadataKeys` 미지정 → 모든 metadata가 filterable. Bedrock KB가 chunk 본문을 넣는 `AMAZON_BEDROCK_TEXT`가 2048B 한도에 걸림(긴 용어 ~3KB).
+> - 결정: index를 `metadataConfiguration.nonFilterableMetadataKeys=[AMAZON_BEDROCK_TEXT, AMAZON_BEDROCK_METADATA]`로 재생성(40KB 합산 한도). index 설정은 immutable → 삭제·재생성 체인(KB·DS cascade) 필요.
+> - 회귀 방지: `test_create_index_sets_non_filterable_metadata_ki016`.
+
 ### T-402 · 용어 사전 → JSONL 변환 스크립트
 
 - [x] `scripts/kb/convert_glossary.py` (로컬 변환, AWS 0, 실행·검증 완료)

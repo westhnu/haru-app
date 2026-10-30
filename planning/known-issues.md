@@ -188,3 +188,18 @@
   - KB·DS·vector store·S3 bucket: **전부 재사용**(삭제 불필요)
 - **교훈**: "chunking=NONE = 라인별 문서"라는 가정이 틀렸다. KB 문서 경계는 청킹이 아니라 **S3 객체 단위**로 정해진다. 데이터 모델 가정은 실 ingestion으로만 검증 가능.
 - **관련**: T-402, T-403, KI-010~014, Phase 4 ⑥
+
+## KI-016 — S3 Vectors filterable metadata 2048 bytes 한도 → 158/302 색인 실패
+
+- **발견**: 2026-10-31, Phase ⑥ 4차 ingestion job `R6QMUSL1AU` (status=COMPLETE지만 158 실패)
+- **상태**: strategy-decided (옵션 A), implementation-in-progress
+- **증상**: `numberOfDocumentsScanned=302`, `numberOfNewDocumentsIndexed=144`, `numberOfDocumentsFailed=158`. 실패 로그 전부 `Filterable metadata must have at most 2048 bytes (Service: S3Vectors, 400)`
+- **원인**: vector index 생성 시 `nonFilterableMetadataKeys` 미지정 → 모든 metadata가 filterable로 처리됨. Bedrock KB가 chunk 본문을 저장하는 `AMAZON_BEDROCK_TEXT` 키가 filterable 2048B 한도에 걸림. 긴 용어(최대 ~3KB) 158개가 초과.
+- **증거**:
+  - 성공 벡터 샘플 metadata 키: `AMAZON_BEDROCK_TEXT`(본문), `AMAZON_BEDROCK_METADATA`(출처 JSON), `x-amz-bedrock-kb-source-file-modality`, `x-amz-bedrock-kb-data-source-id`
+  - AWS Bedrock kb-chunking 가이드: S3 vector bucket 사용 시 `AMAZON_BEDROCK_TEXT`·`AMAZON_BEDROCK_METADATA`를 non-filterable metadata key로 지정 권고 (내용은 라이선스 준수를 위해 재서술)
+  - S3 Vectors 한도: filterable 2048 bytes/벡터, filterable+non-filterable 합산 40KB/벡터
+- **완화 (옵션 A)**: vector index 재생성 시 `metadataConfiguration.nonFilterableMetadataKeys=["AMAZON_BEDROCK_TEXT","AMAZON_BEDROCK_METADATA"]` 지정. index 설정은 생성 시 immutable → 삭제·재생성 체인(KB·DS cascade) 필요. S3 302 txt·vector bucket은 보존.
+- **교훈**: 벡터 스토어 metadata 모델은 서비스마다 다르고, filterable 필드에 숨은 바이트 한도가 있을 수 있다. 큰 chunk 본문은 non-filterable에 넣는 것이 S3 Vectors + Bedrock KB의 정석. citation 출처(`AMAZON_BEDROCK_METADATA.sourceLocation`)는 non-filterable로 빼도 retrieval 결과에 보존됨.
+- **회귀 방지**: `test_create_index_sets_non_filterable_metadata_ki016`
+- **관련**: T-401.5-B, KI-015, Phase 4 ⑥

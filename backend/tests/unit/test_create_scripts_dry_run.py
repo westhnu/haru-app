@@ -182,6 +182,26 @@ def test_vector_index_idempotent() -> None:
     assert "create_index" not in calls
 
 
+def test_create_index_sets_non_filterable_metadata_ki016() -> None:
+    captured: dict[str, Any] = {}
+
+    class _Spy(SpyVectorIndex):
+        def create_index(self, **kwargs: Any) -> dict[str, Any]:
+            captured.update(kwargs)
+            return super().create_index(**kwargs)
+
+    vi.run(dry_run=False, s3v=_Spy([], exists=False), sts=SpySTS())
+    keys = captured["metadataConfiguration"]["nonFilterableMetadataKeys"]
+    assert "AMAZON_BEDROCK_TEXT" in keys
+    assert "AMAZON_BEDROCK_METADATA" in keys
+
+
+def test_create_index_dry_run_no_create_ki016() -> None:
+    calls: list[str] = []
+    assert vi.run(dry_run=True, s3v=SpyVectorIndex(calls), sts=SpySTS()) is True
+    assert "create_index" not in calls
+
+
 # --- T-404/405 create_or_sync_kb -----------------------------------------------
 
 

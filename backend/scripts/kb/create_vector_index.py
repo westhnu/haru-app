@@ -21,6 +21,8 @@ INDEX_NAME = "haru-glossary"
 EMBED_DIMENSION = 1024
 DATA_TYPE = "float32"
 DISTANCE_METRIC = "cosine"
+# KI-016: Bedrock KB가 chunk 본문을 넣는 키. filterable(2048B) 대신 non-filterable(40KB 합산)로.
+NON_FILTERABLE_METADATA_KEYS = ["AMAZON_BEDROCK_TEXT", "AMAZON_BEDROCK_METADATA"]
 
 
 def _vector_bucket_name(account_id: str) -> str:
@@ -53,6 +55,7 @@ def run(dry_run: bool = True, s3v: Any | None = None, sts: Any | None = None) ->
         )
         print(f"[dry-run] 생성 예정 index: {INDEX_NAME} in {bucket}")
         print(f"  dimension={EMBED_DIMENSION}, dataType={DATA_TYPE}, metric={DISTANCE_METRIC}")
+        print("  nonFilterableMetadataKeys: AMAZON_BEDROCK_TEXT, AMAZON_BEDROCK_METADATA (KI-016)")
         print("→ 생성 후 .env에 추가: HARU_KB_S3_VECTOR_INDEX_ARN=<arn>")
         return True
     s3v = s3v or get_s3vectors_client()
@@ -73,6 +76,7 @@ def run(dry_run: bool = True, s3v: Any | None = None, sts: Any | None = None) ->
             dimension=EMBED_DIMENSION,
             dataType=DATA_TYPE,
             distanceMetric=DISTANCE_METRIC,
+            metadataConfiguration={"nonFilterableMetadataKeys": NON_FILTERABLE_METADATA_KEYS},
         )
         arn = _existing_arn(s3v, bucket, INDEX_NAME) or ""
         logger.info(
