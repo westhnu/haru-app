@@ -410,6 +410,15 @@ def test_create_data_source_skips_when_name_exists() -> None:
     assert "create_data_source" not in calls  # DS는 재사용
 
 
+def test_storage_config_omits_index_name_ki010() -> None:
+    # KI-010: indexArn과 indexName 동시 전달 시 ValidationException. indexName은 넣지 않는다.
+    storage = kb._storage_config(_settings_with_role())
+    s3v = storage["s3VectorsConfiguration"]
+    assert "indexArn" in s3v
+    assert "vectorBucketArn" in s3v
+    assert "indexName" not in s3v
+
+
 def test_kb_no_mode_returns_false() -> None:
     assert kb.run(dry_run=True, settings=_settings_with_role()) is False
 

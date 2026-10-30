@@ -103,3 +103,14 @@
 - **조치**: Phase 5의 **T-500**에서 `aws bedrock get-inference-profile`로 `ACTIVE` 확인 후 진행. 유효하지 않으면 모델 ID를 후속 Sonnet 버전으로 교체.
 - **해결 (2026-10-30)**: T-500 선행 실측에서 `global.anthropic.claude-sonnet-4-5-20250929-v1:0`가 `SYSTEM_DEFINED` 프로파일이며 status `ACTIVE`임을 확인. list-foundation-models의 base ID `LEGACY`는 수명주기 라벨일 뿐, 실제 호출 경로인 global 추론 프로파일은 ACTIVE로 두 축이 별개임을 검증. 현재 모델 ID 유지.
 - **관련**: KI-005(global. 추론 프로파일), KI-007(use case 양식)
+
+## KI-010 — Bedrock KB S3_VECTORS: indexArn과 indexName 동시 전달 금지
+
+- **발견**: 2026-10-31, `bedrock-kb-and-guardrail` 스펙 Phase ⑥(T-404) `--apply` 1차 시도
+- **상태**: resolved
+- **증상**: `bedrock-agent.create_knowledge_base` 호출이 `ValidationException: Vector index name should not be present with namespace arn.`로 실패
+- **재현**: `aws bedrock-agent create-knowledge-base ... --storage-configuration type=S3_VECTORS,s3VectorsConfiguration={vectorBucketArn,indexArn,indexName}` — indexArn과 indexName을 함께 전달
+- **원인**: `s3VectorsConfiguration`의 `indexArn`과 `indexName`은 상호 배타적이다. indexArn(namespace arn)에 이미 인덱스 식별이 포함되므로 indexName을 함께 주면 거부된다.
+- **완화 (해결)**: `scripts/kb/create_or_sync_kb.py`의 `_storage_config`에서 `indexName`을 제거하고 `indexArn`만 유지. 회귀 테스트 `test_storage_config_omits_index_name_ki010` 추가.
+- **교훈**: Bedrock agent SDK/문서상 Optional 필드 간 상호 배타성이 명시되지 않아, 실제 호출로만 검증 가능했다. S3_VECTORS 같은 신규 스토리지 타입은 dry-run·메타 검증을 넘어 1차 실호출에서 ValidationException을 확인하는 단계가 필요하다.
+- **관련**: T-404, Phase 4 ⑥

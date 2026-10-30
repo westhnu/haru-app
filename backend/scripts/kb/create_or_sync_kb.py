@@ -41,12 +41,13 @@ def _kb_config() -> dict[str, Any]:
 
 
 def _storage_config(settings: Settings) -> dict[str, Any]:
+    # KI-010: indexArn과 indexName을 함께 보내면 ValidationException.
+    # indexArn에 인덱스 식별이 포함되므로 indexName은 전달하지 않는다.
     return {
         "type": "S3_VECTORS",
         "s3VectorsConfiguration": {
             "vectorBucketArn": settings.haru_kb_vector_bucket_arn,
             "indexArn": settings.haru_kb_s3_vector_index_arn,
-            "indexName": INDEX_NAME,
         },
     }
 
@@ -167,6 +168,7 @@ def _do_create(dry_run: bool, agent: Any, account_id: str, settings: Settings) -
         print("  (apply 시 list_knowledge_bases로 동명 KB 존재 확인 후 없으면 생성)")
         print(f"  vectorBucketArn={settings.haru_kb_vector_bucket_arn or '<미설정>'}")
         print(f"  indexArn={settings.haru_kb_s3_vector_index_arn or '<미설정>'}")
+        print("  (indexName 미전달 — indexArn에 포함, KI-010)")
         print(f"  dataSource: s3://{settings.haru_kb_s3_bucket or '<미설정>'}/{INCLUSION_PREFIX}")
         print("→ 생성 후 .env에 추가: BEDROCK_KB_ID=<id>")
         return True

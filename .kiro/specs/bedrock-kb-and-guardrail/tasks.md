@@ -210,7 +210,7 @@
 
 - [ ] `scripts/kb/create_or_sync_kb.py --create` (`--dry-run` 기본, `--apply`로 실행)
 - [ ] `storageConfiguration.type = "S3_VECTORS"`
-- [ ] `storageConfiguration.s3VectorsConfiguration = {vectorBucketArn, indexArn, indexName}` (T-401.5 산출물 사용)
+- [ ] `storageConfiguration.s3VectorsConfiguration = {vectorBucketArn, indexArn}` (indexName 미전달 — KI-010)
 - [ ] `embeddingModelArn`: `amazon.titan-embed-text-v2:0` + `embeddingModelConfiguration`(Titan v2, dim 1024)
 - [ ] Data source: 일반 S3 버킷(`HARU_KB_S3_BUCKET`)의 `glossary/` 프리픽스
 - [ ] Chunking: no-chunking (용어 사전은 라인 단위가 이미 최적)
@@ -218,6 +218,12 @@
 - **DoD**: `aws bedrock-agent get-knowledge-base --knowledge-base-id ...` → status Available
 - **HITL**: 필수 승인
 - **타임아웃**: 600초, 재시도 0
+
+> **[설계 drift KI-010 — ⑥ --apply 1차 시도 실측]**
+> - 증상: `create_knowledge_base` 호출 시 `ValidationException: Vector index name should not be present with namespace arn.`
+> - 원인: `s3VectorsConfiguration`에 `indexArn`과 `indexName`을 함께 전달. 둘은 상호 배타적이며 indexArn에 이미 인덱스 식별이 포함됨.
+> - 결정: **indexArn만 사용**하고 `indexName` kwarg는 제거.
+> - 회귀 방지: `test_storage_config_omits_index_name_ki010`로 `s3VectorsConfiguration`에 indexName 부재를 단언.
 
 ### T-405 · KB 데이터 소스 초기 sync
 
