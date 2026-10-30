@@ -14,6 +14,11 @@ ContextType = Literal["stock", "glossary", "general"]
 AnswerSource = Literal["knowledge_base", "general_knowledge", "no_evidence", "mock"]
 # Bedrock Guardrail이 응답에 개입했는지. None은 Guardrail 리소스 미연결(Phase 4 이전) 상태.
 GuardrailAction = Literal["none", "intervened"]
+# summary_source는 source(AnswerSource)와 다른 레이어의 메타데이터다 (결정 B, 분리).
+#   source          : 근거가 어디서 왔는가 (knowledge_base/general_knowledge/no_evidence/mock)
+#   summary_source  : 응답이 어떻게 생성됐는가 (bedrock/template/cached_bedrock/general_knowledge)
+# 겹치는 값은 general_knowledge 하나뿐이고 나머지는 서로 다른 질문에 답한다.
+SummarySource = Literal["bedrock", "template", "cached_bedrock", "general_knowledge"]
 
 
 class RagRequest(BaseModel):
@@ -43,6 +48,8 @@ class RagResponse(BaseModel):
     context_type: ContextType = "general"
     guardrail_action: GuardrailAction | None = None
     is_mock: bool = False
+    # default=template: mock·거절 등 비(非)Bedrock 생성 경로의 기본값. 기존 생성 지점을 깨지 않는다.
+    summary_source: SummarySource = "template"
 
     @field_validator("disclaimer")
     @classmethod

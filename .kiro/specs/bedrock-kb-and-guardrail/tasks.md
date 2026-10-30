@@ -102,33 +102,35 @@
 
 ## Phase 3 — RAG 서비스 · API 라우터
 
+> **설계 결정 (Phase 3):** `resolve_answer`는 `(text, source)` tuple 대신 `AnswerResolution` dataclass(text/source/summary_source/similarity_max)를 반환하도록 단일 소스로 통합했다(호출처 1곳 확인 완료). `source: AnswerSource`(근거 출처)와 `summary_source`(생성 방식)는 **분리된 레이어**로 유지한다 — 겹치는 값은 general_knowledge 하나뿐. similarity는 Bedrock 응답의 `metadata.score`→`relevanceScore` 후보 2경로로 파싱하며 실측 필드는 Phase 5에서 확정한다. admin 라우터는 KbStatus→KbStatusResponse로 필드명 매핑.
+
 ### T-301 · `services/rag_service.py` 확장
 
-- [ ] `ask(query, context_type)` 시그니처
-- [ ] KB_ID 없으면 mock 응답
-- [ ] `context_type=="stock"`이고 유사도 임계 미달 시 대체 문구 (REQ-RAG-04)
-- [ ] `similarity_max`, `guardrail_action` 로그
+- [x] `ask(query, context_type)` 시그니처 (하위 호환 유지)
+- [x] KB_ID 없으면 mock 응답 (`summary_source=template`)
+- [x] `context_type=="stock"` 유사도 임계 미달 → 거절 문구 (REQ-RAG-04), glossary는 general_knowledge
+- [x] `AnswerResolution` 도입 + similarity 파싱 + `event=rag_ask`(context_type/similarity_max/summary_source) 로그
 - **DoD**: 유닛 3개 통과
 - **HITL**: Allow Session
 
 ### T-302 · `api/v1/glossary.py` 신설
 
-- [ ] `POST /api/v1/glossary/ask` 엔드포인트
-- [ ] Request/Response Pydantic 모델
-- [ ] 예외 → 502 매핑
+- [x] `POST /api/v1/glossary/ask` 엔드포인트 (main.py 등록)
+- [x] `GlossaryAskRequest` + `RagResponse` 재사용
+- [x] 예외 → 502 매핑 (poc.py 패턴, RagServiceError)
 - **DoD**: `curl POST /api/v1/glossary/ask -d '{"query":"PER?"}'` mock 응답 200
 - **HITL**: Allow Session
 
 ### T-303 · `api/v1/admin.py` 신설
 
-- [ ] `GET /api/v1/admin/kb-status` (인증 없이, read-only)
-- [ ] KB describe 호출, 마지막 sync 시각 반환
+- [x] `GET /api/v1/admin/kb-status` (인증 없이, read-only, main.py 등록)
+- [x] `kb_admin_service.get_status` 호출, KB_ID 빈 값이면 is_mock=True; `KbStatusResponse` 매핑
 - **DoD**: mock 상태로 200 응답
 - **HITL**: Allow Session
 
 ### T-304 · 커밋
 
-- [ ] `feat: glossary and admin routers`
+- [x] `feat: glossary and admin routers with context_type routing`
 
 ---
 
