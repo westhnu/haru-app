@@ -104,7 +104,8 @@ def test_ask_with_kb_returns_answer_citations_and_disclaimer(client: TestClient)
     assert response.status_code == 200
     body = response.json()
     assert body["answer"] == f"PER은 주가를 주당순이익으로 나눈 값입니다.\n\n{DISCLAIMER}"
-    assert body["citations"] == [{"excerpt": PER_EXCERPT, "source": S3_SOURCE}]
+    # RagCitation에 similarity(옵션) 추가됨 — rag_service가 아직 채우지 않으므로 None 직렬화.
+    assert body["citations"] == [{"excerpt": PER_EXCERPT, "source": S3_SOURCE, "similarity": None}]
     assert body["source"] == "knowledge_base"
     assert body["model_id"] == MODEL_ID
     kb_config = fake.requests[0]["retrieveAndGenerateConfiguration"]["knowledgeBaseConfiguration"]

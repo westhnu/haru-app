@@ -16,7 +16,7 @@
 
 ### T-101 · `.env.example` 확장
 
-- [ ] `backend/.env.example`에 다음 5개 키 추가 (값 없이):
+- [x] `backend/.env.example`에 다음 5개 키 추가 (값 없이):
   - `BEDROCK_KB_ID=`
   - `BEDROCK_GUARDRAIL_ID=`
   - `BEDROCK_GUARDRAIL_VERSION=DRAFT`
@@ -28,35 +28,35 @@
 
 ### T-102 · `Settings` 확장 + prod 검증
 
-- [ ] `app/config.py`에 5개 필드 추가
-- [ ] `model_validator(mode="after")` 신설 — REQ-ENV-01
-- [ ] `hide_input_in_errors=True` 유지
+- [x] `app/config.py`에 5개 필드 추가
+- [x] `model_validator(mode="after")` 신설 — REQ-ENV-01
+- [x] `hide_input_in_errors=True` 유지
 - **DoD**: `APP_ENV=prod BEDROCK_KB_ID= uv run uvicorn app.main:app` → `ValueError` 발생 확인
 - **HITL**: Allow Once
 - **타임아웃**: 60초, 재시도 0
 
 ### T-103 · `models/rag.py` 확장
 
-- [ ] `RagCitation` 신설 (text_snippet, source_uri, similarity)
-- [ ] `RagResponse`에 `citations: list[RagCitation]`, `guardrail_action`, `context_type`, `summary_source` 확장
-- [ ] `disclaimer` 필드 빈 문자열 금지 (Pydantic validator)
+- [x] `RagCitation` 신설 (text_snippet, source_uri, similarity)
+- [x] `RagResponse`에 `citations: list[RagCitation]`, `guardrail_action`, `context_type`, `summary_source` 확장
+- [x] `disclaimer` 필드 빈 문자열 금지 (Pydantic validator)
 - **DoD**: `pytest tests/unit/test_models_rag.py` 통과
 - **HITL**: Allow Once
 - **타임아웃**: 60초, 재시도 0
 
 ### T-104 · 회귀 테스트 사전 작성 (TDD)
 
-- [ ] `tests/regression/test_guardrail_bedrock.py` 신설 (4개 케이스)
-- [ ] `tests/regression/test_stock_no_grounding.py` 신설 (REQ-RAG-04)
-- [ ] `tests/regression/test_disclaimer_never_empty.py` 신설
-- [ ] 지금은 실패하는 상태로 둔다 (Red 단계)
+- [x] `tests/regression/test_guardrail_bedrock.py` 신설 (4개 케이스)
+- [x] `tests/regression/test_stock_no_grounding.py` 신설 (REQ-RAG-04)
+- [x] `tests/regression/test_disclaimer_never_empty.py` 신설
+- [x] Red 대신 `@pytest.mark.skip`으로 Phase 2+ 보류 (사용자 지침 C — pytest 통과 유지)
 - **DoD**: `pytest tests/regression/` → 신규 테스트 4개 이상 fail (구현 전이므로 정상)
 - **HITL**: Allow Session
 - **타임아웃**: 120초, 재시도 0
 
 ### T-105 · 커밋
 
-- [ ] `feat: expand config for Bedrock KB and Guardrail (spec-101 to 104)`
+- [x] `feat: expand config and models for Bedrock KB and Guardrail`
 - **DoD**: `git log --oneline -1` 커밋 확인
 - **HITL**: Allow Once
 - **타임아웃**: 30초

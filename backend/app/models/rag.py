@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.guardrail import DISCLAIMER
 
@@ -12,6 +12,8 @@ ContextType = Literal["stock", "glossary", "general"]
 # no_evidence       근거가 없어 답변하지 않음 (stock)
 # mock              KB 미설정 개발 모드
 AnswerSource = Literal["knowledge_base", "general_knowledge", "no_evidence", "mock"]
+# Bedrock Guardrail이 응답에 개입했는지. None은 Guardrail 리소스 미연결(Phase 4 이전) 상태.
+GuardrailAction = Literal["none", "intervened"]
 
 
 class RagRequest(BaseModel):
@@ -26,6 +28,8 @@ class RagCitation(BaseModel):
     source: str = Field(
         description="원본 URL 또는 문서명 (예: s3://haru-kb/dart/005930_2025Q1.pdf)"
     )
+    # Phase 5의 유사도 임계 판정(REQ-RAG-03/04)에 쓴다. 구버전 경로는 생략 가능하도록 옵션.
+    similarity: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 class RagResponse(BaseModel):
@@ -35,3 +39,15 @@ class RagResponse(BaseModel):
     source: AnswerSource
     disclaimer: str = DISCLAIMER
     model_id: str
+    # 신규 필드는 전부 default를 둬 기존 생성 지점(rag_service, 테스트)을 깨지 않는다.
+    context_type: ContextType = "general"
+    guardrail_action: GuardrailAction | None = None
+    is_mock: bool = False
+
+    @field_validator("disclaimer")
+    @classmethod
+    def _disclaimer_not_empty(cls, value: str) -> str:
+        # 원칙 5: 면책 문구는 어떤 경로로도 빈 문자열이 될 수 없다.
+        if not value.strip():
+            raise ValueError("disclaimer는 빈 문자열일 수 없습니다")
+        return value

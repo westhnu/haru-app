@@ -15,6 +15,7 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 PROD_REQUIRED_SETTINGS: tuple[str, ...] = (
     "bedrock_kb_id",
     "bedrock_guardrail_id",
+    "haru_kb_s3_bucket",
     "dart_api_key",
     "jutopia_data_dir",
 )
@@ -44,6 +45,9 @@ class Settings(BaseSettings):
     bedrock_kb_id: str = ""
     bedrock_guardrail_id: str = ""
     bedrock_guardrail_version: str = "DRAFT"
+    # KB 벡터스토어 백킹. prod 필수(PROD_REQUIRED_SETTINGS). 인덱스 ARN은 KB 생성 스크립트가 채운다.
+    haru_kb_s3_bucket: str = ""
+    haru_kb_s3_vector_index_arn: str = ""
 
     # 비어 있으면 DART 도구가 개발용 mock 데이터로 동작한다.
     dart_api_key: str = ""
