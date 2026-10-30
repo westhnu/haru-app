@@ -193,7 +193,7 @@
 - [x] `/Users/westhnu/Agent/Claude/jutopia_data/data/glossary.json` → `len(glossary.json)`개 라인의 JSONL (실측 302개, 하드코딩 금지)
 - [x] 출력: `backend/data/kb/glossary.jsonl` (gitignore)
 - [x] 각 라인: `id=glossary_{idx:03d}`, `term`(키), jutopia 속성 보존(빈 값 생략), `source` 폴백
-- **DoD**: 파일 라인 수 == `len(glossary.json)`, 스키마 검증 통과
+- **DoD (KI-015)**: `backend/data/kb/terms/`에 302개 `.txt` 생성, 각 파일 50KB 미만, `term_001.txt`에 `용어:`·`정의:` 라인 포함
 - **HITL**: Allow Once (읽기만)
 - **타임아웃**: 30초
 
@@ -205,10 +205,10 @@
 
 ### T-403 · JSONL을 S3에 업로드
 
-- [ ] `scripts/kb/upload_glossary.py`
-- [ ] `s3://haru-kb-.../glossary/glossary.jsonl` 업로드
-- [ ] Idempotent (md5 비교)
-- **DoD**: `aws s3 ls s3://haru-kb-.../glossary/` 확인
+- [ ] `scripts/kb/upload_glossary.py` (KI-015: 302개 `.txt` 개별 업로드)
+- [ ] `s3://haru-kb-.../glossary/term_001.txt ~ term_302.txt` 업로드
+- [ ] Idempotent (per-file md5 ↔ ETag 비교)
+- **DoD (KI-015)**: `glossary/` 프리픽스에 302개 객체 존재, 재실행 시 `skipped_unchanged 302`
 - **HITL**: 필수 승인
 - **타임아웃**: 120초
 

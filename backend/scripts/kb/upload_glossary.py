@@ -1,7 +1,7 @@
-"""glossary.jsonl을 데이터소스 S3 버킷에 업로드 (T-403).
+"""용어별 .txt 파일을 데이터소스 S3 버킷에 업로드 (T-403, KI-015 재설계).
 
-s3://{HARU_KB_S3_BUCKET}/glossary/glossary.jsonl 로 올린다.
-md5 비교로 idempotent — 원격 ETag와 로컬 md5가 같으면 skip.
+backend/data/kb/terms/term_*.txt → s3://{HARU_KB_S3_BUCKET}/glossary/term_NNN.txt
+per-file md5 멱등: 원격 ETag(single-part는 md5)와 같으면 skip, 다르면 put_object.
 --dry-run(기본) 무호출, --apply로만 실제 업로드.
 """
 
@@ -19,11 +19,16 @@ from scripts._cli import parse_dry_run
 
 logger = structlog.get_logger(__name__)
 
-LOCAL_PATH = BACKEND_DIR / "data" / "kb" / "glossary.jsonl"
-S3_KEY = "glossary/glossary.jsonl"
+LOCAL_DIR = BACKEND_DIR / "data" / "kb" / "terms"
+S3_PREFIX = "glossary/"
+EXPECTED_MIN_FILES = 1
 
 
-def _local_md5(path: Path) -> str:
+def _local_files() -> list[Path]:
+    return sorted(LOCAL_DIR.glob("term_*.txt"))
+
+
+def _md5(path: Path) -> str:
     return hashlib.md5(path.read_bytes()).hexdigest()
 
 
@@ -37,52 +42,41 @@ def _remote_etag(s3: Any, bucket: str, key: str) -> str | None:
         raise
 
 
+def _upload_one(s3: Any, bucket: str, path: Path) -> str:
+    key = f"{S3_PREFIX}{path.name}"
+    if _remote_etag(s3, bucket, key) == _md5(path):
+        return "skipped_unchanged"
+    s3.put_object(Bucket=bucket, Key=key, Body=path.read_bytes())
+    return "uploaded"
+
+
 def run(dry_run: bool = True, s3: Any | None = None, bucket: str | None = None) -> bool:
     bucket = bucket if bucket is not None else get_settings().haru_kb_s3_bucket
+    files = _local_files()
     if not bucket:
         print("HARU_KB_S3_BUCKET 미설정 — 먼저 create_s3_bucket.py --apply 후 .env 설정 필요")
         return True
-    if not LOCAL_PATH.exists():
-        print(f"{LOCAL_PATH} 없음 — 먼저 convert_glossary.py 실행 필요")
+    if len(files) < EXPECTED_MIN_FILES:
+        print(f"로컬 .txt 없음({LOCAL_DIR}) — 먼저 convert_glossary.py --apply 실행 필요")
         return False
     if dry_run:
-        logger.info(
-            "create_step",
-            resource_type="s3_object",
-            resource_id=S3_KEY,
-            dry_run=True,
-            result="would_upload",
-        )
-        print(f"[dry-run] 업로드 예정: {LOCAL_PATH} → s3://{bucket}/{S3_KEY}")
-        print("→ 다음 단계: create_or_sync_kb.py --create --apply")
+        total_bytes = sum(f.stat().st_size for f in files)
+        print(f"[dry-run] {len(files)} files would be uploaded (0 skipped)")
+        print(f"  대상: s3://{bucket}/{S3_PREFIX}term_NNN.txt, 총 {total_bytes:,} bytes")
         return True
     s3 = s3 or get_s3_client()
-    local_md5 = _local_md5(LOCAL_PATH)
-    if _remote_etag(s3, bucket, S3_KEY) == local_md5:
-        logger.info(
-            "create_step",
-            resource_type="s3_object",
-            resource_id=S3_KEY,
-            dry_run=False,
-            result="already_current",
-        )
-        print(f"동일 md5 — skip: s3://{bucket}/{S3_KEY}")
-    else:
-        s3.upload_file(str(LOCAL_PATH), bucket, S3_KEY)
-        logger.info(
-            "create_step",
-            resource_type="s3_object",
-            resource_id=S3_KEY,
-            dry_run=False,
-            result="uploaded",
-        )
-        print(f"업로드 완료: s3://{bucket}/{S3_KEY}")
-    print("→ 다음 단계: create_or_sync_kb.py --create --apply")
+    uploaded = skipped = 0
+    for path in files:
+        result = _upload_one(s3, bucket, path)
+        uploaded += result == "uploaded"
+        skipped += result == "skipped_unchanged"
+    logger.info("glossary_uploaded", uploaded=uploaded, skipped=skipped, total=len(files))
+    print(f"uploaded {uploaded}, skipped {skipped}, total {len(files)}")
     return True
 
 
 def main(argv: list[str] | None = None) -> int:
-    dry_run = parse_dry_run("glossary.jsonl S3 업로드", argv)
+    dry_run = parse_dry_run("용어 .txt S3 업로드", argv)
     return 0 if run(dry_run=dry_run) else 1
 
 

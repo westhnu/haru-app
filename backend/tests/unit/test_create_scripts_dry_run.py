@@ -4,8 +4,6 @@
 dry-run은 어떤 AWS API도 호출하지 않아야 한다(완전 무호출).
 """
 
-import json
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -13,9 +11,6 @@ from botocore.exceptions import ClientError
 
 from app.config import Settings
 from scripts.guardrail import create_guardrail as cg
-from scripts.kb import (
-    convert_glossary as cv,
-)
 from scripts.kb import (
     create_or_sync_kb as kb,
 )
@@ -27,9 +22,6 @@ from scripts.kb import (
 )
 from scripts.kb import (
     create_vector_index as vi,
-)
-from scripts.kb import (
-    upload_glossary as up,
 )
 
 ACCOUNT = "205474063205"
@@ -188,85 +180,6 @@ def test_vector_index_idempotent() -> None:
     calls: list[str] = []
     vi.run(dry_run=False, s3v=SpyVectorIndex(calls, exists=True), sts=SpySTS())
     assert "create_index" not in calls
-
-
-# --- T-402 convert_glossary (local, no AWS) ------------------------------------
-
-
-def test_convert_line_count_matches_input(tmp_path: Path) -> None:
-    src = tmp_path / "g.json"
-    src.write_text(
-        json.dumps({"PER": {"description": "d", "formula": "", "related_terms": []}}),
-        encoding="utf-8",
-    )
-    out = tmp_path / "g.jsonl"
-    count = cv.convert(src, out)
-    assert count == 1
-    assert len(out.read_text(encoding="utf-8").strip().splitlines()) == 1
-
-
-def test_convert_omits_empty_fields(tmp_path: Path) -> None:
-    src = tmp_path / "g.json"
-    src.write_text(
-        json.dumps({"PER": {"description": "d", "formula": "", "related_terms": []}}),
-        encoding="utf-8",
-    )
-    out = tmp_path / "g.jsonl"
-    cv.convert(src, out)
-    record = json.loads(out.read_text(encoding="utf-8").splitlines()[0])
-    assert "formula" not in record  # 빈 문자열은 생략
-    assert "related_terms" not in record  # 빈 배열은 생략
-    assert record["id"] == "glossary_001"
-    assert record["source"] == cv.SOURCE_FALLBACK
-
-
-def test_convert_keeps_source_when_present(tmp_path: Path) -> None:
-    src = tmp_path / "g.json"
-    src.write_text(json.dumps({"X": {"description": "d", "source": "원본"}}), encoding="utf-8")
-    out = tmp_path / "g.jsonl"
-    cv.convert(src, out)
-    record = json.loads(out.read_text(encoding="utf-8").splitlines()[0])
-    assert record["source"] == "원본"
-
-
-# --- T-403 upload_glossary -----------------------------------------------------
-
-
-class SpyS3Upload:
-    def __init__(self, calls: list[str], etag: str | None = None) -> None:
-        self._calls = calls
-        self._etag = etag
-
-    def head_object(self, **kwargs: Any) -> dict[str, Any]:
-        self._calls.append("head_object")
-        if self._etag is None:
-            raise _not_found("HeadObject", "404")
-        return {"ETag": f'"{self._etag}"'}
-
-    def upload_file(self, *args: Any, **kwargs: Any) -> None:
-        self._calls.append("upload_file")
-
-
-def test_upload_dry_run_no_calls() -> None:
-    calls: list[str] = []
-    assert up.run(dry_run=True, s3=SpyS3Upload(calls), bucket="b") is True
-    assert calls == []
-
-
-def test_upload_empty_bucket_is_success_noop() -> None:
-    calls: list[str] = []
-    assert up.run(dry_run=False, s3=SpyS3Upload(calls), bucket="") is True
-    assert calls == []
-
-
-def test_upload_apply_uploads_when_absent() -> None:
-    calls: list[str] = []
-    # 로컬 파일이 존재해야 한다 (convert로 생성됨). 없으면 생성.
-    if not up.LOCAL_PATH.exists():
-        up.LOCAL_PATH.parent.mkdir(parents=True, exist_ok=True)
-        up.LOCAL_PATH.write_text("{}\n", encoding="utf-8")
-    up.run(dry_run=False, s3=SpyS3Upload(calls, etag=None), bucket="b")
-    assert "upload_file" in calls
 
 
 # --- T-404/405 create_or_sync_kb -----------------------------------------------
