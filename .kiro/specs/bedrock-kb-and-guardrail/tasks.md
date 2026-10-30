@@ -197,6 +197,12 @@
 - **HITL**: Allow Once (읽기만)
 - **타임아웃**: 30초
 
+> **[설계 drift KI-015 — ⑥ 3차 재개 ingestion FAILED]**
+> - 증상: ingestion `numberOfDocumentsScanned=1`, `maxLength 50000 초과(actual 194198)`. KB가 glossary.jsonl 전체를 **1개 문서**로 취급.
+> - 원인: Bedrock KB 문서 경계 = **S3 객체 1개 = 문서 1개**. `chunking=NONE`은 라인별 분리가 아니라 "파일을 쪼개지 말라".
+> - 결정: **302개 개별 `.txt` 파일**(`glossary/term_001.txt`~`term_302.txt`, 평문, 빈 필드 생략)로 재설계. 파일=문서=청크 1:1.
+> - 다음 PR에서 구현: convert_glossary/upload_glossary 재작성, JSONL 폐기, S3 재적재. KB·DS·vector store·S3 bucket은 재사용.
+
 ### T-403 · JSONL을 S3에 업로드
 
 - [ ] `scripts/kb/upload_glossary.py`
@@ -205,6 +211,8 @@
 - **DoD**: `aws s3 ls s3://haru-kb-.../glossary/` 확인
 - **HITL**: 필수 승인
 - **타임아웃**: 120초
+
+> **[설계 drift KI-015]** JSONL 단일 파일 업로드 → **302개 `.txt` 개별 업로드**로 변경(다음 PR). 파일 단위 md5 idempotency. 기존 `glossary/glossary.jsonl`은 다음 블록에서 삭제. DoD도 '302개 객체 존재'로 갱신 예정.
 
 ### T-404 · Bedrock Knowledge Base 생성
 

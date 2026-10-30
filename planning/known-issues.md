@@ -161,3 +161,30 @@
 - **교훈**: mock은 "메서드 존재 여부"만 검증한다. "실 API 파라미터 스키마"는 contract test 또는 실호출로만 보장된다. 신규 AWS API 래퍼는 1차 실호출 검증이 필수.
 - **회귀 방지**: `test_poll_sync_passes_data_source_id_ki014`, `test_poll_sync_rejects_missing_data_source_id_ki014`
 - **관련**: T-405, KI-011, KI-013, Phase 4 ⑥
+
+## KI-015 — Bedrock KB가 glossary.jsonl 전체를 1개 문서로 취급 → 50KB maxLength 초과
+
+- **발견**: 2026-10-31, Phase ⑥ 3차 재개, ingestion job `XMUUKHIRZP` FAILED
+- **상태**: strategy-decided / implementation-deferred-to-next-block
+- **증거**: `statistics.numberOfDocumentsScanned=1`(302 아님), `failureReasons="expected maxLength: 50000, actual: 194198 ... file: glossary/glossary.jsonl"`
+- **원인**: `chunkingStrategy=NONE`의 의미 오해. NONE은 "파일 1개 = 문서 1개로 취급하고 쪼개지 말라"는 뜻. 302줄 JSONL이 단일 문서가 돼 길이 초과. Bedrock KB의 문서 모델은 **S3 object 1개 = 문서 1개**이고, "JSONL 라인별 record"라는 의미는 KB 추상화에 없다.
+- **채택 전략 (옵션 1 — 302개 개별 .txt 파일)**:
+  - S3 레이아웃: `glossary/term_001.txt` ~ `glossary/term_302.txt` (3자리 zero-pad)
+  - 포맷: 평문 txt, 비어있지 않은 필드만 `용어/영문/정의/예시/해석/사용 시점/주의` 라벨로 나열
+  - 각 파일 평균 ~500자, 최대 ~2KB → 50KB 한도 여유
+  - `chunkingStrategy=NONE` 유지 (파일=문서=청크 1:1)
+  - 평문 txt는 Bedrock KB 네이티브 지원 포맷
+- **왜 다른 옵션 아닌가**:
+  - FIXED_SIZE 청킹: 용어 경계가 깨져 Context Precision 하락 → RAGAS 지표 악화
+  - CSV: Bedrock CSV는 메타데이터 매핑용 특수 포맷, row=문서 보장 없음
+  - md/html 등 blob: JSON과 동일하게 파일=문서로 처리됨
+- **영향 범위 (다음 블록 구현)**:
+  - `scripts/kb/convert_glossary.py` 재작성 (302 .txt 생성)
+  - `scripts/kb/upload_glossary.py` 재작성 (302 객체, 파일 단위 md5 idempotency)
+  - `backend/data/kb/`: glossary.jsonl 폐기, 302개 .txt 신규 (gitignore 유지)
+  - S3: 기존 `glossary/glossary.jsonl` 삭제 + 302개 업로드
+  - tasks.md T-402/T-403 DoD 갱신 (파일 1개 → 302개)
+  - convert/upload 테스트 재작성
+  - KB·DS·vector store·S3 bucket: **전부 재사용**(삭제 불필요)
+- **교훈**: "chunking=NONE = 라인별 문서"라는 가정이 틀렸다. KB 문서 경계는 청킹이 아니라 **S3 객체 단위**로 정해진다. 데이터 모델 가정은 실 ingestion으로만 검증 가능.
+- **관련**: T-402, T-403, KI-010~014, Phase 4 ⑥
