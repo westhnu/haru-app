@@ -6,7 +6,7 @@ KB ID가 없으면 Bedrock을 호출하지 않고 mock 응답을 돌려준다. �
 """
 
 import time
-from typing import Any
+from typing import Any, Literal
 
 import structlog
 from botocore.exceptions import BotoCoreError, ClientError
@@ -16,6 +16,7 @@ from app.core.guardrail import NO_EVIDENCE_STOCK_ANSWER, apply_output_guard, mas
 from app.core.prompts import RAG_PROMPT_TEMPLATES
 from app.models.rag import AnswerSource, ContextType, RagCitation, RagResponse
 from app.services.bedrock_client import get_agent_runtime_client
+from app.services.exceptions import BedrockError, BedrockRetrievalError
 
 MAX_TOKENS = 2048
 MOCK_MODEL_ID = "mock"
@@ -28,8 +29,9 @@ REFERENCE_SOURCE_FIELDS: tuple[tuple[str, str], ...] = (
 logger = structlog.get_logger(__name__)
 
 
-class RagServiceError(Exception):
-    """Bedrock 호출 실패. 원인 예외는 __cause__로 보존한다."""
+# 하위 호환: 기존 호출처(api/v1/poc.py의 except)가 그대로 신규 Bedrock 예외를 잡도록
+# BedrockError를 베이스로 재노출한다. 신규 코드는 services.exceptions를 직접 import 한다.
+RagServiceError = BedrockError
 
 
 class RagService:
@@ -42,7 +44,12 @@ class RagService:
         if not self._settings.bedrock_kb_id:
             return self._mock_response(safe_query)
 
-        raw = self._retrieve_and_generate(safe_query, context_type)
+        raw = self._retrieve_and_generate(
+            safe_query,
+            guardrail_id=self._settings.bedrock_guardrail_id or None,
+            guardrail_version=self._settings.bedrock_guardrail_version,
+            context_type=context_type,
+        )
         citations = parse_citations(raw.get("citations", []))
         answer, source = resolve_answer(raw["output"]["text"], citations, context_type)
         return RagResponse(
@@ -56,17 +63,29 @@ class RagService:
         logger.info("rag_mock_response", query_length=len(query))
         answer = f"[MOCK] Knowledge Base가 설정되지 않아 개발용 응답을 반환합니다. 질문: {query}"
         # mock에는 실제 근거 문서가 없으므로 출처를 지어내지 않고 빈 배열로 둔다 (원칙 2).
-        return RagResponse(answer=apply_output_guard(answer), source="mock", model_id=MOCK_MODEL_ID)
+        return RagResponse(
+            answer=apply_output_guard(answer),
+            source="mock",
+            model_id=MOCK_MODEL_ID,
+            is_mock=True,
+        )
 
-    def _retrieve_and_generate(self, query: str, context_type: ContextType) -> dict[str, Any]:
+    def _retrieve_and_generate(
+        self,
+        query: str,
+        guardrail_id: str | None = None,
+        guardrail_version: str = "DRAFT",
+        context_type: Literal["glossary", "stock", "general"] = "general",
+    ) -> dict[str, Any]:
         client = self._client or get_agent_runtime_client()
         started = time.perf_counter()
-        request = self._build_request(query, context_type)
+        request = self._build_request(query, context_type, guardrail_id, guardrail_version)
         try:
             response: dict[str, Any] = client.retrieve_and_generate(**request)
         except (ClientError, BotoCoreError) as exc:
             logger.error("rag_bedrock_failed", error_type=type(exc).__name__, error=str(exc))
-            raise RagServiceError("RetrieveAndGenerate 호출 실패") from exc
+            # Phase 5 실호출 시 ResourceNotFound→NotAvailable 등 세분 변환을 활성화한다.
+            raise BedrockRetrievalError("RetrieveAndGenerate 호출 실패") from exc
 
         logger.info(
             "rag_bedrock_succeeded",
@@ -77,15 +96,22 @@ class RagService:
         )
         return response
 
-    def _build_request(self, query: str, context_type: ContextType) -> dict[str, Any]:
+    def _build_request(
+        self,
+        query: str,
+        context_type: ContextType,
+        guardrail_id: str | None = None,
+        guardrail_version: str = "DRAFT",
+    ) -> dict[str, Any]:
         generation: dict[str, Any] = {
             "promptTemplate": {"textPromptTemplate": RAG_PROMPT_TEMPLATES[context_type]},
             "inferenceConfig": {"textInferenceConfig": {"maxTokens": MAX_TOKENS}},
         }
-        if self._settings.bedrock_guardrail_id:
+        # REQ-GR-02: guardrail_id가 있으면 호출 kwargs에 Guardrail 설정을 반드시 포함한다.
+        if guardrail_id:
             generation["guardrailConfiguration"] = {
-                "guardrailId": self._settings.bedrock_guardrail_id,
-                "guardrailVersion": self._settings.bedrock_guardrail_version,
+                "guardrailId": guardrail_id,
+                "guardrailVersion": guardrail_version,
             }
         knowledge_base = {
             "knowledgeBaseId": self._settings.bedrock_kb_id,

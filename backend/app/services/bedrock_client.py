@@ -31,5 +31,11 @@ def get_agent_runtime_client() -> Any:
     return _make_client("bedrock-agent-runtime")
 
 
+@lru_cache
+def get_bedrock_agent_client() -> Any:
+    """KB 관리용(생성·sync·describe) bedrock-agent 제어 평면 클라이언트."""
+    return _make_client("bedrock-agent")
+
+
 def _make_client(service_name: str) -> Any:
     return boto3.client(service_name, region_name=get_settings().aws_region, config=BOTO_CONFIG)

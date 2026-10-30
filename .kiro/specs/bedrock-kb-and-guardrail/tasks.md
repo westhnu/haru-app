@@ -65,33 +65,38 @@
 
 ## Phase 2 — Bedrock Client 확장 (Fake 모드)
 
-### T-201 · `BedrockClient.retrieve_and_generate` 인터페이스
+> **설계 drift (Phase 2):** tasks/design의 `BedrockClient` 클래스 가정은 재해석했다. RAG 호출 로직이 이미 `rag_service`에 있으므로 `BedrockClient` 클래스는 만들지 않는다. RAG 호출 확장은 `rag_service._retrieve_and_generate`에서, KB 관리(sync/poll/status)는 신규 `services/kb_admin_service.py`에서 담당한다. 기존 `@lru_cache` 팩토리(`get_runtime_client`, `get_agent_runtime_client`)는 유지하고 `get_bedrock_agent_client`만 추가했다. 예외 3종은 `services/exceptions.py`에 둔다. design.md는 Phase 3에서 함께 재해석 예정.
 
-- [ ] `services/bedrock_client.py`에 `retrieve_and_generate(query, kb_id, guardrail_id, ...)` 메서드 추가
-- [ ] Fake 응답 모드 (KB_ID 미설정 시)
-- [ ] 예외 3종 신설: `BedrockRetrievalError`, `BedrockGuardrailBlockedError`, `BedrockNotAvailableError`
+### T-201 · `rag_service._retrieve_and_generate` 확장 (drift: BedrockClient 대체)
+
+- [x] `rag_service._retrieve_and_generate`에 `guardrail_id`, `guardrail_version`, `context_type` 파라미터 추가 (하위 호환 default)
+- [x] Fake 응답 모드 (KB_ID 미설정 시 `_mock_response`, `is_mock=True`)
+- [x] 예외 3종 신설(`services/exceptions.py`): `BedrockRetrievalError`, `BedrockGuardrailBlockedError`, `BedrockNotAvailableError` — Phase 2에서 raise 안 함(실호출 없음)
 - **DoD**: 유닛 테스트에서 Fake 응답 정상 파싱
 - **HITL**: Allow Session
 - **타임아웃**: 180초
 
-### T-202 · `BedrockClient.start_kb_sync` / `poll_kb_sync`
+### T-202 · `kb_admin_service` 신설 (drift: BedrockClient 대체)
 
-- [ ] 두 메서드 인터페이스 추가 (실호출은 T-405에서)
-- [ ] 폴링 타임아웃 600초, 15초 간격
+- [x] `KbAdminService.start_sync` / `poll_sync` / `get_status` 추가 (실호출은 Phase 5에서)
+- [x] 폴링 타임아웃 600초, 15초 간격 (`POLL_INTERVAL_S=15`)
+- [x] 신규 팩토리 `get_bedrock_agent_client()` 추가
 - **DoD**: 유닛 테스트 mock으로 통과
 - **HITL**: Allow Session
 - **타임아웃**: 120초
 
 ### T-203 · 통합 테스트 — mock 경로
 
-- [ ] `tests/integration/test_glossary_ask_mock_mode.py` — KB_ID 없을 때 mock 응답
-- [ ] `tests/integration/test_glossary_ask_with_fake_bedrock.py` — Fake 응답으로 citations 파싱
+- [x] `tests/integration/test_glossary_ask_mock_mode.py` — KB_ID 없을 때 mock 응답
+- [x] `tests/integration/test_glossary_ask_with_fake_bedrock.py` — Fake 응답으로 citations 파싱
+- [x] `tests/unit/test_kb_admin_service.py` — sync/poll/status Fake 검증
+- [x] `conftest.py`에 `fake_agent_runtime` fixture 추가
 - **DoD**: `pytest tests/integration/` 신규 2개 통과
 - **HITL**: Allow Once
 
 ### T-204 · 커밋
 
-- [ ] `feat: bedrock client retrieve_and_generate with fake mode`
+- [x] `feat: extend rag_service with guardrail params and add kb_admin_service`
 
 ---
 
