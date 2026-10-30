@@ -23,10 +23,13 @@
 - 발견: KI-011
 - 교훈: create가 반환한 ID를 sync에서 버리는 안티패턴 → 최소권한 원칙 위반
 
-### Teardown (KI-011 수정 후, 2차 생성물 정리)
-- 명령: `scripts/kb/teardown.py --dry-run` → `--confirm`
-- 대상: KB XBBETDQEY4, DS LPMVBACVJ0 (S3 glossary/ 데이터는 보존)
-- 결과: (대기 중)
+### Teardown (KI-011 사이클 종료, KI-012 발견)
+- 방식: ad-hoc `delete-knowledge-base` (teardown.py 범위 불일치로 미사용)
+- 삭제: KB XBBETDQEY4 (DS LPMVBACVJ0 cascade)
+- 보존: vector bucket, vector index, S3 데이터 버킷 (멱등성 재사용 예정)
+- 비용: $0
+- 발견: KI-012 (teardown all-or-nothing 설계)
+- 완료 시각: 2026-10-30T16:21:13Z
 
 ### 3차 시도 (KI-011 수정 적용, fresh --apply)
 - 명령: `--create --sync --apply`
