@@ -137,12 +137,12 @@ def _ensure_data_source(agent: Any, kb_id: str, account_id: str, settings: Setti
     return ds_id
 
 
-def _create_kb(agent: Any, account_id: str, settings: Settings) -> str:
+def _create_kb(agent: Any, account_id: str, settings: Settings) -> tuple[str, str]:
     kb_id = _ensure_kb(agent, settings)
     ds_id = _ensure_data_source(agent, kb_id, account_id, settings)
     print(f"KB: {kb_id} / dataSource: {ds_id}")
     print(f"→ .env에 추가: BEDROCK_KB_ID={kb_id}")
-    return kb_id
+    return kb_id, ds_id
 
 
 def _split_ds(account_id: str, settings: Settings) -> dict[str, Any]:
@@ -155,7 +155,9 @@ def _split_ds(account_id: str, settings: Settings) -> dict[str, Any]:
     }
 
 
-def _do_create(dry_run: bool, agent: Any, account_id: str, settings: Settings) -> bool:
+def _do_create(
+    dry_run: bool, agent: Any, account_id: str, settings: Settings
+) -> tuple[bool, str | None, str | None]:
     if dry_run:
         logger.info(
             "create_step",
@@ -171,34 +173,45 @@ def _do_create(dry_run: bool, agent: Any, account_id: str, settings: Settings) -
         print("  (indexName 미전달 — indexArn에 포함, KI-010)")
         print(f"  dataSource: s3://{settings.haru_kb_s3_bucket or '<미설정>'}/{INCLUSION_PREFIX}")
         print("→ 생성 후 .env에 추가: BEDROCK_KB_ID=<id>")
-        return True
+        return True, None, None
     if not settings.bedrock_kb_role_arn:
         print(ROLE_GUIDE.replace("{account}", account_id))
-        return False
-    _create_kb(agent, account_id, settings)
-    return True
+        return False, None, None
+    kb_id, ds_id = _create_kb(agent, account_id, settings)
+    return True, kb_id, ds_id
 
 
-def _do_sync(dry_run: bool, agent: Any, settings: Settings) -> bool:
+def _do_sync(
+    dry_run: bool,
+    agent: Any,
+    settings: Settings,
+    kb_id: str | None = None,
+    ds_id: str | None = None,
+) -> bool:
+    # KI-011: create가 방금 반환한 kb_id/ds_id가 있으면 그대로 쓴다.
+    # 없을 때만(단독 --sync) settings + list_data_sources fallback.
+    effective_kb = kb_id or settings.bedrock_kb_id
     if dry_run:
         logger.info(
             "create_step",
             resource_type="ingestion_job",
-            resource_id=settings.bedrock_kb_id or "<미설정>",
+            resource_id=effective_kb or "<미설정>",
             dry_run=True,
             result="would_sync",
         )
-        print(f"[dry-run] sync 예정: KB={settings.bedrock_kb_id or '<미설정>'}")
+        print(f"[dry-run] sync 예정: KB={effective_kb or '<미설정>'}")
         return True
+    effective_ds = ds_id or _resolve_ds_id(agent, effective_kb)
     admin = KbAdminService(settings, agent_client=agent)
-    job_id = admin.start_sync(settings.bedrock_kb_id, _resolve_ds_id(agent, settings))
-    status = admin.poll_sync(settings.bedrock_kb_id, job_id)
+    job_id = admin.start_sync(effective_kb, effective_ds)
+    status = admin.poll_sync(effective_kb, job_id)
     print(f"sync 완료: job={job_id} status={status}")
     return status == "COMPLETE"
 
 
-def _resolve_ds_id(agent: Any, settings: Settings) -> str:
-    resp = agent.list_data_sources(knowledgeBaseId=settings.bedrock_kb_id)
+def _resolve_ds_id(agent: Any, kb_id: str) -> str:
+    # fallback 전용 (단독 --sync). fresh create→sync 경로는 이 함수를 호출하지 않는다 (KI-011).
+    resp = agent.list_data_sources(knowledgeBaseId=kb_id)
     return str(resp["dataSourceSummaries"][0]["dataSourceId"])
 
 
@@ -214,10 +227,13 @@ def run(
     account_id = resolve_account_id(dry_run, sts=sts)
     agent = agent or (None if dry_run else get_bedrock_agent_client())
     results: list[bool] = []
+    created_kb_id: str | None = None
+    created_ds_id: str | None = None
     if do_create:
-        results.append(_do_create(dry_run, agent, account_id, settings))
+        ok, created_kb_id, created_ds_id = _do_create(dry_run, agent, account_id, settings)
+        results.append(ok)
     if do_sync:
-        results.append(_do_sync(dry_run, agent, settings))
+        results.append(_do_sync(dry_run, agent, settings, kb_id=created_kb_id, ds_id=created_ds_id))
     if not results:
         print("아무 모드도 지정되지 않음 (--create / --sync 중 하나 이상 필요)")
         return False

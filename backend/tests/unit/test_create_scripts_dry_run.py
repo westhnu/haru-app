@@ -294,7 +294,7 @@ class _DSPaginator:
         self._existing_ds = existing_ds
 
     def paginate(self, **kwargs: Any) -> Any:
-        self._calls.append("list_data_sources")
+        self._calls.append("paginate_list_data_sources")  # 멱등성 체크용 (sync 직접 호출과 구분)
         if self._existing_ds:
             yield {
                 "dataSourceSummaries": [{"name": "haru-glossary-s3", "dataSourceId": "DS-existing"}]
@@ -323,6 +323,20 @@ class SpyAgentKB:
     def create_data_source(self, **kwargs: Any) -> dict[str, Any]:
         self._calls.append("create_data_source")
         return {"dataSource": {"dataSourceId": "DS1"}}
+
+    def list_data_sources(self, **kwargs: Any) -> dict[str, Any]:
+        # KI-011: fresh create->sync 경로는 이 API를 호출하면 안 된다.
+        # 호출되면 2차 --apply에서 겪은 AccessDenied를 재현해 테스트를 실패시킨다.
+        self._calls.append("list_data_sources")
+        raise _not_found("ListDataSources", "AccessDeniedException")
+
+    def start_ingestion_job(self, **kwargs: Any) -> dict[str, Any]:
+        self._calls.append("start_ingestion_job")
+        return {"ingestionJob": {"ingestionJobId": "JOB1"}}
+
+    def get_ingestion_job(self, **kwargs: Any) -> dict[str, Any]:
+        self._calls.append("get_ingestion_job")
+        return {"ingestionJob": {"status": "COMPLETE"}}
 
 
 def _settings_with_role(role: str = "arn:role") -> Settings:
@@ -375,7 +389,7 @@ def test_kb_apply_creates_kb_and_data_source() -> None:
     assert calls == [
         "list_knowledge_bases",
         "create_knowledge_base",
-        "list_data_sources",
+        "paginate_list_data_sources",
         "create_data_source",
     ]
 
@@ -417,6 +431,22 @@ def test_storage_config_omits_index_name_ki010() -> None:
     assert "indexArn" in s3v
     assert "vectorBucketArn" in s3v
     assert "indexName" not in s3v
+
+
+def test_sync_uses_create_result_ds_id_ki011() -> None:
+    # fresh create->sync: create가 반환한 ds_id를 직접 써서 list_data_sources를 호출하지 않는다.
+    calls: list[str] = []
+    ok = kb.run(
+        dry_run=False,
+        do_create=True,
+        do_sync=True,
+        agent=SpyAgentKB(calls),
+        sts=SpySTS(),
+        settings=_settings_with_role(),
+    )
+    assert ok is True
+    assert "list_data_sources" not in calls  # KI-011: 재조회 안 함
+    assert "start_ingestion_job" in calls
 
 
 def test_kb_no_mode_returns_false() -> None:

@@ -233,6 +233,13 @@
 - **HITL**: 필수 승인
 - **타임아웃**: 900초
 
+> **[설계 drift KI-011 — ⑥ --apply 2차 시도 실측]**
+> - 증상: KB·DS 생성 성공 후 sync 단계에서 `AccessDeniedException: bedrock:ListDataSources`.
+> - 원인: `_do_sync`가 방금 `create_data_source`가 반환한 ds_id를 버리고 `_resolve_ds_id`에서 `list_data_sources`로 재조회. 사용자 IAM에 해당 list 권한이 없었음.
+> - 결정: **create가 반환한 kb_id·ds_id를 sync에 직접 전달**해 fresh 경로에서 `list_data_sources`를 호출하지 않는다. 단독 `--sync`일 때만 fallback으로 재조회.
+> - 부수 수정: `KbAdminService._is_fake(kb_id)`가 전달된 kb_id도 고려 — fresh 경로(settings엔 아직 kb_id 없음)에서 실제 ingestion이 mock으로 빠지지 않게.
+> - 회귀 방지: `test_sync_uses_create_result_ds_id_ki011` — fresh create→sync에서 직접 `list_data_sources` 호출 0회 단언.
+
 ### T-406 · `.env` 업데이트 (수동)
 
 - [ ] 사용자(나)가 `.env`에 다음 4개 값 입력:

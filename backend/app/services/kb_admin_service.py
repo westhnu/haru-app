@@ -44,12 +44,14 @@ class KbAdminService:
         self._settings = settings
         self._client = agent_client
 
-    def _is_fake(self) -> bool:
+    def _is_fake(self, kb_id: str = "") -> bool:
         # KB_ID가 비면 실제 리소스가 없으므로 호출 자체를 하지 않는다 (원칙 2).
-        return not self._settings.bedrock_kb_id
+        # KI-011: fresh create->sync는 settings엔 아직 없지만 방금 만든 kb_id를 인자로 받는다.
+        # 전달된 kb_id가 있으면 실제 리소스가 존재하므로 fake로 보지 않는다.
+        return not (kb_id or self._settings.bedrock_kb_id)
 
     def start_sync(self, kb_id: str, data_source_id: str) -> str:
-        if self._is_fake():
+        if self._is_fake(kb_id):
             logger.info("kb_sync_mock", kb_id=kb_id or "none")
             return MOCK_INGESTION_JOB_ID
         client = self._client or get_bedrock_agent_client()
@@ -71,7 +73,7 @@ class KbAdminService:
         timeout_s: int = DEFAULT_SYNC_TIMEOUT_S,
         poll_interval_s: int = POLL_INTERVAL_S,
     ) -> str:
-        if self._is_fake():
+        if self._is_fake(kb_id):
             return MOCK_STATUS
         client = self._client or get_bedrock_agent_client()
         deadline = time.monotonic() + timeout_s
@@ -95,7 +97,7 @@ class KbAdminService:
         return status
 
     def get_status(self, kb_id: str) -> KbStatus:
-        if self._is_fake():
+        if self._is_fake(kb_id):
             return KbStatus(kb_id=kb_id or "none", status=MOCK_STATUS, is_mock=True)
         client = self._client or get_bedrock_agent_client()
         try:

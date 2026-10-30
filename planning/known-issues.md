@@ -114,3 +114,15 @@
 - **완화 (해결)**: `scripts/kb/create_or_sync_kb.py`의 `_storage_config`에서 `indexName`을 제거하고 `indexArn`만 유지. 회귀 테스트 `test_storage_config_omits_index_name_ki010` 추가.
 - **교훈**: Bedrock agent SDK/문서상 Optional 필드 간 상호 배타성이 명시되지 않아, 실제 호출로만 검증 가능했다. S3_VECTORS 같은 신규 스토리지 타입은 dry-run·메타 검증을 넘어 1차 실호출에서 ValidationException을 확인하는 단계가 필요하다.
 - **관련**: T-404, Phase 4 ⑥
+
+## KI-011 — fresh create→sync 플로우에서 불필요한 list_data_sources 호출
+
+- **발견**: 2026-10-31, `bedrock-kb-and-guardrail` 스펙 Phase ⑥(T-405) `--apply` 2차 시도
+- **상태**: resolved
+- **증상**: KB(`XBBETDQEY4`)·DataSource(`LPMVBACVJ0`) 생성은 성공했으나, 이어진 sync 단계에서 `AccessDeniedException: User ... is not authorized to perform: bedrock:ListDataSources`
+- **재현**: `create_or_sync_kb.py --create --sync --apply` — create는 ds_id를 반환하는데, sync의 `_resolve_ds_id`가 그 값을 버리고 `agent.list_data_sources(...)`로 다시 조회
+- **원인**: "방금 만든 리소스의 ID를 버리고 다시 조회"하는 안티패턴. 불필요한 list 호출이 최소권한 원칙을 위반(해당 사용자에 ListDataSources 권한 없음)
+- **완화 (해결)**: `_do_create`가 `(ok, kb_id, ds_id)`를 반환하고 `run()`이 이를 `_do_sync(kb_id=..., ds_id=...)`로 직접 전달. 전달받으면 `_resolve_ds_id`(= list_data_sources)를 건너뛴다. 단독 `--sync`일 때만 fallback으로 재조회. 추가로 `KbAdminService._is_fake(kb_id)`가 전달 kb_id를 고려하도록 수정해 fresh 경로가 mock으로 빠지지 않게 함.
+- **교훈**: 생성 직후의 ID를 그대로 흘려보내지 않고 재조회하면 (1) 중복 왕복, (2) 불필요한 read 권한 요구가 발생한다. create→sync를 한 실행에서 할 때는 반환값을 스레딩하는 게 최소권한·최소호출.
+- **회귀 방지**: `test_sync_uses_create_result_ds_id_ki011`
+- **관련**: T-405, KI-010, Phase 4 ⑥
