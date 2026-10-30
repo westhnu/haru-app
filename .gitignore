@@ -35,3 +35,17 @@ npm-debug.log*
 # build artifacts
 dist/
 *.zip
+
+# --- Python backend ---
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Backend 로컬 생성물 (302개 term_*.txt + glossary.jsonl)
+backend/data/kb/
+
+# uv cache
+.uv/
