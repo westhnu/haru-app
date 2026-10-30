@@ -63,7 +63,38 @@ def _data_source_config(account_id: str, settings: Settings) -> dict[str, Any]:
     }
 
 
-def _create_kb(agent: Any, account_id: str, settings: Settings) -> str:
+def _find_kb_by_name(agent: Any, name: str) -> str | None:
+    """동명 KB가 이미 있으면 그 ID를 돌려준다 (페이지네이션)."""
+    paginator = agent.get_paginator("list_knowledge_bases")
+    for page in paginator.paginate():
+        for summary in page.get("knowledgeBaseSummaries", []):
+            if summary.get("name") == name:
+                return str(summary["knowledgeBaseId"])
+    return None
+
+
+def _find_ds_by_name(agent: Any, kb_id: str, name: str) -> str | None:
+    """KB 안에 동명 데이터소스가 있으면 그 ID를 돌려준다 (페이지네이션)."""
+    paginator = agent.get_paginator("list_data_sources")
+    for page in paginator.paginate(knowledgeBaseId=kb_id):
+        for summary in page.get("dataSourceSummaries", []):
+            if summary.get("name") == name:
+                return str(summary["dataSourceId"])
+    return None
+
+
+def _ensure_kb(agent: Any, settings: Settings) -> str:
+    existing = _find_kb_by_name(agent, KB_NAME)
+    if existing:
+        logger.info(
+            "create_step",
+            resource_type="knowledge_base",
+            resource_id=existing,
+            dry_run=False,
+            result="already_exists",
+        )
+        print(f"KB already_exists, reusing: {existing}")
+        return existing
     kb = agent.create_knowledge_base(
         name=KB_NAME,
         roleArn=settings.bedrock_kb_role_arn,
@@ -71,8 +102,6 @@ def _create_kb(agent: Any, account_id: str, settings: Settings) -> str:
         storageConfiguration=_storage_config(settings),
     )
     kb_id: str = kb["knowledgeBase"]["knowledgeBaseId"]
-    ds = agent.create_data_source(knowledgeBaseId=kb_id, **_split_ds(account_id, settings))
-    ds_id: str = ds["dataSource"]["dataSourceId"]
     logger.info(
         "create_step",
         resource_type="knowledge_base",
@@ -80,7 +109,37 @@ def _create_kb(agent: Any, account_id: str, settings: Settings) -> str:
         dry_run=False,
         result="created",
     )
-    print(f"KB 생성: {kb_id} / dataSource: {ds_id}")
+    return kb_id
+
+
+def _ensure_data_source(agent: Any, kb_id: str, account_id: str, settings: Settings) -> str:
+    existing = _find_ds_by_name(agent, kb_id, DS_NAME)
+    if existing:
+        logger.info(
+            "create_step",
+            resource_type="data_source",
+            resource_id=existing,
+            dry_run=False,
+            result="already_exists",
+        )
+        print(f"dataSource already_exists, reusing: {existing}")
+        return existing
+    ds = agent.create_data_source(knowledgeBaseId=kb_id, **_split_ds(account_id, settings))
+    ds_id: str = ds["dataSource"]["dataSourceId"]
+    logger.info(
+        "create_step",
+        resource_type="data_source",
+        resource_id=ds_id,
+        dry_run=False,
+        result="created",
+    )
+    return ds_id
+
+
+def _create_kb(agent: Any, account_id: str, settings: Settings) -> str:
+    kb_id = _ensure_kb(agent, settings)
+    ds_id = _ensure_data_source(agent, kb_id, account_id, settings)
+    print(f"KB: {kb_id} / dataSource: {ds_id}")
     print(f"→ .env에 추가: BEDROCK_KB_ID={kb_id}")
     return kb_id
 
@@ -105,6 +164,7 @@ def _do_create(dry_run: bool, agent: Any, account_id: str, settings: Settings) -
             result="would_create",
         )
         print(f"[dry-run] 생성 예정 KB: {KB_NAME} (S3_VECTORS, Titan v2, chunking=NONE)")
+        print("  (apply 시 list_knowledge_bases로 동명 KB 존재 확인 후 없으면 생성)")
         print(f"  vectorBucketArn={settings.haru_kb_vector_bucket_arn or '<미설정>'}")
         print(f"  indexArn={settings.haru_kb_s3_vector_index_arn or '<미설정>'}")
         print(f"  dataSource: s3://{settings.haru_kb_s3_bucket or '<미설정>'}/{INCLUSION_PREFIX}")

@@ -271,9 +271,50 @@ def test_upload_apply_uploads_when_absent() -> None:
 # --- T-404/405 create_or_sync_kb -----------------------------------------------
 
 
-class SpyAgentKB:
-    def __init__(self, calls: list[str]) -> None:
+class _KBPaginator:
+    def __init__(self, calls: list[str], existing_kb: bool) -> None:
         self._calls = calls
+        self._existing_kb = existing_kb
+
+    def paginate(self, **kwargs: Any) -> Any:
+        self._calls.append("list_knowledge_bases")
+        if self._existing_kb:
+            yield {
+                "knowledgeBaseSummaries": [
+                    {"name": "haru-glossary-kb", "knowledgeBaseId": "KB-existing"}
+                ]
+            }
+        else:
+            yield {"knowledgeBaseSummaries": []}
+
+
+class _DSPaginator:
+    def __init__(self, calls: list[str], existing_ds: bool) -> None:
+        self._calls = calls
+        self._existing_ds = existing_ds
+
+    def paginate(self, **kwargs: Any) -> Any:
+        self._calls.append("list_data_sources")
+        if self._existing_ds:
+            yield {
+                "dataSourceSummaries": [{"name": "haru-glossary-s3", "dataSourceId": "DS-existing"}]
+            }
+        else:
+            yield {"dataSourceSummaries": []}
+
+
+class SpyAgentKB:
+    def __init__(
+        self, calls: list[str], existing_kb: bool = False, existing_ds: bool = False
+    ) -> None:
+        self._calls = calls
+        self._existing_kb = existing_kb
+        self._existing_ds = existing_ds
+
+    def get_paginator(self, op: str) -> Any:
+        if op == "list_knowledge_bases":
+            return _KBPaginator(self._calls, self._existing_kb)
+        return _DSPaginator(self._calls, self._existing_ds)
 
     def create_knowledge_base(self, **kwargs: Any) -> dict[str, Any]:
         self._calls.append("create_knowledge_base")
@@ -330,7 +371,43 @@ def test_kb_apply_creates_kb_and_data_source() -> None:
         settings=_settings_with_role(),
     )
     assert ok is True
-    assert calls == ["create_knowledge_base", "create_data_source"]
+    # 멱등성 체크(list) 후 둘 다 없으면 생성.
+    assert calls == [
+        "list_knowledge_bases",
+        "create_knowledge_base",
+        "list_data_sources",
+        "create_data_source",
+    ]
+
+
+def test_create_kb_skips_when_name_exists() -> None:
+    calls: list[str] = []
+    ok = kb.run(
+        dry_run=False,
+        do_create=True,
+        agent=SpyAgentKB(calls, existing_kb=True, existing_ds=True),
+        sts=SpySTS(),
+        settings=_settings_with_role(),
+    )
+    assert ok is True
+    assert "create_knowledge_base" not in calls  # 동명 KB 재사용
+    assert "create_data_source" not in calls  # 동명 DS 재사용
+    assert "list_knowledge_bases" in calls
+
+
+def test_create_data_source_skips_when_name_exists() -> None:
+    calls: list[str] = []
+    # KB는 새로, DS만 이미 존재
+    ok = kb.run(
+        dry_run=False,
+        do_create=True,
+        agent=SpyAgentKB(calls, existing_kb=False, existing_ds=True),
+        sts=SpySTS(),
+        settings=_settings_with_role(),
+    )
+    assert ok is True
+    assert "create_knowledge_base" in calls  # KB는 생성
+    assert "create_data_source" not in calls  # DS는 재사용
 
 
 def test_kb_no_mode_returns_false() -> None:
