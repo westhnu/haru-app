@@ -69,7 +69,7 @@ inclusion: always
 
 - pytest 실행
 - ruff·black 실행
-- 새 파일 생성 (`haru_web/` 하위, 원칙 4 대상 아닌 경우)
+- 새 파일 생성 (`haru-app-mono/` 하위, 원칙 4 대상 아닌 경우)
 - git status·diff (커밋 X)
 - structlog 로그 조회
 

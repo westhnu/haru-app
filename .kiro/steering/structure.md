@@ -9,7 +9,7 @@ fileMatchPattern: "**/*.py"
 
 ## 파일 위치 규칙
 
-- 새 파일은 모두 `/Users/westhnu/Agent/Claude/haru_web/` 하위에만 생성
+- 새 파일은 모두 `/Users/westhnu/Agent/Claude/haru-app-mono/` 하위에만 생성
 - `jutopia_data`는 참조 전용, **절대 수정 금지**
 - 임시 스크립트는 `planning/tmp/` (git에 포함하지 않음)
 - 세션 임시 파일은 최종 산출물로 남기지 않음

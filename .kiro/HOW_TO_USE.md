@@ -10,7 +10,7 @@
 
 ### 0-1. Kiro 열기
 
-1. Kiro를 열고 **New Workspace** → `/Users/westhnu/Agent/Claude/haru_web` 선택
+1. Kiro를 열고 **New Workspace** → `/Users/westhnu/Agent/Claude/haru-app-mono` 선택
 2. 스튜던트 작성자(Trust) 설정 — "I trust the authors of the files in this folder"
 3. 터미널 기본 프로필을 운영체제에 맞게 설정 (강의처럼 Command Prompt가 아니라 **Mac이면 zsh**)
 4. 테마: 다크 추천 (장시간 작업 시 눈 피로 ↓)
@@ -20,7 +20,7 @@
 Sprint 2까지 끝났다면 이미 git 저장소입니다. Kiro 터미널에서:
 
 ```bash
-cd /Users/westhnu/Agent/Claude/haru_web
+cd /Users/westhnu/Agent/Claude/haru-app-mono
 git status      # clean 상태 또는 Sprint 2 커밋들 확인
 git log --oneline -5
 ```
@@ -114,7 +114,7 @@ Kiro 하단 상태바에서 자율성 레벨을 선택:
 | 명령 유형 | 승인 방식 |
 |---|---|
 | `pytest`, `ruff`, `black` | Allow Session |
-| 파일 생성·편집 (`haru_web/` 하위) | Allow Once |
+| 파일 생성·편집 (`haru-app-mono/` 하위) | Allow Once |
 | `aws` read-only (`list*`, `get*`, `describe*`) | Allow Once |
 | `aws` write (`create*`, `update*`, `delete*`) | **필수 승인** · Allow Always 금지 |
 | `.env` 편집 | **필수 승인** · 값 노출 금지 |
@@ -126,7 +126,7 @@ Kiro 하단 상태바에서 자율성 레벨을 선택:
 Kiro가 "Allow this command?" 창을 띄우면:
 
 1. 명령 전문을 읽는다
-2. **대상 파일/리소스**가 `haru_web/` 하위인지 확인
+2. **대상 파일/리소스**가 `haru-app-mono/` 하위인지 확인
 3. **파괴적 작업**(rm, DROP, DELETE)인지 확인
 4. **시크릿 노출**이 없는지 확인
 5. 괜찮으면 `Allow Once`, 아니면 `Deny` + 나에게 보고
