@@ -70,25 +70,32 @@ class KbAdminService:
         self,
         kb_id: str,
         ingestion_job_id: str,
+        *,
+        data_source_id: str,
         timeout_s: int = DEFAULT_SYNC_TIMEOUT_S,
         poll_interval_s: int = POLL_INTERVAL_S,
     ) -> str:
+        # KI-014: get_ingestion_job은 dataSourceId도 필수. keyword-only로 전달 강제.
         if self._is_fake(kb_id):
             return MOCK_STATUS
         client = self._client or get_bedrock_agent_client()
         deadline = time.monotonic() + timeout_s
         while True:
-            status = self._fetch_ingestion_status(client, kb_id, ingestion_job_id)
+            status = self._fetch_ingestion_status(client, kb_id, ingestion_job_id, data_source_id)
             if status == COMPLETE_STATUS or status in FAILED_STATUSES:
                 return status
             if time.monotonic() >= deadline:
                 return status
             time.sleep(poll_interval_s)
 
-    def _fetch_ingestion_status(self, client: Any, kb_id: str, ingestion_job_id: str) -> str:
+    def _fetch_ingestion_status(
+        self, client: Any, kb_id: str, ingestion_job_id: str, data_source_id: str
+    ) -> str:
         try:
             response = client.get_ingestion_job(
-                knowledgeBaseId=kb_id, ingestionJobId=ingestion_job_id
+                knowledgeBaseId=kb_id,
+                dataSourceId=data_source_id,
+                ingestionJobId=ingestion_job_id,
             )
         except (ClientError, BotoCoreError) as exc:
             logger.error("kb_sync_poll_failed", error_type=type(exc).__name__)

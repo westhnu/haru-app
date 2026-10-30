@@ -246,6 +246,12 @@
 > - 결정: create와 sync 사이에 **`_wait_kb_active` 폴링**(최대 120s, 2s 간격) 추가. FAILED면 즉시 RuntimeError, 초과 시 TimeoutError. 멱등 재사용 경로도 1회 조회로 안전 확인.
 > - 회귀 방지: `test_create_waits_for_kb_active_ki013`, `test_create_fails_fast_on_kb_failed_ki013`, `test_wait_kb_active_passes_through_when_already_active_ki013`.
 
+> **[설계 drift KI-014 — ⑥ 3차 재개 실측]**
+> - 증상: `start_ingestion_job` 성공 후 첫 폴링 `get_ingestion_job`에서 `ParamValidationError: Missing required parameter: dataSourceId`.
+> - 원인: `KbAdminService.poll_sync`/`_fetch_ingestion_status`가 `get_ingestion_job`에 `knowledgeBaseId`+`ingestionJobId`만 전달. 실 API는 `dataSourceId`도 필수. Phase 2 Fake 테스트가 메서드 존재만 검증해 파라미터 스키마를 놓침.
+> - 결정: `poll_sync(kb_id, ingestion_job_id, *, data_source_id, ...)` keyword-only 필수 인자 추가, 전 호출 경로에서 전달.
+> - 회귀 방지: `test_poll_sync_passes_data_source_id_ki014`, `test_poll_sync_rejects_missing_data_source_id_ki014`.
+
 ### T-406 · `.env` 업데이트 (수동)
 
 - [ ] 사용자(나)가 `.env`에 다음 4개 값 입력:

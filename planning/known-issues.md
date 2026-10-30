@@ -149,3 +149,15 @@
 - **교훈**: AWS 비동기 리소스 생성에서 "API 반환 == 사용 가능"이 아니다. 상태 폴링은 선택이 아니라 필수다. (KI-011의 "반환값 스레딩"으로도 못 막는, 리소스 수명주기 레벨의 문제)
 - **회귀 방지**: `test_create_waits_for_kb_active_ki013` 외 2건
 - **관련**: T-405, KI-010, KI-011, Phase 4 ⑥
+
+## KI-014 — get_ingestion_job 호출에 dataSourceId 파라미터 누락 → ParamValidationError
+
+- **발견**: 2026-10-31, Phase ⑥ 3차 재개 — ingestion start 성공 후 폴링 1차 호출에서 즉시 실패
+- **상태**: resolved
+- **증상**: `start_ingestion_job`(job `XMUUKHIRZP`)은 성공했으나, `poll_sync`의 첫 `get_ingestion_job` 호출이 `botocore ParamValidationError: Missing required parameter in input: "dataSourceId"`
+- **원인**: `KbAdminService.poll_sync`/`_fetch_ingestion_status`가 `get_ingestion_job`에 `knowledgeBaseId`+`ingestionJobId`만 넘김. 실 API는 `dataSourceId`도 필수. Phase 2에서 KbAdminService를 Fake 클라이언트로만 테스트해 실 API 필수 파라미터를 미검증.
+- **재현**: `client.get_ingestion_job(knowledgeBaseId=.., ingestionJobId=..)` (dataSourceId 누락)
+- **완화 (해결)**: `poll_sync` 시그니처에 `*, data_source_id` keyword-only 필수 인자 추가. `_fetch_ingestion_status`가 `dataSourceId`를 전달. `create_or_sync_kb._do_sync`가 create 결과 ds_id를 `poll_sync`에 전달(KI-011 스레딩 재활용).
+- **교훈**: mock은 "메서드 존재 여부"만 검증한다. "실 API 파라미터 스키마"는 contract test 또는 실호출로만 보장된다. 신규 AWS API 래퍼는 1차 실호출 검증이 필수.
+- **회귀 방지**: `test_poll_sync_passes_data_source_id_ki014`, `test_poll_sync_rejects_missing_data_source_id_ki014`
+- **관련**: T-405, KI-011, KI-013, Phase 4 ⑥

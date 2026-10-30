@@ -6,6 +6,8 @@ KB_ID 빈 문자열(Fake 분기)과 Fake bedrock-agent 클라이언트 주입 �
 
 from typing import Any
 
+import pytest
+
 from app.config import Settings
 from app.services.kb_admin_service import (
     MOCK_INGESTION_JOB_ID,
@@ -55,7 +57,7 @@ def test_start_sync_fake_mode_returns_mock_job() -> None:
 def test_poll_sync_fake_mode_returns_complete() -> None:
     svc = KbAdminService(_settings(""))
 
-    assert svc.poll_sync("", MOCK_INGESTION_JOB_ID) == "COMPLETE"
+    assert svc.poll_sync("", MOCK_INGESTION_JOB_ID, data_source_id=DS_ID) == "COMPLETE"
 
 
 def test_get_status_fake_mode_is_mock() -> None:
@@ -85,14 +87,14 @@ def test_poll_sync_injected_stops_on_complete() -> None:
     svc = KbAdminService(_settings(KB_ID), agent_client=agent)
 
     # poll_interval_s=0으로 sleep 없이 즉시 판정.
-    assert svc.poll_sync(KB_ID, JOB_ID, poll_interval_s=0) == "COMPLETE"
+    assert svc.poll_sync(KB_ID, JOB_ID, data_source_id=DS_ID, poll_interval_s=0) == "COMPLETE"
 
 
 def test_poll_sync_injected_stops_on_failed() -> None:
     agent = FakeBedrockAgent(statuses=["FAILED"])
     svc = KbAdminService(_settings(KB_ID), agent_client=agent)
 
-    assert svc.poll_sync(KB_ID, JOB_ID, poll_interval_s=0) == "FAILED"
+    assert svc.poll_sync(KB_ID, JOB_ID, data_source_id=DS_ID, poll_interval_s=0) == "FAILED"
 
 
 def test_get_status_injected_maps_fields() -> None:
@@ -105,3 +107,40 @@ def test_get_status_injected_maps_fields() -> None:
     assert status.status == "ACTIVE"
     assert status.last_sync_at == "2026-10-30T00:00:00Z"
     assert status.is_mock is False
+
+
+# --- KI-014: get_ingestion_job dataSourceId 전달 ---
+
+
+class SpyIngestionAgent:
+    """get_ingestion_job 호출 kwargs를 캡처. dataSourceId 없으면 실 API처럼 거부."""
+
+    def __init__(self) -> None:
+        self.last_kwargs: dict[str, Any] = {}
+
+    def get_ingestion_job(self, **kwargs: Any) -> dict[str, Any]:
+        self.last_kwargs = kwargs
+        if "dataSourceId" not in kwargs:
+            # 실 botocore ParamValidationError 재현.
+            raise TypeError("Missing required parameter: dataSourceId")
+        return {"ingestionJob": {"status": "COMPLETE"}}
+
+
+def test_poll_sync_passes_data_source_id_ki014() -> None:
+    agent = SpyIngestionAgent()
+    svc = KbAdminService(_settings(KB_ID), agent_client=agent)
+
+    status = svc.poll_sync(KB_ID, JOB_ID, data_source_id=DS_ID, poll_interval_s=0)
+
+    assert status == "COMPLETE"
+    assert agent.last_kwargs["knowledgeBaseId"] == KB_ID
+    assert agent.last_kwargs["dataSourceId"] == DS_ID
+    assert agent.last_kwargs["ingestionJobId"] == JOB_ID
+
+
+def test_poll_sync_rejects_missing_data_source_id_ki014() -> None:
+    svc = KbAdminService(_settings(KB_ID), agent_client=SpyIngestionAgent())
+
+    # data_source_id는 keyword-only 필수 — 누락 시 호출 자체가 TypeError.
+    with pytest.raises(TypeError):
+        svc.poll_sync(KB_ID, JOB_ID)  # type: ignore[call-arg]

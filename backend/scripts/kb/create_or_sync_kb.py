@@ -243,7 +243,7 @@ def _do_sync(
     effective_ds = ds_id or _resolve_ds_id(agent, effective_kb)
     admin = KbAdminService(settings, agent_client=agent)
     job_id = admin.start_sync(effective_kb, effective_ds)
-    status = admin.poll_sync(effective_kb, job_id)
+    status = admin.poll_sync(effective_kb, job_id, data_source_id=effective_ds)
     print(f"sync 완료: job={job_id} status={status}")
     return status == "COMPLETE"
 
