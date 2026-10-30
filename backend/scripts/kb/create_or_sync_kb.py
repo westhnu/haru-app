@@ -8,6 +8,7 @@ KB 생성에는 IAM Role(BEDROCK_KB_ROLE_ARN)이 필요하며, 없으면 안내 
 
 import argparse
 import sys
+import time
 from typing import Any
 
 import structlog
@@ -24,6 +25,11 @@ DS_NAME = "haru-glossary-s3"
 EMBED_MODEL_ARN = "arn:aws:bedrock:ap-northeast-2::foundation-model/amazon.titan-embed-text-v2:0"
 INCLUSION_PREFIX = "glossary/"
 INDEX_NAME = "haru-glossary"
+# KI-013: KB 생성은 비동기(CREATING→ACTIVE). sync 전에 ACTIVE를 기다린다.
+KB_ACTIVE_TIMEOUT_S = 120
+KB_ACTIVE_POLL_INTERVAL_S = 2
+KB_PENDING_STATUSES: frozenset[str] = frozenset({"CREATING", "UPDATING"})
+KB_FAILED_STATUSES: frozenset[str] = frozenset({"FAILED", "DELETING", "DELETE_UNSUCCESSFUL"})
 
 ROLE_GUIDE = """먼저 IAM Role을 수동 생성해야 합니다. 필요 권한:
 - bedrock:InvokeModel (Titan Embeddings)
@@ -84,6 +90,36 @@ def _find_ds_by_name(agent: Any, kb_id: str, name: str) -> str | None:
     return None
 
 
+def _poll_once(agent: Any, kb_id: str) -> str:
+    kb = agent.get_knowledge_base(knowledgeBaseId=kb_id)["knowledgeBase"]
+    status: str = kb.get("status", "UNKNOWN")
+    if status in KB_FAILED_STATUSES:
+        reasons = kb.get("failureReasons", [])
+        raise RuntimeError(f"KB creation failed ({status}): {reasons}")
+    return status
+
+
+def _wait_kb_active(
+    agent: Any,
+    kb_id: str,
+    timeout_s: int = KB_ACTIVE_TIMEOUT_S,
+    poll_interval_s: int = KB_ACTIVE_POLL_INTERVAL_S,
+) -> None:
+    """KB가 ACTIVE 될 때까지 폴링한다 (KI-013). FAILED면 즉시 RuntimeError, 초과 시 TimeoutError."""
+    started = time.monotonic()
+    while True:
+        status = _poll_once(agent, kb_id)
+        elapsed = round(time.monotonic() - started, 1)
+        logger.info("kb_wait_active", kb_id=kb_id, status=status, elapsed_s=elapsed)
+        if status == "ACTIVE":
+            return
+        if status not in KB_PENDING_STATUSES:
+            raise RuntimeError(f"KB unexpected status: {status}")
+        if time.monotonic() - started > timeout_s:
+            raise TimeoutError(f"KB {kb_id} not ACTIVE within {timeout_s}s (last={status})")
+        time.sleep(poll_interval_s)
+
+
 def _ensure_kb(agent: Any, settings: Settings) -> str:
     existing = _find_kb_by_name(agent, KB_NAME)
     if existing:
@@ -95,6 +131,7 @@ def _ensure_kb(agent: Any, settings: Settings) -> str:
             result="already_exists",
         )
         print(f"KB already_exists, reusing: {existing}")
+        _wait_kb_active(agent, existing)  # 이미 ACTIVE면 1회 조회로 즉시 반환 (안전장치)
         return existing
     kb = agent.create_knowledge_base(
         name=KB_NAME,
@@ -110,6 +147,7 @@ def _ensure_kb(agent: Any, settings: Settings) -> str:
         dry_run=False,
         result="created",
     )
+    _wait_kb_active(agent, kb_id)  # KI-013: CREATING→ACTIVE 대기 후 sync 가능
     return kb_id
 
 
@@ -171,6 +209,7 @@ def _do_create(
         print(f"  vectorBucketArn={settings.haru_kb_vector_bucket_arn or '<미설정>'}")
         print(f"  indexArn={settings.haru_kb_s3_vector_index_arn or '<미설정>'}")
         print("  (indexName 미전달 — indexArn에 포함, KI-010)")
+        print("  (생성 후 ACTIVE 될 때까지 최대 120s 폴링, 2s 간격, KI-013)")
         print(f"  dataSource: s3://{settings.haru_kb_s3_bucket or '<미설정>'}/{INCLUSION_PREFIX}")
         print("→ 생성 후 .env에 추가: BEDROCK_KB_ID=<id>")
         return True, None, None

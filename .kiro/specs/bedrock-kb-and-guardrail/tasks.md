@@ -240,6 +240,12 @@
 > - 부수 수정: `KbAdminService._is_fake(kb_id)`가 전달된 kb_id도 고려 — fresh 경로(settings엔 아직 kb_id 없음)에서 실제 ingestion이 mock으로 빠지지 않게.
 > - 회귀 방지: `test_sync_uses_create_result_ds_id_ki011` — fresh create→sync에서 직접 `list_data_sources` 호출 0회 단언.
 
+> **[설계 drift KI-013 — ⑥ --apply 3차 시도 실측]**
+> - 증상: KB·DS 생성 성공 후 `start_ingestion_job`이 `ConflictException: You cannot start an ingestion job on a knowledgeBase with status CREATING`.
+> - 원인: `create_knowledge_base`는 비동기(CREATING→ACTIVE). create 반환 직후 대기 없이 sync를 시작해 KB가 아직 CREATING일 때 거부됨.
+> - 결정: create와 sync 사이에 **`_wait_kb_active` 폴링**(최대 120s, 2s 간격) 추가. FAILED면 즉시 RuntimeError, 초과 시 TimeoutError. 멱등 재사용 경로도 1회 조회로 안전 확인.
+> - 회귀 방지: `test_create_waits_for_kb_active_ki013`, `test_create_fails_fast_on_kb_failed_ki013`, `test_wait_kb_active_passes_through_when_already_active_ki013`.
+
 ### T-406 · `.env` 업데이트 (수동)
 
 - [ ] 사용자(나)가 `.env`에 다음 4개 값 입력:

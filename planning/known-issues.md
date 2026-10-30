@@ -137,3 +137,15 @@
 - **근본 완화 (deferred, T-603 / Phase 6)**: teardown에 `--scope {kb-only, vector-only, s3-only, all}` + `--kb-id` 인자 추가.
 - **교훈**: IaC의 "되돌리기"는 생성과 대칭적이어야 하지만, 운영에선 부분 롤백 요구가 더 흔하다. teardown은 전체/부분 둘 다 지원해야 한다.
 - **관련**: T-451, T-603, KI-011
+
+## KI-013 — create_knowledge_base 후 KB ACTIVE 대기 누락 → ConflictException on start_ingestion_job
+
+- **발견**: 2026-10-31, Phase ⑥ 3차 `--apply` (KI-010·KI-011 수정 후 처음 도달한 지점)
+- **상태**: resolved
+- **증상**: KB(`LEWVDQRRRK`)·DS 생성 성공 직후 `start_ingestion_job`이 `ConflictException: You cannot start an ingestion job on a knowledgeBase with status CREATING`로 실패
+- **원인**: AWS Bedrock KB 생성은 비동기다(`CREATING` → `ACTIVE`). `create_knowledge_base` 반환은 "요청 접수"일 뿐 "사용 가능"이 아닌데, 코드가 대기 없이 sync를 시작했다.
+- **재현**: `create_knowledge_base` 반환 직후 `start_ingestion_job` 호출 → ConflictException
+- **완화 (해결)**: `create_or_sync_kb.py`에 `_wait_kb_active`(get_knowledge_base 폴링, 최대 120s / 2s 간격) 추가. create·멱등 재사용 두 경로 모두 sync 전에 ACTIVE 확인. FAILED/DELETING은 즉시 RuntimeError, 초과 시 TimeoutError. structlog `event=kb_wait_active`.
+- **교훈**: AWS 비동기 리소스 생성에서 "API 반환 == 사용 가능"이 아니다. 상태 폴링은 선택이 아니라 필수다. (KI-011의 "반환값 스레딩"으로도 못 막는, 리소스 수명주기 레벨의 문제)
+- **회귀 방지**: `test_create_waits_for_kb_active_ki013` 외 2건
+- **관련**: T-405, KI-010, KI-011, Phase 4 ⑥

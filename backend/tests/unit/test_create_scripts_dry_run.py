@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
 from botocore.exceptions import ClientError
 
 from app.config import Settings
@@ -305,11 +306,27 @@ class _DSPaginator:
 
 class SpyAgentKB:
     def __init__(
-        self, calls: list[str], existing_kb: bool = False, existing_ds: bool = False
+        self,
+        calls: list[str],
+        existing_kb: bool = False,
+        existing_ds: bool = False,
+        kb_statuses: list[str] | None = None,
+        failure_reasons: list[str] | None = None,
     ) -> None:
         self._calls = calls
         self._existing_kb = existing_kb
         self._existing_ds = existing_ds
+        # get_knowledge_base가 순서대로 반환할 상태. 기본은 즉시 ACTIVE.
+        self._kb_statuses = kb_statuses if kb_statuses is not None else ["ACTIVE"]
+        self._failure_reasons = failure_reasons or []
+
+    def get_knowledge_base(self, **kwargs: Any) -> dict[str, Any]:
+        self._calls.append("get_knowledge_base")
+        status = self._kb_statuses[0] if len(self._kb_statuses) == 1 else self._kb_statuses.pop(0)
+        kb: dict[str, Any] = {"knowledgeBaseId": "KB1", "status": status}
+        if status in ("FAILED", "DELETING", "DELETE_UNSUCCESSFUL"):
+            kb["failureReasons"] = self._failure_reasons
+        return {"knowledgeBase": kb}
 
     def get_paginator(self, op: str) -> Any:
         if op == "list_knowledge_bases":
@@ -389,6 +406,7 @@ def test_kb_apply_creates_kb_and_data_source() -> None:
     assert calls == [
         "list_knowledge_bases",
         "create_knowledge_base",
+        "get_knowledge_base",
         "paginate_list_data_sources",
         "create_data_source",
     ]
@@ -447,6 +465,49 @@ def test_sync_uses_create_result_ds_id_ki011() -> None:
     assert ok is True
     assert "list_data_sources" not in calls  # KI-011: 재조회 안 함
     assert "start_ingestion_job" in calls
+
+
+def test_create_waits_for_kb_active_ki013(monkeypatch: Any) -> None:
+    # KI-013: create 후 ACTIVE까지 폴링한 뒤에만 sync 시작.
+    monkeypatch.setattr(kb.time, "sleep", lambda _s: None)
+    calls: list[str] = []
+    agent = SpyAgentKB(calls, kb_statuses=["CREATING", "CREATING", "ACTIVE"])
+    ok = kb.run(
+        dry_run=False,
+        do_create=True,
+        do_sync=True,
+        agent=agent,
+        sts=SpySTS(),
+        settings=_settings_with_role(),
+    )
+    assert ok is True
+    assert calls.count("get_knowledge_base") == 3  # CREATING, CREATING, ACTIVE
+    # get_knowledge_base(마지막 ACTIVE)가 start_ingestion_job보다 앞선다.
+    assert calls.index("get_knowledge_base") < calls.index("start_ingestion_job")
+    assert calls.count("start_ingestion_job") == 1
+
+
+def test_create_fails_fast_on_kb_failed_ki013(monkeypatch: Any) -> None:
+    monkeypatch.setattr(kb.time, "sleep", lambda _s: None)
+    calls: list[str] = []
+    agent = SpyAgentKB(calls, kb_statuses=["FAILED"], failure_reasons=["dummy"])
+    with pytest.raises(RuntimeError):
+        kb.run(
+            dry_run=False,
+            do_create=True,
+            do_sync=True,
+            agent=agent,
+            sts=SpySTS(),
+            settings=_settings_with_role(),
+        )
+    assert "start_ingestion_job" not in calls  # sync 도달 전 fail-fast
+
+
+def test_wait_kb_active_passes_through_when_already_active_ki013() -> None:
+    calls: list[str] = []
+    agent = SpyAgentKB(calls, kb_statuses=["ACTIVE"])
+    kb._wait_kb_active(agent, "KB1", poll_interval_s=0)
+    assert calls.count("get_knowledge_base") == 1  # 즉시 통과
 
 
 def test_kb_no_mode_returns_false() -> None:
