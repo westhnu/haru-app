@@ -172,3 +172,71 @@ app.services.exceptions.BedrockRetrievalError: KB sync 폴링 실패
 - failureReason: maxLength 50000 초과 (actual 194198)
 - 비용: $0 (임베딩 호출 전 검증 실패)
 - 발견 KI: KI-014 (폴링 버그, 이번 블록에서 수정), KI-015 (적재 전략, 다음 블록에서 구현)
+
+### 4차 재개 — KI-015 수정 반영, 302 txt 재적재 후 ingestion
+- 시작: 2026-10-30T16:58:17Z
+```
+2026-10-31 01:58:17 [info     ] create_step                    dry_run=False resource_id=LEWVDQRRRK resource_type=knowledge_base result=already_exists
+KB already_exists, reusing: LEWVDQRRRK
+2026-10-31 01:58:17 [info     ] kb_wait_active                 elapsed_s=0.1 kb_id=LEWVDQRRRK status=ACTIVE
+2026-10-31 01:58:17 [info     ] create_step                    dry_run=False resource_id=FWRJAYJRK6 resource_type=data_source result=already_exists
+dataSource already_exists, reusing: FWRJAYJRK6
+KB: LEWVDQRRRK / dataSource: FWRJAYJRK6
+→ .env에 추가: BEDROCK_KB_ID=LEWVDQRRRK
+2026-10-31 01:58:18 [info     ] kb_sync_started                ingestion_job_id=R6QMUSL1AU kb_id=LEWVDQRRRK
+sync 완료: job=R6QMUSL1AU status=COMPLETE
+```
+- 종료: 2026-10-30T16:59:49Z
+
+### 5차 재개 — KI-016 수정 반영 (nonFilterableMetadataKeys), index/KB/DS 재생성 후 ingestion
+- 시작: 2026-10-30T17:34:23Z
+```
+2026-10-31 02:34:24 [info     ] create_step                    dry_run=False resource_id=ITEUSMR3IL resource_type=knowledge_base result=created
+2026-10-31 02:34:24 [info     ] kb_wait_active                 elapsed_s=0.1 kb_id=ITEUSMR3IL status=CREATING
+2026-10-31 02:34:26 [info     ] kb_wait_active                 elapsed_s=2.2 kb_id=ITEUSMR3IL status=ACTIVE
+2026-10-31 02:34:26 [info     ] create_step                    dry_run=False resource_id=TICYPXTCJQ resource_type=data_source result=created
+KB: ITEUSMR3IL / dataSource: TICYPXTCJQ
+→ .env에 추가: BEDROCK_KB_ID=ITEUSMR3IL
+2026-10-31 02:34:27 [info     ] kb_sync_started                ingestion_job_id=WUK6SJJHKB kb_id=ITEUSMR3IL
+sync 완료: job=WUK6SJJHKB status=COMPLETE
+```
+- 종료: 2026-10-30T17:35:43Z
+
+### 5차 재개 — 요약 (성공, Phase ⑥ 완결)
+- 새 KB id: ITEUSMR3IL
+- 새 DS id: TICYPXTCJQ
+- Ingestion job: WUK6SJJHKB, status=COMPLETE
+- Docs scanned: 302
+- Docs indexed: 302
+- Docs failed: 0
+- 실 ingestion 소요: 65초 (17:34:27 → 17:35:32 UTC)
+- 임베딩 비용 실측: 실측 미획득(응답에 토큰 수 없음), 사전 추정 ~$0.0016 (302 docs × Titan v2)
+- KI-010 검증: indexName 미전달 ✓
+- KI-011 검증: list_data_sources 직접 호출 0회 ✓
+- KI-013 검증: kb_wait_active CREATING(0.1s)→ACTIVE(2.2s) ✓
+- KI-014 검증: poll_sync에 dataSourceId 포함, 폴링 성공 ✓
+- KI-015 검증: numberOfDocumentsScanned=302 (파일=문서 1:1) ✓
+- KI-016 검증: indexed=302 / failed=0 (nonFilterableMetadataKeys로 2048B 한도 회피) ✓
+
+### 하네스 ROI 통합 요약 (Phase ⑥ KB 구축 전 사이클)
+
+| 시도 | 결과 | 소요 | 비용 | 발견 KI | 수정 방식 |
+|---|---|---|---|---|---|
+| 1차 --apply | ValidationException | 1s | $0 | KI-010 (indexArn⊕indexName) | 코드 1줄 + 회귀 테스트 |
+| 2차 --apply | AccessDenied | 1s | $0 | KI-011 (sync가 list_data_sources 재호출) | 리팩토링 + 회귀 테스트 |
+| Teardown #1 | KB cascade | ~2m | $0 | KI-012 (teardown all-or-nothing) | Phase 6 리팩토링 예약 |
+| 3차 --apply | ConflictException | <5s | $0 | KI-013 (KB ACTIVE 대기 누락) | _wait_kb_active + 테스트 3건 |
+| 3차 재개 | ingestion FAILED (50KB) | 4s | $0 | KI-014 (poll dataSourceId 누락), KI-015 (JSONL blob 50KB) | 폴링 수정 + 302 txt 재설계 |
+| 4차 재개 | 부분 성공 (144/302) | 76s | ~$0.001 | KI-016 (2048B filterable) | nonFilterableMetadataKeys 지정 |
+| Teardown #2 + Rebuild | index/KB/DS 재생성 | ~3m | $0 | — | — |
+| 5차 재개 | 302/302 COMPLETE | 65s | ~$0.0016 | — | — |
+
+- 총 발견 drift: 7건 (KI-010 ~ KI-016)
+- 모든 drift가 운영 환경 도달 전 포획 (사용자 체감 장애 0, 데이터 손실 0)
+- 전체 사이클 운영 롤백 비용: $0 (임베딩 실측 총합 < $0.01)
+- 하네스 설계 요소: --dry-run 기본 / --apply 명시 / --confirm teardown / 각 단계 사람 승인 체크포인트 / 외부 호출 전 read-only 재확인 / fail-fast with raw 로그
+- 수정 방식: 7건 중 6건 코드 수정 + 회귀 테스트 + known-issues 등재. KI-012는 Phase 6 리팩토링(T-603) 예약.
+
+### Phase ⑥ 완료 후 .env 반영 필요 (사용자 직접)
+- BEDROCK_KB_ID=ITEUSMR3IL
+- HARU_KB_S3_VECTOR_INDEX_ARN: 변경 없음 (재생성 후 ARN 동일)
