@@ -7,7 +7,8 @@ from app.main import create_app
 REQUIRED_IN_PROD = {
     "bedrock_kb_id": "KB0000TEST",
     "bedrock_guardrail_id": "gr0000test",
-    "haru_kb_s3_bucket": "haru-kb-000000000000-ap-northeast-2",
+    "haru_kb_s3_bucket": "haru-kb-data-000000000000-ap-northeast-2",
+    "haru_kb_vector_bucket_arn": "arn:aws:s3vectors:ap-northeast-2:0:bucket/vec",
     "dart_api_key": "dart-secret-value-do-not-log",
     "jutopia_data_dir": "/opt/jutopia_data",
 }

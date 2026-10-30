@@ -93,3 +93,12 @@
   - 반기·분기 IS의 비교값은 `frmtrm_q_amount`에 있어 시계열이 1점뿐 → 증감률 계산 불가
 - **영향**: 원칙 2(정확한 수치 전달) 측면에서 오해 소지. 체크리스트 채점(§5.2)에 그대로 쓰면 3개월 기준으로 판정됨
 - **조치**: PO 결정 대기 (sprint-2-log §12의 ① 기간 라벨 추가 / ② 누적 기준 통일, ② 권장)
+
+## KI-009 — Sonnet 4.5 base ID LEGACY (추론 프로파일 사용 중, Phase 5 재검증 예정)
+
+- **발견**: 2026-10-30, `bedrock-kb-and-guardrail` 스펙 Phase 4 사전 실측
+- **상태**: in-progress
+- **내용**: `aws bedrock list-foundation-models`(서울 리전) 조회 결과 `anthropic.claude-sonnet-4-5-20250929-v1:0`의 `modelLifecycle.status`가 **`LEGACY`**다. (Titan Embeddings v2는 `ACTIVE`.) 실제 호출은 base ID가 아닌 `global.anthropic...` 크로스 리전 추론 프로파일을 경유하므로(KI-005), list의 LEGACY 표기와 호출 경로는 별개다.
+- **영향**: Phase 5 실호출(RetrieveAndGenerate 생성 모델)에서 쓰는 `BEDROCK_MODEL_ID`가 이 Sonnet 4.5다. base ID가 LEGACY로 EOL 수순에 들어가면 추론 프로파일도 영향받을 수 있어, 실호출 전 유효성 확인이 필요하다.
+- **조치**: Phase 5의 **T-500**에서 `aws bedrock get-inference-profile --inference-profile-identifier global.anthropic.claude-sonnet-4-5-20250929-v1:0`로 `ACTIVE` 확인 후 진행. 유효하지 않으면 모델 ID를 후속 Sonnet 버전으로 교체.
+- **관련**: KI-005(global. 추론 프로파일), KI-007(use case 양식)

@@ -16,6 +16,7 @@ PROD_REQUIRED_SETTINGS: tuple[str, ...] = (
     "bedrock_kb_id",
     "bedrock_guardrail_id",
     "haru_kb_s3_bucket",
+    "haru_kb_vector_bucket_arn",
     "dart_api_key",
     "jutopia_data_dir",
 )
@@ -46,7 +47,10 @@ class Settings(BaseSettings):
     bedrock_guardrail_id: str = ""
     bedrock_guardrail_version: str = "DRAFT"
     # KB 벡터스토어 백킹. prod 필수(PROD_REQUIRED_SETTINGS). 인덱스 ARN은 KB 생성 스크립트가 채운다.
+    # haru_kb_s3_bucket: 데이터소스용 일반 S3 버킷.
+    # haru_kb_vector_bucket_arn: 임베딩용 S3 vector bucket — 일반 버킷과 별개 리소스.
     haru_kb_s3_bucket: str = ""
+    haru_kb_vector_bucket_arn: str = ""
     haru_kb_s3_vector_index_arn: str = ""
 
     # 비어 있으면 DART 도구가 개발용 mock 데이터로 동작한다.

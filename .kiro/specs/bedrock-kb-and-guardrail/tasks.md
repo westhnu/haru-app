@@ -138,14 +138,53 @@
 
 > ⚠️ **여기서부터 실제 AWS 자원이 생성된다. 각 태스크마다 사용자(나)의 명시적 승인 없이 절대 실행 금지.**
 
-### T-401 · S3 버킷 생성 스크립트
+> **[설계 drift — 사전 실측 반영 (2026-10-30)]**
+>
+> 실측 결과 **S3 Vector Store는 일반 S3 버킷과 별개 리소스**다. 따라서 Phase 4는 세 리소스를 만든다:
+> 1. **데이터소스용 일반 S3 버킷** (`HARU_KB_S3_BUCKET`) — glossary JSONL 원문 저장 (T-401·T-403)
+> 2. **벡터용 S3 vector bucket** (`HARU_KB_VECTOR_BUCKET_ARN`) — 임베딩 저장, `s3vectors.create_vector_bucket` (T-401.5-A)
+> 3. **vector index** (`HARU_KB_S3_VECTOR_INDEX_ARN`) — vector bucket 내 인덱스, `s3vectors.create_index` (T-401.5-B)
+>
+> KB(T-404)는 `storageConfiguration.type=S3_VECTORS`로 위 2·3을 참조하고, 데이터소스로 1을 읽는다.
+>
+> **플래그 패턴 (비대칭):**
+> - 생성 스크립트: `--dry-run`이 **기본값**, 실제 생성은 `--apply` 명시.
+> - teardown 스크립트(Phase 4.5): `--dry-run`이 **기본값**, 실제 삭제는 `--confirm` 명시.
+> - 실측 확인: Titan Embeddings v2 `ACTIVE`(dim 1024), S3 Vectors 서울 리전 지원 확정.
+
+### T-401 · 데이터소스용 일반 S3 버킷 생성 스크립트
 
 - [ ] `scripts/kb/create_s3_bucket.py`
-- [ ] 버킷 이름: `haru-kb-{account_id}-ap-northeast-2`
+- [ ] 버킷 이름: `haru-kb-data-{account_id}-ap-northeast-2` (데이터소스용 '일반' 버킷)
 - [ ] 버킷 정책: private, versioning 활성화, 서버측 암호화 (SSE-S3)
 - [ ] Idempotent (이미 존재 시 skip)
-- **DoD**: 스크립트 dry-run 성공 (`--dry-run` 플래그로 실 생성 안 함)
-- **HITL**: 필수 승인 (실행 시 나에게 물어볼 것)
+- [ ] 플래그: `--dry-run` 기본, `--apply`로 실제 생성
+- **DoD**: `--dry-run`(기본) 실행 시 아무 것도 생성 안 됨을 출력으로 확인
+- **HITL**: 필수 승인 (`--apply` 실행 시 나에게 물어볼 것)
+- **타임아웃**: 120초
+
+### T-401.5 · S3 Vector Store 리소스 생성 (실측으로 신설)
+
+#### T-401.5-A · Vector Bucket 생성
+
+- [ ] `scripts/kb/create_vector_bucket.py`
+- [ ] `s3vectors.create_vector_bucket(name="haru-kb-vectors-{account_id}")`
+- [ ] stdout에 `vectorBucketArn` 출력 (→ `HARU_KB_VECTOR_BUCKET_ARN`)
+- [ ] Idempotent (이미 존재 시 skip)
+- [ ] 플래그: `--dry-run` 기본, `--apply`로 실제 생성
+- **DoD**: `--dry-run` 시 생성 없음 확인 / `--apply` 시 ARN 출력
+- **HITL**: 필수 승인
+- **타임아웃**: 120초
+
+#### T-401.5-B · Vector Index 생성
+
+- [ ] `scripts/kb/create_vector_index.py`
+- [ ] `s3vectors.create_index(vectorBucketName=..., indexName="haru-glossary", dimension=1024, dataType="float32", distanceMetric="cosine")`
+- [ ] dimension=1024 — Titan Embeddings v2 차원 (실측 반영)
+- [ ] stdout에 `indexArn` 출력 (→ `HARU_KB_S3_VECTOR_INDEX_ARN`)
+- [ ] 플래그: `--dry-run` 기본, `--apply`로 실제 생성
+- **DoD**: `--dry-run` 시 생성 없음 확인 / `--apply` 시 indexArn 출력
+- **HITL**: 필수 승인
 - **타임아웃**: 120초
 
 ### T-402 · 용어 사전 → JSONL 변환 스크립트
@@ -169,12 +208,13 @@
 
 ### T-404 · Bedrock Knowledge Base 생성
 
-- [ ] `scripts/kb/create_or_sync_kb.py --create`
-- [ ] Embedding: `amazon.titan-embed-text-v2:0`
-- [ ] Vector store: S3 Vector Store (신규 인덱스 생성)
-- [ ] Data source: S3 (`glossary/` 프리픽스)
+- [ ] `scripts/kb/create_or_sync_kb.py --create` (`--dry-run` 기본, `--apply`로 실행)
+- [ ] `storageConfiguration.type = "S3_VECTORS"`
+- [ ] `storageConfiguration.s3VectorsConfiguration = {vectorBucketArn, indexArn, indexName}` (T-401.5 산출물 사용)
+- [ ] `embeddingModelArn`: `amazon.titan-embed-text-v2:0` + `embeddingModelConfiguration`(Titan v2, dim 1024)
+- [ ] Data source: 일반 S3 버킷(`HARU_KB_S3_BUCKET`)의 `glossary/` 프리픽스
 - [ ] Chunking: no-chunking (용어 사전은 라인 단위가 이미 최적)
-- [ ] 생성된 `kb_id`, `data_source_id`, `vector_index_arn`을 stdout에 표시
+- [ ] 생성된 `kb_id`, `data_source_id`를 stdout에 표시
 - **DoD**: `aws bedrock-agent get-knowledge-base --knowledge-base-id ...` → status Available
 - **HITL**: 필수 승인
 - **타임아웃**: 600초, 재시도 0
@@ -189,9 +229,10 @@
 
 ### T-406 · `.env` 업데이트 (수동)
 
-- [ ] 사용자(나)가 `.env`에 다음 3개 값 입력:
+- [ ] 사용자(나)가 `.env`에 다음 4개 값 입력:
   - `BEDROCK_KB_ID=`
   - `HARU_KB_S3_BUCKET=`
+  - `HARU_KB_VECTOR_BUCKET_ARN=` (신규 — vector bucket)
   - `HARU_KB_S3_VECTOR_INDEX_ARN=`
 - Kiro는 값을 절대 화면·로그에 노출하지 않음
 - **DoD**: `env | grep BEDROCK_KB_ID` (값은 노출 X, 존재만 확인)
@@ -218,7 +259,47 @@
 
 ---
 
+## Phase 4.5 — Teardown 스크립트 (Phase 4 직후)
+
+> 실측 반영 신설. 생성 리소스를 안전하게 되돌린다. 모든 삭제는 `--dry-run` 기본, `--confirm`으로만 실행.
+> 삭제는 생성의 **역순**: KB → vector index → vector bucket → S3 객체 → S3 버킷.
+
+### T-451 · `scripts/kb/teardown.py`
+
+- [ ] 역순 삭제: `delete_knowledge_base` → `s3vectors.delete_index` → `s3vectors.delete_vector_bucket` → S3 객체 삭제 → 일반 S3 버킷 삭제
+- [ ] 각 리소스 삭제 전 존재 확인 (get/head 후 없으면 skip)
+- [ ] `--dry-run` 기본, `--confirm`으로만 실제 삭제
+- **DoD**: `--dry-run`(기본)에서 어떤 삭제 API도 호출되지 않음 (mock 유닛으로 검증, T-453)
+- **HITL**: 필수 승인 (`--confirm` 실행 시)
+- **타임아웃**: 600초
+
+### T-452 · `scripts/guardrail/teardown.py`
+
+- [ ] `get_guardrail`로 존재 확인 후 `delete_guardrail`
+- [ ] `--dry-run` 기본, `--confirm`으로만 실제 삭제
+- **DoD**: `--dry-run`에서 삭제 API 미호출 (mock 유닛, T-453)
+- **HITL**: 필수 승인
+- **타임아웃**: 120초
+
+### T-453 · `tests/unit/test_teardown_dry_run.py`
+
+- [ ] 두 teardown이 `--dry-run` 모드에서 어떤 AWS API도 실제 호출하지 않음을 mock으로 검증
+- [ ] `--confirm` 없이 호출 시 실삭제가 일어나지 않음을 검증
+- **DoD**: `pytest tests/unit/test_teardown_dry_run.py` 통과
+- **HITL**: Allow Session
+
+---
+
 ## Phase 5 — 실호출 통합 및 회귀 통과
+
+### T-500 · 추론 프로파일 유효성 사전 확인 (실측 반영 신설)
+
+- [ ] `aws bedrock get-inference-profile --inference-profile-identifier global.anthropic.claude-sonnet-4-5-20250929-v1:0`
+- [ ] status `ACTIVE` 확인 후에만 Phase 5 진행
+- [ ] Sonnet 4.5 base ID가 `LEGACY`이므로, 추론 프로파일이 유효하지 않으면 모델 ID 교체 필요 (KI-009 참조)
+- **DoD**: 추론 프로파일 ACTIVE 확인 (read-only 호출)
+- **HITL**: Allow Once (read-only)
+- **타임아웃**: 30초
 
 ### T-501 · `BedrockClient.retrieve_and_generate` 실호출 경로
 
