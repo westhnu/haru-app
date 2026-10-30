@@ -189,11 +189,11 @@
 
 ### T-402 · 용어 사전 → JSONL 변환 스크립트
 
-- [ ] `scripts/kb/convert_glossary.py`
-- [ ] `/Users/westhnu/Agent/Claude/jutopia_data/data/glossary.json` → 73개 라인의 JSONL
-- [ ] 출력: `backend/data/kb/glossary.jsonl`
-- [ ] 각 라인: `{"id","term","definition","category","related_terms","formula","source"}`
-- **DoD**: 파일 라인 수 == 73, 스키마 검증 통과
+- [x] `scripts/kb/convert_glossary.py` (로컬 변환, AWS 0, 실행·검증 완료)
+- [x] `/Users/westhnu/Agent/Claude/jutopia_data/data/glossary.json` → `len(glossary.json)`개 라인의 JSONL (실측 302개, 하드코딩 금지)
+- [x] 출력: `backend/data/kb/glossary.jsonl` (gitignore)
+- [x] 각 라인: `id=glossary_{idx:03d}`, `term`(키), jutopia 속성 보존(빈 값 생략), `source` 폴백
+- **DoD**: 파일 라인 수 == `len(glossary.json)`, 스키마 검증 통과
 - **HITL**: Allow Once (읽기만)
 - **타임아웃**: 30초
 
@@ -223,7 +223,7 @@
 
 - [ ] `scripts/kb/create_or_sync_kb.py --sync --wait`
 - [ ] `start_kb_sync` 호출 후 `poll_kb_sync`로 완료 대기
-- **DoD**: ingestion job status == `COMPLETE`, 인덱싱된 청크 수 >= 73
+- **DoD**: ingestion job status == `COMPLETE`, 인덱싱된 청크 수 >= `len(glossary.json)`
 - **HITL**: 필수 승인
 - **타임아웃**: 900초
 
@@ -387,7 +387,7 @@
 이 스펙 전체가 완료됐다고 판단하는 종합 기준:
 
 1. ✅ `.env` 5개 신규 키 모두 설정, prod에서 앱 정상 시작
-2. ✅ Bedrock KB에 73개 용어 인덱싱 완료, admin 엔드포인트로 확인 가능
+2. ✅ Bedrock KB에 `len(glossary.json)`개(실측 302) 용어 인덱싱 완료, admin 엔드포인트로 확인 가능
 3. ✅ Guardrail 리소스 존재, 6개 정책 적용, 실호출 시 `guardrailIdentifier` 파라미터 포함
 4. ✅ `POST /api/v1/glossary/ask` 정상 질의 → citations 포함 응답 (실측)
 5. ✅ 위험 질의 → Guardrail 차단 → 표준 대체 문구 (실측)

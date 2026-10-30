@@ -97,8 +97,9 @@
 ## KI-009 — Sonnet 4.5 base ID LEGACY (추론 프로파일 사용 중, Phase 5 재검증 예정)
 
 - **발견**: 2026-10-30, `bedrock-kb-and-guardrail` 스펙 Phase 4 사전 실측
-- **상태**: in-progress
+- **상태**: resolved
 - **내용**: `aws bedrock list-foundation-models`(서울 리전) 조회 결과 `anthropic.claude-sonnet-4-5-20250929-v1:0`의 `modelLifecycle.status`가 **`LEGACY`**다. (Titan Embeddings v2는 `ACTIVE`.) 실제 호출은 base ID가 아닌 `global.anthropic...` 크로스 리전 추론 프로파일을 경유하므로(KI-005), list의 LEGACY 표기와 호출 경로는 별개다.
 - **영향**: Phase 5 실호출(RetrieveAndGenerate 생성 모델)에서 쓰는 `BEDROCK_MODEL_ID`가 이 Sonnet 4.5다. base ID가 LEGACY로 EOL 수순에 들어가면 추론 프로파일도 영향받을 수 있어, 실호출 전 유효성 확인이 필요하다.
-- **조치**: Phase 5의 **T-500**에서 `aws bedrock get-inference-profile --inference-profile-identifier global.anthropic.claude-sonnet-4-5-20250929-v1:0`로 `ACTIVE` 확인 후 진행. 유효하지 않으면 모델 ID를 후속 Sonnet 버전으로 교체.
+- **조치**: Phase 5의 **T-500**에서 `aws bedrock get-inference-profile`로 `ACTIVE` 확인 후 진행. 유효하지 않으면 모델 ID를 후속 Sonnet 버전으로 교체.
+- **해결 (2026-10-30)**: T-500 선행 실측에서 `global.anthropic.claude-sonnet-4-5-20250929-v1:0`가 `SYSTEM_DEFINED` 프로파일이며 status `ACTIVE`임을 확인. list-foundation-models의 base ID `LEGACY`는 수명주기 라벨일 뿐, 실제 호출 경로인 global 추론 프로파일은 ACTIVE로 두 축이 별개임을 검증. 현재 모델 ID 유지.
 - **관련**: KI-005(global. 추론 프로파일), KI-007(use case 양식)

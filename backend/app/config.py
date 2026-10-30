@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     haru_kb_s3_bucket: str = ""
     haru_kb_vector_bucket_arn: str = ""
     haru_kb_s3_vector_index_arn: str = ""
+    # KB가 임베딩·S3 접근에 사용하는 IAM Role. Phase 4에서 수동 생성 후 설정(스펙 범위 밖).
+    bedrock_kb_role_arn: str = ""
 
     # 비어 있으면 DART 도구가 개발용 mock 데이터로 동작한다.
     dart_api_key: str = ""

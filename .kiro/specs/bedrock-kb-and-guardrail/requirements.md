@@ -4,7 +4,7 @@
 
 Sprint 2 완료 시점의 Haru 백엔드는 Bedrock 파운데이션 모델은 실호출하지만, RAG 파이프라인은 mock 응답이고 Guardrail은 코드 후처리만 존재한다. 이 스펙은 **강의 §RAG와 §Guardrail을 그대로 실물화**하여:
 
-1. Bedrock Knowledge Base (S3 벡터스토어)에 73개 용어 사전을 인덱싱하고
+1. Bedrock Knowledge Base (S3 벡터스토어)에 glossary.json의 모든 용어 사전을 인덱싱하고
 2. Bedrock Guardrail 리소스를 생성해 원칙 1·5를 상위 방어층으로 강제하며
 3. 기존 코드 가드레일과 이중 방어를 이루도록 통합한다.
 
@@ -52,7 +52,7 @@ Sprint 2 완료 시점의 Haru 백엔드는 Bedrock 파운데이션 모델은 �
 
 ### KB 구축
 
-**REQ-KB-01** WHEN 배포 스크립트가 실행되면, THE SYSTEM SHALL S3 버킷 (`HARU_KB_S3_BUCKET`)에 `glossary/` 프리픽스로 73개 용어 문서를 JSON Lines 형식으로 업로드해야 한다.
+**REQ-KB-01** WHEN 배포 스크립트가 실행되면, THE SYSTEM SHALL S3 버킷 (`HARU_KB_S3_BUCKET`)에 `glossary/` 프리픽스로 glossary.json의 모든 용어 문서를 JSON Lines 형식으로 업로드해야 한다.
 
 **REQ-KB-02** WHEN 사용자가 관리자 CLI로 `sync-kb` 명령을 실행하면, THE SYSTEM SHALL Bedrock Knowledge Base 데이터 소스 동기화를 트리거하고 상태를 폴링하여 `Available` 완료를 확인해야 한다.
 
