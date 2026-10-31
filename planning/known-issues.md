@@ -216,3 +216,15 @@
 - **교훈**: 지역화된 PII는 Bedrock 내장 enum이 아니라 regexesConfig로 커스텀 지정하는 것이 정석. 공식 schema를 service model에서 직접 확인하는 것이 재작업 비용 최소화.
 - **회귀 방지**: `test_guardrail_uses_regexes_config_for_kr_rrn_ki017`
 - **관련**: T-407, 원칙 1 이중 방어
+
+## KI-018 — 기존 /brief, /themes 경로가 Bedrock Guardrail·core.guardrail 이중 방어 미적용
+
+- **발견**: 2026-10-31, 세션 2 frontend 구조 조사
+- **상태**: open (중장기 리팩토링 과제)
+- **증상**: haru-app frontend의 Daily 2-Brief 경로는 GPT(openai sdk) + Gemini를 쓴다. FastAPI 백엔드·Bedrock Guardrail·`core/guardrail.py` 어느 것도 거치지 않는다.
+- **영향 범위**: `/brief/morning`, `/brief/evening`, `/themes`, `/api/brief`, `/api/brief/generate`, `/api/themes`
+- 특히 `/themes`는 이슈를 종목에 연결하는 기능이라 원칙 1(종목 매수·매도 권유 금지)에 가까운 민감 경로.
+- **현재 완화**: 기존 코드의 자체 가드(GPT→Gemini 교차검증). Bedrock Guardrail의 Denied Topic·Content Filter·KR_RRN(KI-017) 같은 상위 레이어 보호는 없음.
+- **중장기 완화 (세션 4+)**: LLM 호출을 FastAPI `/api/v1/glossary/ask` 패턴으로 통일 → Bedrock Claude Sonnet 4.5 + Guardrail + core.guardrail 자동 통과. 또는 openai sdk 호출을 자체 wrapper로 감싸 `enforce_disclaimer` 후처리 적용.
+- **세션 2 범위**: 수정 안 함. 신규 경로(/workbook, /checklist, /journal, /glossary)는 `/backend/*` 프록시로 FastAPI를 경유해 이중 방어를 통과.
+- **교훈**: 안전 레이어 적용 범위를 명시적으로 관리하는 것이 "암묵적 미적용"보다 안전하다.

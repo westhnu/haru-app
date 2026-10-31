@@ -19,6 +19,16 @@ const nextConfig = {
     S3_BUCKET: process.env.S3_BUCKET,
     TWELEVE_KEY: process.env.TWELEVE_KEY,
   },
+  // FastAPI 백엔드 프록시. 신규 경로(/workbook·/checklist·/journal·/glossary)는 이걸로
+  // FastAPI를 거쳐 Bedrock Guardrail + core.guardrail 이중 방어를 통과한다 (KI-018).
+  async rewrites() {
+    return [
+      {
+        source: "/backend/:path*",
+        destination: "http://localhost:8000/api/v1/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
