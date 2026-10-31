@@ -1,5 +1,8 @@
 // Workbook API 타입·호출 (backend app/models/workbook.py와 1:1).
-// next.config rewrites: /backend/* → FastAPI /api/v1/* (로컬 백엔드, 운영 Amplify에는 아직 없음)
+// 호출은 lib/backendFetch.ts 공통 helper를 쓴다.
+import { backendFetch } from "@/lib/backendFetch";
+
+export { formatDateTime } from "@/lib/backendFetch";
 
 export type BlockType = "memo" | "financial" | "news" | "chart" | "checklist_ref";
 
@@ -35,30 +38,7 @@ export type Workbook = {
 type WorkbookListResponse = { workbooks: Workbook[]; total: number };
 
 const BASE = "/backend/workbooks";
-
-export class WorkbookApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number
-  ) {
-    super(message);
-  }
-}
-
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  let r: Response;
-  try {
-    r = await fetch(url, { cache: "no-store", ...init });
-  } catch {
-    throw new WorkbookApiError("백엔드에 연결할 수 없습니다 (localhost:8000 실행 여부 확인)", 0);
-  }
-  if (!r.ok) {
-    // 프록시가 백엔드에 못 붙으면 Next가 500을 돌려준다.
-    const hint = r.status >= 500 ? " — 백엔드 실행 여부를 확인하세요" : "";
-    throw new WorkbookApiError(`요청 실패 (${r.status})${hint}`, r.status);
-  }
-  return (r.status === 204 ? undefined : await r.json()) as T;
-}
+const request = backendFetch;
 
 export async function listWorkbooks(stockCode?: string): Promise<Workbook[]> {
   const q = stockCode ? `?stock_code=${encodeURIComponent(stockCode)}` : "";
@@ -95,11 +75,4 @@ export function deleteBlock(workbookId: string, blockId: string): Promise<void> 
 export function memoText(block: WorkbookBlock): string | null {
   const t = block.content.text;
   return block.block_type === "memo" && typeof t === "string" ? t : null;
-}
-
-export function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? iso
-    : d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }

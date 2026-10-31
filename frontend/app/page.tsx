@@ -6,6 +6,7 @@ import {
   Sparkles,
   Network,
   BookOpen,
+  NotebookPen,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
@@ -46,6 +47,14 @@ const features = [
     time: "신규",
     description: "종목별 분석 메모를 모아 보관해요.",
     icon: BookOpen,
+    active: true,
+  },
+  {
+    href: "/journal",
+    title: "투자 저널",
+    time: "신규",
+    description: "결정과 근거를 기록하고 가상 포지션을 추적해요.",
+    icon: NotebookPen,
     active: true,
   },
 ];

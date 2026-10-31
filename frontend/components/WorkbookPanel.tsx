@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, NotebookPen, Plus, Trash2 } from "lucide-react";
+import ChecklistSection from "@/components/ChecklistSection";
+import JournalEntryDialog from "@/components/JournalEntryDialog";
 import WorkbookEditDialog from "@/components/WorkbookEditDialog";
 import WorkbookTempBadge from "@/components/WorkbookTempBadge";
 import {
@@ -19,7 +21,8 @@ type Load =
   | { kind: "error"; message: string }
   | { kind: "ready"; workbooks: Workbook[] };
 
-/** StockDetail "워크북" 탭. 종목별 워크북의 memo 블록을 보여주고 추가·삭제한다.
+/** StockDetail "워크북" 탭. 종목별 워크북의 memo 블록, 체크리스트, 결정 기록 진입점을 모은다.
+ *  흐름: 메모로 정리 → 체크리스트로 점검 → 본인 결정 기록(저널).
  *  한 종목에 워크북이 여러 개면 첫 번째를 기본 선택한다. */
 export default function WorkbookPanel({
   stockCode,
@@ -33,6 +36,8 @@ export default function WorkbookPanel({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null); // "create" | 삭제 중인 block id
   const [actionError, setActionError] = useState<string | null>(null);
+  const [checklistId, setChecklistId] = useState<string | null>(null);
+  const [journalOpen, setJournalOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -85,20 +90,19 @@ export default function WorkbookPanel({
   const card =
     "rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5";
 
+  let workbookArea: JSX.Element | null = null;
   if (load.kind === "loading") {
-    return (
-      <div className={`mt-4 ${card} flex items-center justify-center gap-2 py-10`}>
+    workbookArea = (
+      <div className={`${card} flex items-center justify-center gap-2 py-10`}>
         <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
         <span className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">
           워크북을 불러오는 중...
         </span>
       </div>
     );
-  }
-
-  if (load.kind === "error") {
-    return (
-      <div className={`mt-4 ${card}`}>
+  } else if (load.kind === "error") {
+    workbookArea = (
+      <div className={card}>
         <p className="text-[13px] font-semibold text-red-600 dark:text-red-400">{load.message}</p>
         <button
           type="button"
@@ -114,12 +118,13 @@ export default function WorkbookPanel({
     );
   }
 
-  const workbooks = load.workbooks;
+  const workbooks = load.kind === "ready" ? load.workbooks : [];
   const wb = workbooks.find((w) => w.id === selectedId) ?? null;
 
   return (
     <div className="mt-4 space-y-3">
-      {workbooks.length > 1 && (
+      {workbookArea}
+      {load.kind === "ready" && workbooks.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto">
           {workbooks.map((w) => (
             <button
@@ -138,6 +143,7 @@ export default function WorkbookPanel({
         </div>
       )}
 
+      {load.kind === "ready" && (
       <div className={card}>
         {!wb ? (
           <div className="py-6 text-center">
@@ -228,11 +234,36 @@ export default function WorkbookPanel({
           <p className="mt-3 text-[12px] font-semibold text-red-600 dark:text-red-400">{actionError}</p>
         )}
       </div>
+      )}
+
+      <ChecklistSection
+        stockCode={stockCode}
+        stockName={stockName}
+        onChecklistChange={setChecklistId}
+      />
+
+      <button
+        type="button"
+        onClick={() => setJournalOpen(true)}
+        className="flex w-full items-center justify-center gap-2 rounded-[20px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3.5 text-[14px] font-black text-slate-900 dark:text-slate-100 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+      >
+        <NotebookPen className="h-4 w-4" />
+        결정 기록하기
+      </button>
 
       <p className="px-1 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
         워크북은 본인의 생각을 정리하는 공간이에요. Haru는 종목을 추천하지 않으며, 최종 결정은
         사용자에게 있습니다.
       </p>
+
+      <JournalEntryDialog
+        open={journalOpen}
+        onClose={() => setJournalOpen(false)}
+        stockCode={stockCode}
+        stockName={stockName}
+        defaultChecklistId={checklistId}
+        defaultWorkbookId={wb?.id ?? null}
+      />
 
       {wb && (
         <WorkbookEditDialog

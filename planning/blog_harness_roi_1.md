@@ -367,3 +367,72 @@ Phase 5a 완결 후 두 번째 체감 UI. StockDetail에 "워크북" 탭 + 전�
 - **테스트 전역 상태 격리**: _WORKBOOKS가 모듈 전역이라 테스트끼리 데이터 공유. 각 테스트가 새 워크북 만들어 쓰고 샘플은 안 건드리게 설계
 - **원칙 라우터 PII 처리 공백 지적**: 지금은 저장만이라 OK, 나중에 메모를 LLM에 넘기면 (예: AI 요약) `mask_pii` + `apply_output_guard` 지점 필요 — known-issue 등재 후보
 - **Amplify 운영 결함 재지적** (KI-025와 같은 패턴): 홈 "내 워크북" 카드가 운영에서 백엔드 접근 불가 → main merge 전 feature flag 또는 백엔드 배포 필요
+
+---
+
+## Sprint 3c — Checklist + Journal UI (Haru MVP 4대 기능 완결)
+
+Sprint 3b (Workbook) 바로 다음. 체크리스트 섹션은 워크북 탭에 통합 (분석 흐름 연속), 저널은 /journal 전용 페이지. **원칙 2 샘플 수치 전부 제거** (출처 없는 PER/ROE/부채비율 하드코딩 삭제).
+
+### 체감 UI 6장
+
+| # | 상태 | 스크린샷 |
+|---|---|---|
+| 13 | 체크리스트 섹션 초기 (원칙 3개 "판단 어려움", 0/3, 수치 없는 질문) | ![checklist](screenshots/sprint3c/13_checklist_initial.jpg) |
+| 14 | PER "충족" 클릭 → 즉시 PATCH → 점수 1/3 (33.3%) 초록 진행 막대 | ![updated](screenshots/sprint3c/14_status_updated.jpg) |
+| 15 | 결정 기록 다이얼로그 — "나의 결정 (본인 기록)" + 원칙 1 안내 ("가상 기록이며 실제 주문·거래 아님") | ![dialog](screenshots/sprint3c/15_journal_dialog_default.jpg) |
+| 16 | "매수 결정" 선택 → 가상 수량·단가 input 동적 노출 (관망/보유에선 숨김) | ![buy](screenshots/sprint3c/16_journal_dialog_buy.jpg) |
+| 17 | /journal 전용 페이지 — 가상 포지션 (10주·82,500원) + "현재가·손익은 표시하지 않아요" + 연결 워크북·체크리스트 | ![journal](screenshots/sprint3c/17_journal_page.jpg) |
+| 18 | 홈 "투자 저널" 카드 (NotebookPen 아이콘, 신규 배지) — Haru MVP 4대 기능 진입점 완성 | ![home](screenshots/sprint3c/18_home_journal_entry.jpg) |
+
+### Backend 확장 (총 259 passed, 신규 13건)
+
+**Checklist**:
+- `GET /api/v1/checklists?stock_code=` (필터)
+- `POST /api/v1/checklists` (종목별 생성, 빈 items)
+- `POST /{id}/items` (원칙 1~200자, 공백 제거)
+- `PATCH /{id}/items/{item_id}` (status·reasoning 부분 변경, 둘 다 생략 시 422)
+- `DELETE /{id}/items/{item_id}` (204)
+- `Checklist.updated_at` auto 갱신
+
+**Journal**:
+- `JournalEntryCreateRequest` 분리 (id·created_at 클라이언트 전송 거부, 가격·수량 ≥ 0, reasoning 1~1000자)
+- `GET /entries?stock_code=` (필터)
+- `DELETE /entries/{id}` (204)
+- `VirtualPosition.pnl/pnl_pct/current_price` 제거 (시세 연동 전까지 숨김)
+
+**샘플 데이터 원칙 2 교정**:
+- 체크리스트 `sample-value`: "현재 PER 11.2 / ROE 12.3%" 등 하드코딩 수치 전부 제거 → "PER이 업종 평균 대비 저평가인가?" 등 수치 없는 원칙으로 교체. 모두 "판단 어려움" 상태 (0/3)
+- 저널 `sample-1`: reasoning에서 수치 참조 삭제
+
+### Frontend 설계 결정
+
+- **(d) 통합 변형**: 체크리스트는 워크북 탭에 섹션으로 (분석→체크→결정 흐름), 저널만 `/journal` 전용. 체크리스트 전용 페이지는 종목 묶임이라 skip.
+- **PATCH 부분 변경**: status 또는 reasoning 하나만 선택적 전송 (상태 버튼은 상태만, input 변경은 근거만). 지시안의 "status 필수" 보다 실용적.
+- **가상 수량·단가 조건부 노출**: 매수·매도일 때만. 관망/보유에서 가격 받아도 쓸 곳 없음.
+- **원칙 4 CI 준수**: 파일·함수 이름에 `order/trade/bid/ask` 금지. `recordDecision`, `getVirtualPositions` 사용.
+- **lib/backendFetch.ts 공통 추출**: 3b에서 workbook만 쓰던 fetch 유틸을 공통 모듈로 승격. checklist/journal 재사용.
+- **"현재가·손익 숨김" 명시**: VirtualPosition에서 필드 자체 제거 + UI 안내 ("시세 연동 전이라 현재가·손익은 표시하지 않아요"). 과장된 수치 노출 방지.
+
+### Kiro가 사전 포획한 추가 결함
+
+- **샘플 수치 원칙 2 위반**: 조사 중 "PER 11.2, ROE 12.3%" 하드코딩 발견 → "예시 표시" 대신 수치 완전 제거로 결정 (사용자가 복붙할 가능성 원천 차단)
+- **AI 채점 미구현**: product.md에 "AI 채점"이라고 썼지만 prompts·services에 checklist 관련 코드 0건. 사용자 직접 선택 UX로 명시 (다음 세션 과제)
+- **Journal 생성 스키마 결함**: `POST /entries`가 `JournalEntry` 그대로 받음 → id/created_at 클라이언트 설정 가능, 음수 가격·수량 허용. `JournalEntryCreateRequest` 분리로 수정
+- **current_price 포함 오해**: 시세 연동 전이라 항상 0 반환 → UI에 노출하면 "0원" 오해. 필드 자체 제거로 안전
+- **포트폴리오 테스트 격리**: `_ENTRIES`가 모듈 전역이라 테스트끼리 데이터 공유 → 각 테스트 끝에 생성 데이터 정리
+
+---
+
+## 🎉 Haru MVP 4대 기능 완결
+
+Phase 5a + Sprint 3a + 3b + 3c로 Haru MVP 전체 체감 가능:
+
+| 기능 | UI 통합 지점 | 체감 스크린샷 |
+|---|---|---|
+| **용어 도우미** (Bedrock KB RAG) | StockDetail 지표/재무 라벨 hover → "자세히" 바텀시트 | 01~06 (Sprint 3a) |
+| **종목 워크북** (memo 블록) | StockDetail 세 번째 탭 + `/workbook` 전용 | 07~12 (Sprint 3b) |
+| **AI 체크리스트** (사용자 선택, AI 채점 미구현) | 워크북 탭 하단 섹션 | 13, 14 (Sprint 3c) |
+| **투자 저널 + 가상 포트폴리오** | 결정 기록 다이얼로그 + `/journal` 전용 | 15~18 (Sprint 3c) |
+
+총 스크린샷 18장, 블로그 글 400+ 줄, Drift 16건 narrative + 체감 UI 4종 완결 상태.
