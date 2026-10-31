@@ -4,6 +4,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.core.guardrail import DISCLAIMER
+from app.models.stock import StockSource
+
 ItemStatus = Literal["satisfied", "unsatisfied", "uncertain"]
 PRINCIPLE_MAX_LENGTH = 200
 REASONING_MAX_LENGTH = 1000
@@ -31,9 +34,6 @@ class Checklist(BaseModel):
     items: list[ChecklistItem] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
-
-    def touch(self) -> None:
-        self.updated_at = _now()
 
 
 class ChecklistCreateRequest(BaseModel):
@@ -72,3 +72,22 @@ class ChecklistScoreResponse(BaseModel):
     unsatisfied: int
     uncertain: int
     score_pct: float  # satisfied / total * 100
+
+
+EvaluationSource = Literal["bedrock", "template", "mock"]
+
+
+class AiEvaluation(BaseModel):
+    """원칙 하나에 대한 AI 판정 제안 (저장하지 않음, 사용자가 확인 후 PATCH로 반영).
+
+    원칙 2: 근거 출처(DART)가 없는 판정은 스키마 차원에서 만들 수 없다.
+    """
+
+    suggested_status: ItemStatus
+    reasoning: str = Field(..., min_length=1, max_length=REASONING_MAX_LENGTH)
+    sources: list[StockSource] = Field(..., min_length=1)
+    used_facts: list[str] = Field(default_factory=list)
+    # bedrock: 검증 통과한 AI 판정 / template: 코드 fallback(판단 보류) / mock: 개발용 DART
+    evaluation_source: EvaluationSource
+    report_label: str = ""
+    disclaimer: str = DISCLAIMER

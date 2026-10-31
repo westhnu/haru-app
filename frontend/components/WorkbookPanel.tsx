@@ -5,7 +5,6 @@ import { Loader2, NotebookPen, Plus, Trash2 } from "lucide-react";
 import ChecklistSection from "@/components/ChecklistSection";
 import JournalEntryDialog from "@/components/JournalEntryDialog";
 import WorkbookEditDialog from "@/components/WorkbookEditDialog";
-import WorkbookTempBadge from "@/components/WorkbookTempBadge";
 import {
   BLOCK_TYPE_LABELS,
   createWorkbook,
@@ -167,12 +166,9 @@ export default function WorkbookPanel({
           <>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-[15px] font-black text-slate-900 dark:text-slate-100">
-                    {wb.title}
-                  </p>
-                  <WorkbookTempBadge />
-                </div>
+                <p className="truncate text-[15px] font-black text-slate-900 dark:text-slate-100">
+                  {wb.title}
+                </p>
                 <p className="mt-0.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                   블록 {wb.blocks.length}개 · 수정 {formatDateTime(wb.updated_at)}
                 </p>

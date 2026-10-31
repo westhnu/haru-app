@@ -75,3 +75,41 @@ export function scoreOf(items: ChecklistItem[]): { satisfied: number; total: num
   const satisfied = items.filter((i) => i.status === "satisfied").length;
   return { satisfied, total, pct: total ? Math.round((satisfied / total) * 1000) / 10 : 0 };
 }
+
+// --- Phase B: AI 평가 (제안만, 저장은 사용자가 updateItem으로) ---------------------------
+
+export type EvaluationSource = "bedrock" | "template" | "mock";
+
+export const EVALUATION_SOURCE_LABELS: Record<EvaluationSource, string> = {
+  bedrock: "Bedrock AI 평가",
+  template: "판단 보류 (데이터 부족·검증 실패)",
+  mock: "개발용 데이터",
+};
+
+export type StockSource = { name: string; url: string };
+
+export type AiEvaluation = {
+  suggested_status: ItemStatus;
+  reasoning: string;
+  sources: StockSource[];
+  used_facts: string[];
+  evaluation_source: EvaluationSource;
+  report_label: string;
+  disclaimer: string;
+};
+
+/** AI 평가는 DART 종목(6자리 코드)만 지원한다. 해외 종목은 버튼을 숨긴다. */
+export function supportsAiEvaluation(stockCode: string): boolean {
+  return /^\d{6}$/.test(stockCode);
+}
+
+export function evaluateItem(
+  checklistId: string,
+  itemId: string,
+  signal?: AbortSignal
+): Promise<AiEvaluation> {
+  return backendFetch<AiEvaluation>(`${item(checklistId, itemId)}/evaluate`, {
+    method: "POST",
+    signal,
+  });
+}

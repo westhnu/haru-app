@@ -49,5 +49,11 @@ __pycache__/
 # Backend 로컬 생성물 (302개 term_*.txt + glossary.jsonl)
 backend/data/kb/
 
+# Backend SQLite 영속 저장소 (Phase A, 사용자 데이터 — 커밋 금지)
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.db-wal
+backend/data/*.db-shm
+
 # uv cache
 .uv/

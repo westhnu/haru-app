@@ -1,10 +1,12 @@
 """Journal 라우터 + 가상 포트폴리오."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
 
 
+@pytest.mark.usefixtures("seeded_db")
 def test_journal_entries_has_sample() -> None:
     client = TestClient(create_app())
     r = client.get("/api/v1/journal/entries")
@@ -12,6 +14,7 @@ def test_journal_entries_has_sample() -> None:
     assert r.json()["total"] >= 1
 
 
+@pytest.mark.usefixtures("seeded_db")
 def test_virtual_portfolio_empty_initially() -> None:
     client = TestClient(create_app())
     r = client.get("/api/v1/journal/portfolio")
@@ -36,6 +39,7 @@ def _entry(**over: object) -> dict:
     return body
 
 
+@pytest.mark.usefixtures("seeded_db")
 def test_sample_entry_has_no_numbers_principle2() -> None:
     client = TestClient(create_app())
     sample = next(e for e in client.get(ENTRIES).json()["entries"] if e["id"] == "sample-1")

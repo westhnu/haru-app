@@ -9,6 +9,7 @@ LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 AppEnv = Literal["local", "dev", "staging", "prod"]
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_DATABASE_URL = f"sqlite:///{BACKEND_DIR / 'data' / 'haru.db'}"
 
 # prod에서 비어 있으면 mock 응답·Guardrail 미적용 상태로
 # "조용히" 떠 버리는 설정들. 기동 자체를 막는다 (결정 2).
@@ -61,6 +62,17 @@ class Settings(BaseSettings):
     dart_cache_dir: Path = BACKEND_DIR / ".cache" / "dart"
     # jutopia_data 저장소 경로. dart_client.py를 파일 단위로 읽는다.
     jutopia_data_dir: str = ""
+
+    # 워크북·체크리스트·저널 영속 저장소 (Phase A). CWD와 무관하게 backend/data/haru.db.
+    # 테스트는 conftest가 in-memory 엔진으로 바꿔 끼운다(실제 파일을 만들지 않음).
+    database_url: str = DEFAULT_DATABASE_URL
+
+    @model_validator(mode="after")
+    def default_blank_database_url(self) -> Self:
+        # .env에 DATABASE_URL= 처럼 빈 값만 있으면 기본 경로를 쓴다.
+        if not self.database_url.strip():
+            self.database_url = DEFAULT_DATABASE_URL
+        return self
 
     @model_validator(mode="after")
     def require_prod_settings(self) -> Self:

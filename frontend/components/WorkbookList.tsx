@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight, Loader2 } from "lucide-react";
-import WorkbookTempBadge from "@/components/WorkbookTempBadge";
 import { formatDateTime, listWorkbooks, memoText, type Workbook } from "@/lib/workbook";
 
 type Load =
@@ -78,12 +77,6 @@ export default function WorkbookList() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 px-1">
-        <WorkbookTempBadge />
-        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-          서버를 재시작하면 추가한 내용이 사라지고 샘플만 남아요.
-        </span>
-      </div>
       {groups.map((g) => (
         <section
           key={g.code}

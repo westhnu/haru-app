@@ -1,72 +1,41 @@
-import uuid
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy.orm import Session
 
-from app.models.journal import JournalEntry, JournalEntryCreateRequest, VirtualPosition
+from app.db.engine import get_session
+from app.db.repositories import checklist_repo, journal_repo, workbook_repo
+from app.models.journal import JournalEntry, JournalEntryCreateRequest
 
 router = APIRouter(prefix="/api/v1/journal", tags=["journal"])
 
-PRICE_DECIMALS = 2
-
-# In-memory store. 세션 4-5에서 SQLite로 승격 예정 (재시작 시 초기화, 샘플은 모듈 로드 때 복원).
-_ENTRIES: dict[str, JournalEntry] = {}
-
-# 원칙 2: 샘플 근거에 출처 없는 수치를 넣지 않는다.
-_ENTRIES["sample-1"] = JournalEntry(
-    id="sample-1",
-    stock_code="005930",
-    stock_name="삼성전자",
-    decision="watch",
-    reasoning="체크리스트 원칙을 직접 채워 본 뒤 결정하기로 함. 다음 분기 실적 공시를 확인할 예정.",
-    checklist_id="sample-value",
-    virtual_quantity=0,
-)
+SessionDep = Annotated[Session, Depends(get_session)]
 
 
 @router.get("/entries")
-def list_entries(stock_code: str | None = None) -> dict[str, Any]:
-    items = [e for e in _ENTRIES.values() if stock_code is None or e.stock_code == stock_code]
+def list_entries(session: SessionDep, stock_code: str | None = None) -> dict[str, Any]:
+    items = journal_repo.list_entries(session, stock_code)
     return {"entries": items, "total": len(items)}
 
 
 @router.post("/entries", response_model=JournalEntry)
-def create_entry(req: JournalEntryCreateRequest) -> JournalEntry:
-    new_id = str(uuid.uuid4())
-    entry = JournalEntry(id=new_id, **req.model_dump())
-    _ENTRIES[new_id] = entry
-    return entry
+def create_entry(req: JournalEntryCreateRequest, session: SessionDep) -> JournalEntry:
+    # 연결 대상은 FK라 없는 id를 그대로 넣으면 IntegrityError(500)가 난다 → 422로 먼저 거른다.
+    if req.checklist_id and not checklist_repo.exists(session, req.checklist_id):
+        raise HTTPException(status_code=422, detail="연결할 체크리스트가 없습니다")
+    if req.workbook_id and not workbook_repo.exists(session, req.workbook_id):
+        raise HTTPException(status_code=422, detail="연결할 워크북이 없습니다")
+    return journal_repo.create_entry(session, req)
 
 
 @router.delete("/entries/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_entry(entry_id: str) -> Response:
-    if _ENTRIES.pop(entry_id, None) is None:
+def delete_entry(entry_id: str, session: SessionDep) -> Response:
+    if not journal_repo.delete_entry(session, entry_id):
         raise HTTPException(status_code=404, detail="Journal entry not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _aggregate_buys() -> dict[str, dict[str, Any]]:
-    """buy 기록만 종목별 수량·원가로 합산한다 (가상 포지션, 실매매 없음)."""
-    agg: dict[str, dict[str, Any]] = {}
-    for e in _ENTRIES.values():
-        if e.decision != "buy" or not e.virtual_price or not e.virtual_quantity:
-            continue
-        slot = agg.setdefault(e.stock_code, {"qty": 0, "cost": 0.0, "name": e.stock_name})
-        slot["qty"] += e.virtual_quantity
-        slot["cost"] += e.virtual_price * e.virtual_quantity
-    return agg
-
-
 @router.get("/portfolio")
-def get_virtual_portfolio() -> dict[str, Any]:
-    positions = [
-        VirtualPosition(
-            stock_code=code,
-            stock_name=data["name"],
-            quantity=data["qty"],
-            avg_price=round(data["cost"] / data["qty"], PRICE_DECIMALS),
-        )
-        for code, data in _aggregate_buys().items()
-        if data["qty"] > 0
-    ]
+def get_virtual_portfolio(session: SessionDep) -> dict[str, Any]:
+    positions = journal_repo.get_virtual_positions(session)
     return {"positions": positions, "total": len(positions)}

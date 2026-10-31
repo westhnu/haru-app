@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 
 
+@pytest.mark.usefixtures("seeded_db")
 def test_checklist_score_sample() -> None:
     client = TestClient(create_app())
     r = client.get("/api/v1/checklists/sample-value/score")
@@ -42,12 +43,17 @@ def _add(client: TestClient, cl_id: str, principle: str) -> dict:
     return r.json()
 
 
+@pytest.mark.usefixtures("seeded_db")
 def test_sample_has_no_unsourced_figures_principle2() -> None:
     # 원칙 문장의 기준값("3년", "10%")은 사용자가 정한 기준이라 허용한다.
     # 금지 대상은 종목 수치를 사실처럼 적은 근거(예: "현재 PER 11.2")와 미리 채운 판정이다.
     client = TestClient(create_app())
     cl = client.get("/api/v1/checklists/sample-value").json()
-    assert len(cl["items"]) == 3
+    assert [i["principle"] for i in cl["items"]] == [
+        "부채비율이 200% 미만인가?",
+        "영업이익률이 전년 대비 개선되었는가?",
+        "최근 3년 ROE 추이가 10% 이상 유지되는가?",
+    ]
     for item in cl["items"]:
         assert item["status"] == "uncertain"
         assert item["reasoning"] == ""
@@ -116,6 +122,7 @@ def test_delete_item() -> None:
 def test_filter_by_stock_code() -> None:
     client = TestClient(create_app())
     _new_checklist(client, code="051910", name="LG화학")
+    _new_checklist(client, code="005930", name="삼성전자")
     data = client.get("/api/v1/checklists", params={"stock_code": "005930"}).json()
     assert data["total"] == len(data["checklists"]) >= 1
     assert {c["stock_code"] for c in data["checklists"]} == {"005930"}

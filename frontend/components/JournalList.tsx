@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight, Loader2, Trash2 } from "lucide-react";
-import WorkbookTempBadge from "@/components/WorkbookTempBadge";
 import { formatDateTime } from "@/lib/backendFetch";
 import {
   DECISION_LABELS,
@@ -114,9 +113,8 @@ export default function JournalList() {
         <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
           가상 기록
         </span>
-        <WorkbookTempBadge />
         <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-          실제 주문·거래가 아니며, 서버를 재시작하면 샘플만 남아요.
+          실제 주문·거래가 아닙니다.
         </span>
       </div>
 

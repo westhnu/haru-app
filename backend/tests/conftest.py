@@ -8,6 +8,11 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.db import engine as db_engine
+from app.db.init import init_db, seed_if_empty
 
 
 class FakeAgentRuntimeClient:
@@ -46,3 +51,29 @@ def fake_agent_runtime(monkeypatch: pytest.MonkeyPatch) -> Iterator[FakeAgentRun
 
     monkeypatch.setattr("app.services.rag_service.get_agent_runtime_client", _factory)
     yield fake
+
+
+@pytest.fixture(autouse=True)
+def isolated_db(monkeypatch: pytest.MonkeyPatch) -> Iterator[Engine]:
+    """테스트마다 빈 in-memory SQLite를 새로 만든다 (Phase A).
+
+    테스트가 create_app()을 매번 새로 만들기 때문에 앱 인스턴스별 dependency_overrides 대신
+    세션 공급원(get_engine·get_sessionmaker) 자체를 바꿔 끼운다.
+    실제 backend/data/haru.db는 열지 않는다.
+    """
+    engine = db_engine.build_engine("sqlite:///:memory:")
+    init_db(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    for target in ("app.db.engine", "app.main"):
+        monkeypatch.setattr(f"{target}.get_engine", lambda: engine)
+        monkeypatch.setattr(f"{target}.get_sessionmaker", lambda: factory)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def seeded_db(isolated_db: Engine) -> Engine:
+    """앱 기동 때와 같은 샘플 seed가 필요한 테스트용."""
+    with Session(isolated_db) as session:
+        seed_if_empty(session)
+    return isolated_db

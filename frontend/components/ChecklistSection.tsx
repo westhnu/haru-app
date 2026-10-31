@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { ListChecks, Loader2, Plus, Trash2 } from "lucide-react";
+import { ListChecks, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import AiEvaluationDialog from "@/components/AiEvaluationDialog";
 import {
   PRINCIPLE_MAX_LENGTH,
   REASONING_MAX_LENGTH,
@@ -12,6 +13,7 @@ import {
   deleteItem,
   listChecklists,
   scoreOf,
+  supportsAiEvaluation,
   updateItem,
   type Checklist,
   type ChecklistItem,
@@ -45,6 +47,8 @@ export default function ChecklistSection({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newPrinciple, setNewPrinciple] = useState("");
+  const [evalTarget, setEvalTarget] = useState<ChecklistItem | null>(null);
+  const aiEnabled = supportsAiEvaluation(stockCode);
 
   const refresh = useCallback(async () => {
     try {
@@ -116,6 +120,16 @@ export default function ChecklistSection({
       await refresh();
     });
   };
+
+  // AI 평가 "이 판정 적용": 상태와 근거를 함께 PATCH. 실패하면 다이얼로그가 에러를 보여준다.
+  const applyEvaluation = useCallback(
+    async (status: ItemStatus, reasoning: string) => {
+      if (!checklist || !evalTarget) return;
+      replaceItem(await updateItem(checklist.id, evalTarget.id, { status, reasoning }));
+      setEvalTarget(null);
+    },
+    [checklist, evalTarget, replaceItem]
+  );
 
   const onAdd = (e: FormEvent, cl: Checklist) => {
     e.preventDefault();
@@ -229,6 +243,17 @@ export default function ChecklistSection({
                       </button>
                     ))}
                     {busy === item.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+                    {aiEnabled && (
+                      <button
+                        type="button"
+                        onClick={() => setEvalTarget(item)}
+                        disabled={busy === item.id}
+                        className="ml-auto inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[12px] font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        AI 평가
+                      </button>
+                    )}
                   </div>
                   <input
                     // 서버 값이 바뀌면(삭제·재조회) 입력칸도 새로 그린다.
@@ -266,6 +291,17 @@ export default function ChecklistSection({
       )}
 
       {error && <p className="mt-3 text-[12px] font-semibold text-red-600 dark:text-red-400">{error}</p>}
+
+      {checklist && evalTarget && (
+        <AiEvaluationDialog
+          open
+          onClose={() => setEvalTarget(null)}
+          onApply={applyEvaluation}
+          checklistId={checklist.id}
+          itemId={evalTarget.id}
+          principle={evalTarget.principle}
+        />
+      )}
     </section>
   );
 }

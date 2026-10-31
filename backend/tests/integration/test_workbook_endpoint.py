@@ -1,10 +1,12 @@
 """Workbook 라우터 기본 CRUD."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
 
 
+@pytest.mark.usefixtures("seeded_db")
 def test_list_workbooks_has_sample() -> None:
     client = TestClient(create_app())
     r = client.get("/api/v1/workbooks")
@@ -47,6 +49,7 @@ def _new_workbook(client: TestClient, code: str = "000660", name: str = "SK하�
 def test_list_workbooks_filter_by_stock_code() -> None:
     client = TestClient(create_app())
     _new_workbook(client, code="051910", name="LG화학")
+    _new_workbook(client, code="005930", name="삼성전자")
     r = client.get("/api/v1/workbooks", params={"stock_code": "005930"})
     assert r.status_code == 200
     data = r.json()
@@ -56,6 +59,7 @@ def test_list_workbooks_filter_by_stock_code() -> None:
     assert none == {"workbooks": [], "total": 0}
 
 
+@pytest.mark.usefixtures("seeded_db")
 def test_sample_memo_has_stable_id() -> None:
     client = TestClient(create_app())
     wb = client.get("/api/v1/workbooks/sample-samsung").json()

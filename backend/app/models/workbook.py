@@ -48,10 +48,6 @@ class Workbook(BaseModel):
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 
-    def touch(self) -> None:
-        """블록이 바뀔 때 호출해 updated_at을 갱신한다."""
-        self.updated_at = _now()
-
 
 class WorkbookCreateRequest(BaseModel):
     stock_code: str
