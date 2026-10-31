@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Home, Sunrise, Network, Search } from "lucide-react";
+import { Home, Sunrise, Network, Search, Book } from "lucide-react";
 import SearchDialog from "@/components/SearchDialog";
 
 /**
@@ -47,6 +47,12 @@ export default function BottomNav() {
       href: "/themes",
       icon: Network,
       active: pathname.startsWith("/themes"),
+    },
+    {
+      label: "용어",
+      href: "/glossary",
+      icon: Book,
+      active: pathname.startsWith("/glossary"),
     },
     {
       label: "검색",
