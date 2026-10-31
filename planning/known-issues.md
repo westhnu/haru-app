@@ -31,6 +31,7 @@
   - 노출 허용: `get_holding_stock_detail`, `get_holding_stock`, `get_holding_cash`, `get_transaction_history`, `get_transaction_summary`, `get_minute_chart`
   - 주문 메서드는 이름조차 코드에 등장시키지 않음 (테스트의 `hasattr` 회귀 검증은 예외)
   - `web_order.py`, `run_mock_trades.py` 참조 금지
+- **관련 (2026-10-31 구현)**: `backend/app/services/hantu_readonly.py` — 위 6개 메서드 화이트리스트 위임만 허용, 서비스 코드에 주문 메서드 이름 없음. 회귀 테스트 `tests/regression/test_hantu_readonly.py`
 
 ## KI-003 — 기획안 부록의 `haru_web` 파일 일부 부재
 
@@ -48,6 +49,7 @@
 - **조치**: Sprint 2에서 실제 동작을 확인한 뒤 래퍼(`dart_tool.py`)에서 키를 명시적으로 주입하는 방식을 결정한다.
 - **실측 (2026-09-13, Sprint 2)**: 우려보다 심각했다. `dart_client.py`를 **import만 해도** `load_dotenv()`가 `jutopia_data/.env`를 읽어 **13개 변수가 Haru 프로세스 환경변수로 들어온다**. `DART_API_KEY`, `KIS_APP_KEY`, `KIS_APP_SECRET`, `KIS_APP_KEY_PROD`, `KIS_APP_SECRET_PROD`, `KIS_ACCOUNT_ID`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `TAVILY_API_KEY` 등 (값은 보지 않고 이름만 수집)
 - **해결 (Sprint 2)**: `services/jutopia_loader.py`가 모듈을 실행하는 동안 `dotenv.load_dotenv`를 무력화한다. DART 키는 `Settings.dart_api_key`에서 명시적으로 주입한다. 회귀 테스트 `tests/test_jutopia_loader.py`로 보장 (차단하지 않으면 실제로 새는지 확인하는 대조군 포함)
+- **관련 (2026-10-31)**: `hantu_readonly.py`는 `jutopia_loader.load_hantu_stock_class`로 HantuStock을 로드한다. HantuStock.py도 import 시점에 `load_dotenv()`를 호출하므로 같은 차단을 적용. `load_jutopia_module("HantuStock")`은 여전히 거부됨. 행동 검증: `test_hantu_loader_blocks_dotenv_leak`
 
 ## KI-005 — 데이터 처리 리전 이슈 (`global.` 추론 프로파일)
 
