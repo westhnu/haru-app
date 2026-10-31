@@ -11,6 +11,7 @@ from typing import Any
 import structlog
 
 from app.config import get_settings
+from app.core.guardrail import GUARDRAIL_BLOCKED_ANSWER
 from app.services.bedrock_client import get_bedrock_client
 from scripts._cli import parse_dry_run
 
@@ -18,7 +19,8 @@ logger = structlog.get_logger(__name__)
 
 GUARDRAIL_NAME = "haru-investment-guardrail"
 BLOCKED_INPUT_MSG = "본 서비스는 종목 추천을 제공하지 않습니다."
-BLOCKED_OUTPUT_MSG = "본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다."
+# KI-020: 면책 문구와 같으면 답변이 소실되므로 별도 안내 문구를 쓴다.
+BLOCKED_OUTPUT_MSG = GUARDRAIL_BLOCKED_ANSWER
 
 # REQ-GR-01 — 6개 정책 (design.md GUARDRAIL_CONFIG).
 TOPIC_POLICY = {

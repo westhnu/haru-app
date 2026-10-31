@@ -11,7 +11,10 @@ ContextType = Literal["stock", "glossary", "general"]
 # general_knowledge 근거 없이 모델 일반 지식으로 답변 (glossary·general만 허용)
 # no_evidence       근거가 없어 답변하지 않음 (stock)
 # mock              KB 미설정 개발 모드
-AnswerSource = Literal["knowledge_base", "general_knowledge", "no_evidence", "mock"]
+# guardrail_blocked Bedrock Guardrail이 응답을 차단함 (KI-020)
+AnswerSource = Literal[
+    "knowledge_base", "general_knowledge", "no_evidence", "mock", "guardrail_blocked"
+]
 # Bedrock Guardrail이 응답에 개입했는지. None은 Guardrail 리소스 미연결(Phase 4 이전) 상태.
 GuardrailAction = Literal["none", "intervened"]
 # summary_source는 source(AnswerSource)와 다른 레이어의 메타데이터다 (결정 B, 분리).

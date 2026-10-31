@@ -13,9 +13,22 @@ import structlog
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.config import Settings, get_settings
-from app.core.guardrail import NO_EVIDENCE_STOCK_ANSWER, apply_output_guard, mask_pii
+from app.core.guardrail import (
+    DISCLAIMER,
+    GUARDRAIL_BLOCKED_ANSWER,
+    NO_EVIDENCE_STOCK_ANSWER,
+    apply_output_guard,
+    mask_pii,
+)
 from app.core.prompts import RAG_PROMPT_TEMPLATES
-from app.models.rag import AnswerSource, ContextType, RagCitation, RagResponse, SummarySource
+from app.models.rag import (
+    AnswerSource,
+    ContextType,
+    GuardrailAction,
+    RagCitation,
+    RagResponse,
+    SummarySource,
+)
 from app.services.bedrock_client import get_agent_runtime_client
 from app.services.exceptions import BedrockError, BedrockRetrievalError
 
@@ -66,6 +79,9 @@ class RagService:
             guardrail_version=self._settings.bedrock_guardrail_version,
             context_type=context_type,
         )
+        action = _guardrail_action(raw, self._settings.bedrock_guardrail_id)
+        if action == "intervened":
+            return self._blocked_response(raw["output"]["text"], context_type)
         citations = parse_citations(raw.get("citations", []))
         resolution = resolve_answer(raw["output"]["text"], citations, context_type)
         logger.info(
@@ -81,6 +97,24 @@ class RagService:
             summary_source=resolution.summary_source,
             context_type=context_type,
             model_id=self._settings.bedrock_model_id,
+            guardrail_action=action,
+        )
+
+    def _blocked_response(self, text: str, context_type: ContextType) -> RagResponse:
+        """Guardrail 차단 응답 (KI-020).
+
+        Bedrock이 준 차단 메시지를 쓰되, 면책 문구뿐이면(구 설정) 안내 문구로 대체한다.
+        """
+        body = text.replace(DISCLAIMER, "").strip() or GUARDRAIL_BLOCKED_ANSWER
+        logger.info("guardrail_blocked", context_type=context_type, guardrail_action="intervened")
+        return RagResponse(
+            answer=apply_output_guard(body),
+            citations=[],
+            source="guardrail_blocked",
+            summary_source="template",
+            context_type=context_type,
+            model_id=self._settings.bedrock_model_id,
+            guardrail_action="intervened",
         )
 
     def _mock_response(self, query: str, context_type: ContextType = "general") -> RagResponse:
@@ -157,6 +191,13 @@ def _max_similarity(citations: list[RagCitation]) -> float | None:
     """citation similarity 중 최댓값. similarity가 하나도 없으면 None."""
     scores = [c.similarity for c in citations if c.similarity is not None]
     return max(scores) if scores else None
+
+
+def _guardrail_action(raw: dict[str, Any], guardrail_id: str) -> GuardrailAction | None:
+    """Guardrail 미연결이면 None, 연결됐으면 Bedrock guardrailAction을 소문자 계약값으로 바꾼다."""
+    if not guardrail_id:
+        return None
+    return "intervened" if raw.get("guardrailAction") == "INTERVENED" else "none"
 
 
 def resolve_answer(

@@ -7,7 +7,12 @@ export type GlossaryCitation = {
 };
 
 // backend RagResponse.source (AnswerSource)와 동일한 값.
-export type AnswerSource = "knowledge_base" | "general_knowledge" | "no_evidence" | "mock";
+export type AnswerSource =
+  | "knowledge_base"
+  | "general_knowledge"
+  | "no_evidence"
+  | "mock"
+  | "guardrail_blocked";
 
 export type GlossaryAnswer = {
   answer: string;
@@ -23,6 +28,7 @@ const SOURCE_LABELS: Record<AnswerSource, string> = {
   general_knowledge: "LLM 일반 지식",
   no_evidence: "근거 없음",
   mock: "Mock",
+  guardrail_blocked: "답변 제한",
 };
 
 // backend가 answer 말미에 disclaimer를 이미 붙여 보낸다(core.guardrail.enforce_disclaimer).

@@ -252,16 +252,22 @@
 ## KI-020 — Guardrail이 정상 용어 질문을 과잉 차단
 
 - **발견**: 2026-10-31, Phase 5a 1차 벤치마크 100건 중 49건 INTERVENED
-- **상태**: open (분석 중)
+- **상태**: partially-resolved
+  - D (차단 메시지 분리): resolved (gtulvril25hb apply, 2026-10-31) — `blockedOutputsMessaging`을 `GUARDRAIL_BLOCKED_ANSWER`로 변경, `get-guardrail`로 정책 6종 유지 확인
+  - C (차단 응답 wrapping): resolved — `rag_service`가 INTERVENED를 `source="guardrail_blocked"`, `guardrail_action="intervened"`로 반환
+  - B (topic 재설계): deferred — 설계안 `planning/ki-020-topic-redesign.md`, tasks.md Phase 5b
+  - A (grounding 조사): deferred — KB 검색 품질 조사 필요 (T-514)
 - **증상**: "ROE 설명해줘", "주당순이익", "우선주", "WACC" 같은 일반 용어 질문도 차단된다.
   - 정상 용어 질문(투자용어 + KB 샘플)의 성공 건 59건 중 37건(63%) 차단. 투자용어 28건 중 21건, KB 샘플 31건 중 16건.
   - 차단된 응답은 거의 모두 `answer_len=37`, citation 0건. 37자는 면책 문구 길이와 같다.
-- **보조 결함**: Guardrail 출력 차단 메시지(`blockedOutputsMessaging`)가 면책 문구와 동일("본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다.").
-  - `enforce_disclaimer`가 본문의 중복 문구를 제거하면서 답변이 비고, 사용자는 면책 문구 한 줄만 본다.
-  - citation이 없으므로 `source`가 `general_knowledge`로 잘못 표시된다.
-- **원인 추정 (미확정)**: Contextual Grounding(threshold 0.75, BLOCK) 과잉 작동. glossary 프롬프트는 KB에 없으면 일반 지식으로 답하도록 허용하는데, 그런 답변의 grounding score가 0.75 미만이라 BLOCK되는 것으로 의심. 1차 실행은 Guardrail trace를 켜지 않아 어떤 정책이 막았는지 근거가 없다.
-- **조사 다음 단계**: Guardrail trace를 켜고 정상 용어 5건 재호출해 BLOCK 정책 확정.
-- **관련**: KI-007 (use case 승인), KI-017 (regexesConfig), 원칙 5 (면책 문구)
+- **보조 결함 (C+D로 해소)**: Guardrail 출력 차단 메시지가 면책 문구와 동일 → `enforce_disclaimer`가 중복 제거하면서 답변이 비고, 사용자는 면책 문구만 봄. `source`는 `general_knowledge`로 잘못 표시됨.
+- **원인 재확정 (2026-10-31, ApplyGuardrail 재현 5건, `trace_summary_20261031T041847Z.csv`)**:
+  - Denied Topic `investment-advice`가 4/5, Contextual Grounding이 4/5 차단. 모두 OUTPUT 단계, INPUT은 전부 통과.
+  - grounding score 0.02~0.13(threshold 0.75). ROE는 grounding 0.84로 통과 후 topic으로 차단.
+  - 이전 "Contextual Grounding 과잉 작동" 추정은 절반만 맞았다. threshold 완화(A)만으로는 해결되지 않는다.
+- **1차 수정 (C+D) 효과와 한계**: 사용자가 면책 문구만 받는 문제는 해소되고 "근거를 찾지 못했다"는 안내를 받는다. 하지만 정상 용어 질문의 차단율 자체는 그대로다. 정상 답변을 돌려주려면 B(+A) 적용이 필요하다.
+- **회귀 방지**: `tests/unit/test_rag_service_guardrail_blocked.py`, `tests/unit/test_update_guardrail.py`
+- **관련**: KI-007 (use case 승인), KI-017 (regexesConfig), 원칙 1·5
 
 ## KI-021 — estimate_cost CloudWatch 지표 중복 합산
 

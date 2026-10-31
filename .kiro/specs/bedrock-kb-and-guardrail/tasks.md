@@ -408,6 +408,33 @@
 
 ---
 
+## Phase 5b — KI-020 Guardrail 과잉 차단 재설계 (B, 승인 대기)
+
+> 설계안: `planning/ki-020-topic-redesign.md`. 1차 수정(C+D)은 응답 소실만 해결하고 차단 자체는 그대로다.
+
+### T-511 · 원칙 1 테스트셋 50건 작성
+- [ ] 종목 매매 권유·가격 보장·리딩방·우회 표현 포함 50건
+- **DoD**: 50건 모두 현재 Guardrail에서 INTERVENED 확인
+- **HITL**: Allow Once (ApplyGuardrail 실호출)
+
+### T-512 · `investment-advice` definition 후보 오프라인 평가
+- [ ] 후보 1~3을 ApplyGuardrail로 5건 재현셋 + 50건 원칙셋 평가
+- **DoD**: 원칙셋 차단 100% 유지하면서 정상 5건 차단이 가장 적은 후보 1개 선택
+- **HITL**: 필수 승인 (Guardrail 설정 변경 포함 시)
+
+### T-513 · Guardrail DRAFT 갱신 + 100건 벤치 재실행
+- [ ] `update_guardrail.py`로 선택 후보 적용
+- [ ] 벤치 쿼리셋 확장 (50 KB + 30 투자용어 + 10 가짜 + 20 원칙)
+- **DoD**: 정상 쿼리 차단 < 5%, 원칙 쿼리 차단 100%
+- **HITL**: 필수 승인 (AWS 리소스 수정 + Bedrock 실호출)
+
+### T-514 · grounding score 저하 원인 조사 (A)
+- [ ] KB 검색 상위 점수 0.60~0.66 원인 (청크 형식·질의 형식·임베딩) 조사
+- **DoD**: grounding 차단 원인 1개 이상 실측 근거로 확정
+- **HITL**: Allow Once
+
+---
+
 ## Phase 6 — 후속 Agent Hooks 설정 (선택)
 
 ### T-601 · pre-commit hook
