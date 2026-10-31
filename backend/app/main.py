@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api.v1 import admin, glossary, health, poc, stock
+from app.api.v1 import admin, checklist, glossary, health, journal, poc, stock, workbook
 from app.config import get_settings
 from app.core.logging import configure_logging
 
@@ -26,6 +26,9 @@ def create_app() -> FastAPI:
     app.include_router(stock.router)
     app.include_router(glossary.router)
     app.include_router(admin.router)
+    app.include_router(workbook.router)
+    app.include_router(checklist.router)
+    app.include_router(journal.router)
 
     structlog.get_logger().info("app_created", version=__version__, app_env=settings.app_env)
     return app

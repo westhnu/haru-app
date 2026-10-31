@@ -284,7 +284,7 @@ GUARDRAIL_CONFIG = {
   "contentPolicyConfig": {...},
   "contextualGroundingPolicyConfig": {
     "filtersConfig": [
-      {"type": "GROUNDING", "threshold": 0.75, "action": "BLOCK"}
+      {"type": "GROUNDING", "threshold": 0.50, "action": "BLOCK"}  // T-514: 0.75 → 0.50
     ]
   },
   "blockedInputMessaging": "본 서비스는 종목 추천을 제공하지 않습니다.",

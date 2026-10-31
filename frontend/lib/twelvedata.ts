@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * TwelveData API — 해외 종목 (NASDAQ, NYSE 등) 일봉·현재가 라이브 조회.
  * Free tier: 800 calls/day, 8 calls/min. S3 캐싱으로 호출 절감.

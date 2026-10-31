@@ -13,6 +13,13 @@ SAFE_REPLACEMENT = "본 서비스는 종목 추천을 제공하지 않습니다.
 NO_EVIDENCE_STOCK_ANSWER = (
     "확인된 자료가 없습니다. DART 공시 데이터가 아직 인덱싱되지 않았을 수 있습니다."
 )
+# KI-020: Bedrock Guardrail이 출력을 막았을 때의 안내. 면책 문구와 달라야 한다.
+# 같으면 enforce_disclaimer가 중복 제거하면서 본문이 비고 사용자는 면책 문구만 본다.
+# Guardrail 리소스의 blockedOutputsMessaging도 이 상수로 설정한다 (단일 소스).
+GUARDRAIL_BLOCKED_ANSWER = (
+    "현재 질문에 대해 신뢰할 수 있는 근거 자료를 찾지 못했습니다. "
+    "다른 용어나 더 구체적인 질문으로 시도해 보세요."
+)
 
 # 기획안 §10.4 금지 표현 + §13.5 Denied Topic 예시.
 # "수익을 보장하지 않습니다", "52주 최고가 8만원까지 상승했습니다" 같은 허용 표현을 오탐하지 않도록

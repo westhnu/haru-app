@@ -20,8 +20,11 @@ inclusion: always
 ## Frontend (Sprint 3 이후, 지금은 건드리지 않음)
 
 - Next.js 14 (App Router) + TypeScript
-- Tailwind CSS + shadcn/ui
-- TanStack Query + Zustand
+- 스타일: Tailwind 3.4 (shadcn/ui는 UI 완성도 보강 필요 시 세션 4-5에서 도입)
+- 데이터 패칭: fetch 직접 호출 (세션 4-5에서 TanStack Query 승격 예정)
+- 상태: React useState (상태 복잡해지면 Zustand 승격 예정)
+- 백엔드 연결: `next.config.mjs` rewrites로 `/backend/*` → `http://localhost:8000/api/v1/*` 프록시
+- Node: 20 (Lambda 빌드 대상), 로컬 24
 
 ## AWS Bedrock 스택 (이 스펙의 주 대상)
 

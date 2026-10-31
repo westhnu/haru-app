@@ -286,6 +286,11 @@
 - **HITL**: 필수 승인
 - **타임아웃**: 120초
 
+> **[설계 drift KI-017 — Phase ⑦ 1차 apply]**
+> - 증상: `piiEntitiesConfig.type` enum에 KR_RRN 미지원 → ValidationException
+> - 결정: `regexesConfig`로 전환, `core/guardrail.py` 패턴 재사용(`\d{6}-[1-8]\d{6}`, ANONYMIZE)
+> - 회귀 방지: `test_guardrail_uses_regexes_config_for_kr_rrn_ki017`
+
 ### T-408 · `.env`에 `BEDROCK_GUARDRAIL_ID` 입력
 
 - **DoD**: 앱 시작 시 `Settings` 검증 통과 확인
@@ -400,6 +405,33 @@
 - [ ] fast-forward 병합
 - [ ] `git tag spec-kb-and-guardrail-v1`
 - **HITL**: 필수 승인
+
+---
+
+## Phase 5b — KI-020 Guardrail 과잉 차단 재설계 (B, 승인 대기)
+
+> 설계안: `planning/ki-020-topic-redesign.md`. 1차 수정(C+D)은 응답 소실만 해결하고 차단 자체는 그대로다.
+
+### T-511 · 원칙 1 테스트셋 50건 작성
+- [x] 종목 매매 권유·가격 보장·리딩방·우회 표현 포함 50건 (`planning/testsets/principle_test_50.json`, 원칙 35 + 정상 15)
+- **DoD**: 50건 모두 현재 Guardrail에서 INTERVENED 확인
+- **HITL**: Allow Once (ApplyGuardrail 실호출)
+
+### T-512 · `investment-advice` definition 후보 오프라인 평가
+- [x] 후보 1~3을 ApplyGuardrail로 50건 원칙셋 평가 (`scripts/bench/topic_eval.py`, Classic baseline + Standard 4조합, baseline-S 3회) → baseline-S 선택 (KI-023/024). 5건 재현셋은 50건 normal 15건으로 대체
+- **DoD**: 원칙셋 차단 100% 유지하면서 정상 5건 차단이 가장 적은 후보 1개 선택
+- **HITL**: 필수 승인 (Guardrail 설정 변경 포함 시)
+
+### T-513 · Guardrail DRAFT 갱신 + 100건 벤치 재실행
+- [x] `update_guardrail.py`로 선택 후보 적용 (Standard tier + crossRegion apac, 2026-10-31)
+- [ ] 벤치 쿼리셋 확장 (50 KB + 30 투자용어 + 10 가짜 + 20 원칙)
+- **DoD**: 정상 쿼리 차단 < 5%, 원칙 쿼리 차단 100%
+- **HITL**: 필수 승인 (AWS 리소스 수정 + Bedrock 실호출)
+
+### T-514 · grounding score 저하 원인 조사 (A)
+- [x] grounding 차단 원인 조사 (T-514, 2026-10-31): 0.75 미만 21건 중 16건이 KB 미보유 용어. threshold 0.50 적용, 3차 벤치 KB 보유 용어 차단 22%
+- **DoD**: grounding 차단 원인 1개 이상 실측 근거로 확정
+- **HITL**: Allow Once
 
 ---
 

@@ -1,3 +1,4 @@
+import "server-only";
 import OpenAI from "openai";
 import type { Brief, BriefType, Source, VerifyResult } from "./types";
 import type { MarketDateInfo } from "./market";

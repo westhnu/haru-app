@@ -25,13 +25,18 @@ DEFAULT_OUTPUT_DIR = BACKEND_DIR / "data" / "kb" / "terms"
 LEGACY_JSONL = BACKEND_DIR / "data" / "kb" / "glossary.jsonl"
 
 # (jutopia 필드, 출력 라벨) — 이 순서로, 값이 있을 때만 싣는다.
+# KI-022: full_name·formula·related_terms를 빠뜨리면 한국어 정식 명칭(예: "주당순이익")으로
+# 검색했을 때 해당 문서(EPS)를 찾지 못한다. KI-015 B 결정(모든 필드 보존)대로 전부 싣는다.
 FIELD_LABELS: tuple[tuple[str, str], ...] = (
+    ("full_name", "정식 명칭"),
     ("english", "영문"),
     ("description", "정의"),
+    ("formula", "공식"),
     ("example", "예시"),
     ("interpretation", "해석"),
     ("when_to_use", "사용 시점"),
     ("caution", "주의"),
+    ("related_terms", "관련 용어"),
 )
 
 

@@ -76,7 +76,8 @@ Sprint 2 완료 시점의 Haru 백엔드는 Bedrock 파운데이션 모델은 �
 - Word Filter: `리딩방`, `한 방`, `보장`, `무조건 수익`
 - Sensitive Info Filter: 주민번호·계좌·카드 번호 마스킹
 - Content Filter: Hate/Sexual/Violence 상 수준
-- Contextual Grounding: threshold 0.75
+- Contextual Grounding: threshold 0.50 (T-514에서 0.75 → 0.50, 근거 `planning/metrics/t514/`)
+- Denied Topic·Content Filter는 Standard tier + cross-Region profile `apac.guardrail.v1:0` (KI-023: Classic tier는 한국어 미지원)
 
 **REQ-GR-02** WHEN 모든 Bedrock 호출은 `guardrailIdentifier`와 `guardrailVersion` 파라미터를 반드시 포함해야 한다.
 

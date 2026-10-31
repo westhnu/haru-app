@@ -11,6 +11,7 @@ from typing import Any
 import structlog
 
 from app.config import get_settings
+from app.core.guardrail import GUARDRAIL_BLOCKED_ANSWER
 from app.services.bedrock_client import get_bedrock_client
 from scripts._cli import parse_dry_run
 
@@ -18,10 +19,19 @@ logger = structlog.get_logger(__name__)
 
 GUARDRAIL_NAME = "haru-investment-guardrail"
 BLOCKED_INPUT_MSG = "본 서비스는 종목 추천을 제공하지 않습니다."
-BLOCKED_OUTPUT_MSG = "본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다."
+# KI-020: 면책 문구와 같으면 답변이 소실되므로 별도 안내 문구를 쓴다.
+BLOCKED_OUTPUT_MSG = GUARDRAIL_BLOCKED_ANSWER
+
+# KI-023: Classic tier는 EN/FR/ES만 지원해 한국어 topic 판정이 동작하지 않았다.
+# topic·content는 Standard tier로 두고 cross-Region profile(서울 source → APAC)을 붙인다.
+# contextual grounding은 서울에서 Standard 미지원이라 tier를 지정하지 않는다(Classic).
+STANDARD_TIER = {"tierName": "STANDARD"}
+GUARDRAIL_PROFILE_ID = "apac.guardrail.v1:0"
+CROSS_REGION_CONFIG = {"guardrailProfileIdentifier": GUARDRAIL_PROFILE_ID}
 
 # REQ-GR-01 — 6개 정책 (design.md GUARDRAIL_CONFIG).
 TOPIC_POLICY = {
+    "tierConfig": STANDARD_TIER,
     "topicsConfig": [
         {
             "name": "investment-advice",
@@ -35,17 +45,36 @@ TOPIC_POLICY = {
             "examples": ["내일 급등합니다", "수익을 보장합니다"],
             "type": "DENY",
         },
-    ]
+    ],
 }
 WORD_POLICY = {"wordsConfig": [{"text": w} for w in ("리딩방", "한 방", "무조건 수익", "보장")]}
-SENSITIVE_POLICY = {"piiEntitiesConfig": [{"type": "KR_RRN", "action": "ANONYMIZE"}]}
+# KI-017: Bedrock piiEntitiesConfig enum은 한국 PII(KR_RRN) 미지원 → 커스텀 regexesConfig 사용.
+# 패턴은 core/guardrail.py의 _RRN과 정합(성별코드 1-8). lookaround는 Bedrock 호환성 위해 제외.
+SENSITIVE_POLICY = {
+    "regexesConfig": [
+        {
+            "name": "KR_RRN",
+            "description": "한국 주민등록번호 패턴 (6자리-7자리, 성별코드 1-8)",
+            "pattern": r"\d{6}-[1-8]\d{6}",
+            "action": "ANONYMIZE",
+        }
+    ]
+}
 CONTENT_POLICY = {
     "filtersConfig": [
         {"type": t, "inputStrength": "HIGH", "outputStrength": "HIGH"}
         for t in ("HATE", "SEXUAL", "VIOLENCE")
-    ]
+    ],
+    "tierConfig": STANDARD_TIER,
 }
-GROUNDING_POLICY = {"filtersConfig": [{"type": "GROUNDING", "threshold": 0.75, "action": "BLOCK"}]}
+# T-514: 0.75 → 0.50. KB 보유 용어의 grounding 차단(0.53~0.64) 3건을 해소하면서,
+# KB 미보유 용어(대부분 0.01~0.29)는 계속 차단한다.
+# 환각 체크 8건 중 통과 1건(EV/EBITDA)은 사실 오류 없음.
+# 근거: planning/metrics/t514/grounding_scores_*.csv, hallucination_check.md
+GROUNDING_THRESHOLD = 0.50
+GROUNDING_POLICY = {
+    "filtersConfig": [{"type": "GROUNDING", "threshold": GROUNDING_THRESHOLD, "action": "BLOCK"}]
+}
 
 
 def _build_kwargs() -> dict[str, Any]:
@@ -56,6 +85,7 @@ def _build_kwargs() -> dict[str, Any]:
         "sensitiveInformationPolicyConfig": SENSITIVE_POLICY,
         "contentPolicyConfig": CONTENT_POLICY,
         "contextualGroundingPolicyConfig": GROUNDING_POLICY,
+        "crossRegionConfig": CROSS_REGION_CONFIG,
         "blockedInputMessaging": BLOCKED_INPUT_MSG,
         "blockedOutputsMessaging": BLOCKED_OUTPUT_MSG,
     }
@@ -79,7 +109,9 @@ def run(dry_run: bool = True, bedrock: Any | None = None) -> bool:
             result="would_create",
         )
         print(f"[dry-run] 생성 예정 Guardrail: {GUARDRAIL_NAME} (정책 6종, DRAFT)")
-        print("  DeniedTopic x2, WordFilter x4, PII(KR_RRN), Content(H/S/V HIGH), Grounding 0.75")
+        print("  DeniedTopic x2, WordFilter x4, regexesConfig(KR_RRN 정규식)")
+        print(f"  Content(H/S/V HIGH), Grounding {GROUNDING_THRESHOLD}")
+        print(f"  topic/content tier=STANDARD, crossRegion={GUARDRAIL_PROFILE_ID} (KI-023)")
         print("→ 생성 후 .env에 추가: BEDROCK_GUARDRAIL_ID=<id>, BEDROCK_GUARDRAIL_VERSION=DRAFT")
         return True
     bedrock = bedrock or get_bedrock_client()

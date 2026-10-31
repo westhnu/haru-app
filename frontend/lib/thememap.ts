@@ -1,3 +1,4 @@
+import "server-only";
 import OpenAI from "openai";
 import type { Source } from "./types";
 import { OPENAI_MODEL, hasOpenAI, extractJson } from "./llm";

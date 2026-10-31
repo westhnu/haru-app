@@ -1,0 +1,61 @@
+target_term,target_full_name,query_lang,variation_type,query,rank_1_score,rank_1_source,rank_2_score,rank_2_source,rank_3_score,rank_3_source,target_rank,target_rank_score
+ROE,자기자본이익률,en,단일,ROE,0.8743,term_004.txt,0.7335,term_023.txt,0.5862,term_239.txt,1,0.8743
+ROE,자기자본이익률,en,의문,ROE가 뭐야?,0.9128,term_004.txt,0.7849,term_023.txt,0.6332,term_001.txt,1,0.9128
+ROE,자기자본이익률,en,설명,ROE 설명해줘,0.8896,term_004.txt,0.7879,term_023.txt,0.6419,term_036.txt,1,0.8896
+ROE,자기자본이익률,en,란,ROE란?,0.8727,term_004.txt,0.7337,term_023.txt,0.6058,term_036.txt,1,0.8727
+ROE,자기자본이익률,en,뜻,ROE 뜻,0.8037,term_004.txt,0.6731,term_023.txt,0.588,term_036.txt,1,0.8037
+ROE,자기자본이익률,ko,단일,자기자본이익률,0.6966,term_079.txt,0.6682,term_181.txt,0.6666,term_018.txt,0,
+ROE,자기자본이익률,ko,의문,자기자본이익률이 뭐야?,0.7003,term_079.txt,0.6728,term_018.txt,0.6717,term_020.txt,0,
+ROE,자기자본이익률,ko,설명,자기자본이익률 설명해줘,0.7139,term_079.txt,0.6844,term_018.txt,0.6804,term_266.txt,0,
+ROE,자기자본이익률,ko,란,자기자본이익률이란?,0.7134,term_079.txt,0.6849,term_018.txt,0.6793,term_020.txt,0,
+ROE,자기자본이익률,ko,뜻,자기자본이익률 뜻,0.6825,term_079.txt,0.6681,term_181.txt,0.6667,term_266.txt,0,
+EPS,주당순이익,en,단일,EPS,0.8505,term_003.txt,0.6756,term_001.txt,0.6285,term_019.txt,1,0.8505
+EPS,주당순이익,en,의문,EPS가 뭐야?,0.9355,term_003.txt,0.6819,term_001.txt,0.6636,term_005.txt,1,0.9355
+EPS,주당순이익,en,설명,EPS 설명해줘,0.838,term_003.txt,0.6367,term_005.txt,0.6214,term_001.txt,1,0.838
+EPS,주당순이익,en,란,EPS란?,0.877,term_003.txt,0.6155,term_001.txt,0.611,term_005.txt,1,0.877
+EPS,주당순이익,en,뜻,EPS 뜻,0.8331,term_003.txt,0.5937,term_001.txt,0.5804,term_165.txt,1,0.8331
+EPS,주당순이익,ko,단일,주당순이익,0.6359,term_021.txt,0.6296,term_014.txt,0.6223,term_265.txt,0,
+EPS,주당순이익,ko,의문,주당순이익이 뭐야?,0.652,term_021.txt,0.6509,term_014.txt,0.6354,term_079.txt,0,
+EPS,주당순이익,ko,설명,주당순이익 설명해줘,0.6578,term_014.txt,0.6551,term_021.txt,0.6496,term_075.txt,0,
+EPS,주당순이익,ko,란,주당순이익이란?,0.6498,term_021.txt,0.6375,term_014.txt,0.6358,term_265.txt,0,
+EPS,주당순이익,ko,뜻,주당순이익 뜻,0.6371,term_021.txt,0.6351,term_265.txt,0.6339,term_285.txt,0,
+PER,주가수익비율,en,단일,PER,0.8181,term_001.txt,0.6351,term_003.txt,0.6085,term_024.txt,1,0.8181
+PER,주가수익비율,en,의문,PER이 뭐야?,0.8816,term_001.txt,0.6798,term_003.txt,0.6442,term_002.txt,1,0.8816
+PER,주가수익비율,en,설명,PER 설명해줘,0.8233,term_001.txt,0.6658,term_003.txt,0.6216,term_002.txt,1,0.8233
+PER,주가수익비율,en,란,PER이란?,0.8545,term_001.txt,0.6335,term_003.txt,0.6084,term_281.txt,1,0.8545
+PER,주가수익비율,en,뜻,PER 뜻,0.8283,term_001.txt,0.618,term_003.txt,0.5911,term_281.txt,1,0.8283
+PER,주가수익비율,ko,단일,주가수익비율,0.7596,term_079.txt,0.7143,term_014.txt,0.6631,term_001.txt,3,0.6631
+PER,주가수익비율,ko,의문,주가수익비율이 뭐야?,0.7551,term_079.txt,0.7182,term_014.txt,0.6643,term_001.txt,3,0.6643
+PER,주가수익비율,ko,설명,주가수익비율 설명해줘,0.7952,term_079.txt,0.7487,term_014.txt,0.6975,term_001.txt,3,0.6975
+PER,주가수익비율,ko,란,주가수익비율이란?,0.7645,term_079.txt,0.7272,term_014.txt,0.6715,term_001.txt,3,0.6715
+PER,주가수익비율,ko,뜻,주가수익비율 뜻,0.7756,term_079.txt,0.7347,term_014.txt,0.6806,term_001.txt,3,0.6806
+PBR,주가순자산비율,en,단일,PBR,0.8566,term_002.txt,0.6391,term_024.txt,0.6283,term_170.txt,1,0.8566
+PBR,주가순자산비율,en,의문,PBR이 뭐야?,0.864,term_002.txt,0.6475,term_024.txt,0.6376,term_005.txt,1,0.864
+PBR,주가순자산비율,en,설명,PBR 설명해줘,0.8363,term_002.txt,0.6606,term_005.txt,0.6529,term_091.txt,1,0.8363
+PBR,주가순자산비율,en,란,PBR이란?,0.8654,term_002.txt,0.6374,term_024.txt,0.6182,term_170.txt,1,0.8654
+PBR,주가순자산비율,en,뜻,PBR 뜻,0.8513,term_002.txt,0.6298,term_024.txt,0.6137,term_170.txt,1,0.8513
+PBR,주가순자산비율,ko,단일,주가순자산비율,0.78,term_224.txt,0.7432,term_193.txt,0.7342,term_204.txt,7,0.6418
+PBR,주가순자산비율,ko,의문,주가순자산비율이 뭐야?,0.7869,term_224.txt,0.7575,term_193.txt,0.7388,term_204.txt,7,0.652
+PBR,주가순자산비율,ko,설명,주가순자산비율 설명해줘,0.7726,term_224.txt,0.7675,term_193.txt,0.7318,term_204.txt,4,0.683
+PBR,주가순자산비율,ko,란,주가순자산비율이란?,0.802,term_224.txt,0.7603,term_193.txt,0.7501,term_204.txt,8,0.6613
+PBR,주가순자산비율,ko,뜻,주가순자산비율 뜻,0.7903,term_224.txt,0.7399,term_204.txt,0.7376,term_193.txt,7,0.6593
+BPS,주당순자산,en,단일,BPS,0.8636,term_005.txt,0.6188,term_002.txt,0.6084,term_003.txt,1,0.8636
+BPS,주당순자산,en,의문,BPS가 뭐야?,0.8718,term_005.txt,0.6488,term_002.txt,0.6404,term_003.txt,1,0.8718
+BPS,주당순자산,en,설명,BPS 설명해줘,0.8507,term_005.txt,0.6479,term_003.txt,0.6318,term_002.txt,1,0.8507
+BPS,주당순자산,en,란,BPS란?,0.8873,term_005.txt,0.639,term_002.txt,0.6328,term_003.txt,1,0.8873
+BPS,주당순자산,en,뜻,BPS 뜻,0.8562,term_005.txt,0.6079,term_002.txt,0.5961,term_003.txt,1,0.8562
+BPS,주당순자산,ko,단일,주당순자산,0.6467,term_224.txt,0.6392,term_200.txt,0.637,term_175.txt,0,
+BPS,주당순자산,ko,의문,주당순자산이 뭐야?,0.6468,term_200.txt,0.645,term_175.txt,0.6427,term_224.txt,0,
+BPS,주당순자산,ko,설명,주당순자산 설명해줘,0.6534,term_224.txt,0.6533,term_152.txt,0.6527,term_285.txt,9,0.6377
+BPS,주당순자산,ko,란,주당순자산이란?,0.655,term_175.txt,0.6542,term_285.txt,0.6423,term_103.txt,0,
+BPS,주당순자산,ko,뜻,주당순자산 뜻,0.6513,term_285.txt,0.6451,term_175.txt,0.6388,term_103.txt,0,
+RSI,상대강도지수,en,단일,RSI,0.8611,term_006.txt,0.6262,term_150.txt,0.6042,term_216.txt,1,0.8611
+RSI,상대강도지수,en,의문,RSI가 뭐야?,0.8795,term_006.txt,0.6201,term_150.txt,0.6081,term_023.txt,1,0.8795
+RSI,상대강도지수,en,설명,RSI 설명해줘,0.8778,term_006.txt,0.6342,term_150.txt,0.6132,term_023.txt,1,0.8778
+RSI,상대강도지수,en,란,RSI란?,0.8762,term_006.txt,0.6233,term_150.txt,0.6041,term_216.txt,1,0.8762
+RSI,상대강도지수,en,뜻,RSI 뜻,0.8636,term_006.txt,0.6051,term_150.txt,0.5871,term_216.txt,1,0.8636
+RSI,상대강도지수,ko,단일,상대강도지수,0.6235,term_111.txt,0.6222,term_082.txt,0.6097,term_009.txt,7,0.5822
+RSI,상대강도지수,ko,의문,상대강도지수가 뭐야?,0.6394,term_082.txt,0.6349,term_111.txt,0.6175,term_021.txt,7,0.5905
+RSI,상대강도지수,ko,설명,상대강도지수 설명해줘,0.6429,term_082.txt,0.6292,term_111.txt,0.6143,term_088.txt,6,0.5992
+RSI,상대강도지수,ko,란,상대강도지수란?,0.6328,term_082.txt,0.6321,term_111.txt,0.6189,term_009.txt,7,0.5901
+RSI,상대강도지수,ko,뜻,상대강도지수 뜻,0.6208,term_111.txt,0.6191,term_082.txt,0.6144,term_009.txt,8,0.5819
