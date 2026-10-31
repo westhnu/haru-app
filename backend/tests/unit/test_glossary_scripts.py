@@ -75,6 +75,46 @@ def test_convert_idempotent_second_run_writes_nothing(tmp_path: Path) -> None:
     assert written_again == 0  # 내용 동일 → 재기록 없음
 
 
+KI022_SAMPLE = {
+    "EPS": {
+        "full_name": "주당순이익",
+        "english": "Earnings Per Share",
+        "description": "순이익을 발행 주식수로 나눈 값",
+        "formula": "EPS = 순이익 / 발행주식수",
+        "related_terms": ["PER", "ROE"],
+    },
+    "PBR": {"full_name": "주가순자산비율", "description": "주가 / BPS", "formula": None},
+    "RSI": {"description": "과매수·과매도 지표", "related_terms": []},
+}
+
+
+def _convert_ki022(tmp_path: Path) -> Path:
+    src = tmp_path / "g.json"
+    src.write_text(json.dumps(KI022_SAMPLE, ensure_ascii=False), encoding="utf-8")
+    out_dir = tmp_path / "terms"
+    cv.convert(src, out_dir)
+    return out_dir
+
+
+def test_convert_includes_full_name_formula_related_terms_ki022(tmp_path: Path) -> None:
+    lines = (_convert_ki022(tmp_path) / "term_001.txt").read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "용어: EPS"
+    assert lines[1] == "정식 명칭: 주당순이익"  # 용어 바로 다음 (검색 신호)
+    assert "공식: EPS = 순이익 / 발행주식수" in lines
+    assert "관련 용어: PER, ROE" in lines
+    assert lines[-1] == "관련 용어: PER, ROE"
+
+
+def test_convert_handles_missing_optional_fields_ki022(tmp_path: Path) -> None:
+    out_dir = _convert_ki022(tmp_path)
+    pbr = (out_dir / "term_002.txt").read_text(encoding="utf-8")
+    rsi = (out_dir / "term_003.txt").read_text(encoding="utf-8")
+    assert "정식 명칭: 주가순자산비율" in pbr
+    assert "공식:" not in pbr  # None → 라인 생략
+    assert "정식 명칭:" not in rsi  # 키 없음 → 생략
+    assert "관련 용어:" not in rsi  # 빈 리스트 → 생략
+
+
 def test_convert_glossary_full_count() -> None:
     # 실제 jutopia glossary.json으로 파일 수만 검증.
     if not JUTOPIA_GLOSSARY.exists():

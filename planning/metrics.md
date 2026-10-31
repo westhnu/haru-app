@@ -344,3 +344,24 @@ Guardrail: gtulvril25hb
   - D. Guardrail 차단 메시지를 면책 문구와 다르게 변경 — C와 함께 답변 소실 UX 해소
 - 분석 한계: RetrieveAndGenerate 내부 판정과 완전 일치는 아님(retrieve 결과를 근거로 재사용, 답변은 별도 생성). BLOCK 정책 식별과 grounding score 범위는 유효. 표본 5건.
 - 비용: Bedrock 호출 20건(retrieve 5, RetrieveAndGenerate 5, ApplyGuardrail 10), KI-007 에러 0건.
+
+## 2026-10-31 KI-022 수정 재sync
+- 시작: 2026-10-31T04:44:30Z
+```
+2026-10-31 13:44:30 [info     ] create_step                    dry_run=False resource_id=ITEUSMR3IL resource_type=knowledge_base result=already_exists
+KB already_exists, reusing: ITEUSMR3IL
+2026-10-31 13:44:30 [info     ] kb_wait_active                 elapsed_s=0.2 kb_id=ITEUSMR3IL status=ACTIVE
+2026-10-31 13:44:31 [info     ] create_step                    dry_run=False resource_id=TICYPXTCJQ resource_type=data_source result=already_exists
+dataSource already_exists, reusing: TICYPXTCJQ
+KB: ITEUSMR3IL / dataSource: TICYPXTCJQ
+→ .env에 추가: BEDROCK_KB_ID=ITEUSMR3IL
+2026-10-31 13:44:31 [info     ] kb_sync_started                ingestion_job_id=0NC8ES9YDH kb_id=ITEUSMR3IL
+sync 완료: job=0NC8ES9YDH status=COMPLETE
+```
+- 종료: 2026-10-31T04:45:47Z
+
+### KI-022 재sync 요약
+- Ingestion job: 0NC8ES9YDH, status=COMPLETE
+- Docs scanned: 302 / modified: 302 / new: 0 / failed: 0
+- 실 소요: 64초 (04:44:31 → 04:45:36 UTC)
+- KB ITEUSMR3IL·DS TICYPXTCJQ 재사용, kb_wait_active 1회 조회로 ACTIVE 통과

@@ -277,3 +277,22 @@
 - **수정**: `cloudwatch_tokens`가 `BEDROCK_MODEL_ID` 차원 하나만 조회. 수정 후 쿼리당 $0.0069(성공 76건 기준, Guardrail 가정 포함).
 - **회귀 방지**: `tests/unit/test_bench_estimate_cost.py` — Fake CloudWatch가 이중 보고해도 모델 차원 값만 집계, 차원 없는 합계는 요청하지 않음.
 - **교훈**: CloudWatch 지표는 같은 값이 여러 차원 조합으로 중복 보고된다. 합산할 때는 Dimension을 명시해 하나만 고른다.
+
+## KI-022 — convert_glossary.py가 KI-015 B 결정과 다르게 full_name/formula/related_terms 누락
+
+- **발견**: 2026-10-31, Phase 5a A 조사 (KI-020 원인 추적 중)
+- **상태**: resolved (2026-10-31, ingestion `0NC8ES9YDH` modified 302 / failed 0)
+- **효과 (A-3, 한국어 정식 명칭 30건)**: 정답 1위 0/30 → 15/30, top 3 5/30 → 22/30, 10위 밖 14 → 0. 영문 약어 대조군 30/30 유지. 상세: `planning/ki-020-kb-quality.md`
+- **남은 문제**: 형태소가 겹치는 다른 용어 문서(수익률·순자본비율 등)가 정답보다 위로 오는 경우 15/30 — KI-020 A 후속
+- **증상**:
+  - 302개 term 전부 `full_name`(한국어 정식 명칭)이 있지만 `term_NNN.txt`에 들어가지 않았다.
+  - 그중 27개는 full_name 문자열이 문서 본문 어디에도 나오지 않아 정식 명칭으로 검색해도 해당 문서를 찾을 수 없다 (예: "주당순이익" → EPS 문서 미검색).
+  - `formula`, `related_terms`도 누락.
+- **원인**: KI-015 재작성(`4b2bf5a`) 당시 `FIELD_LABELS`에 full_name/formula/related_terms가 빠졌다. KI-015 B 결정("모든 필드 보존")과 불일치. 기존 테스트는 '빈 값 생략'만 검증하고 '필드 보존'은 검증하지 않아 놓쳤다.
+- **근거**:
+  - A-2 trace: "주당순이익 설명해줘" 검색 1~3위가 배당수익률 0.66, 당좌비율 0.66, 평가손익 0.65 — EPS(term_003) 미포함.
+  - A-1 glossary 조회: EPS의 full_name="주당순이익". S3의 term_003.txt(md5 = ETag 일치)에 "주당순이익" 문자열 없음.
+- **완화**: `FIELD_LABELS`에 full_name("정식 명칭", 용어 바로 다음), formula("공식"), related_terms("관련 용어") 추가 → 302 term 재변환 → S3 재업로드 → KB 재sync.
+- **회귀 방지**: `test_convert_includes_full_name_formula_related_terms_ki022`, `test_convert_handles_missing_optional_fields_ki022`
+- **영향**: 재ingestion 302 docs (~$0.003 재임베딩), S3 PUT 302건 (~$0.0015)
+- **관련**: KI-015 (초기 B 결정), KI-020 (grounding 저점수 원인 중 하나)
