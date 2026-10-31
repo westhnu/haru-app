@@ -1,4 +1,30 @@
-# 하루 HARU — 개인 투자자용 Daily 2-Brief
+# Haru — Personal Investment Workflow OS
+
+> 개인 투자자의 **리서치 → 결정 → 회고** 워크플로우를 한 곳에서 설계하고 자동화하는 플랫폼.
+> Daily 2-Brief로 매일 두 번 시장을 정리하고, 종목 워크북·AI 체크리스트·투자 저널로 결정을 돕습니다.
+> 종목을 추천하지 않고 정리만 합니다. 최종 결정은 사용자에게 있습니다.
+
+## 구조
+
+| 디렉터리 | 내용 | 상태 |
+|---|---|---|
+| [`frontend/`](frontend/) | Next.js 14 App Router. Daily 2-Brief UI, 종목 상세, `/glossary` 용어 도우미 | Amplify SSR 배포 중 |
+| [`backend/`](backend/) | FastAPI. Bedrock Knowledge Base + Guardrail RAG, 워크북·체크리스트·저널 API | 로컬 실행 |
+| [`.kiro/`](.kiro/) | Spec-Driven Development (steering + `bedrock-kb-and-guardrail` spec) | — |
+| [`planning/`](planning/) | sprint 로그, [known-issues](planning/known-issues.md), [metrics](planning/metrics.md), [블로그](planning/blog_harness_roi_1.md) | — |
+| `docs/`, `screenshots/` | 아키텍처 다이어그램, 포트폴리오 화면 | — |
+
+## 하이라이트 — Bedrock KB + Guardrail 백엔드
+
+- **AWS Bedrock Knowledge Base**: S3 Vectors 저장소, Titan Embed v2, 투자 용어 302개 색인(302/302). 모델은 Claude Sonnet 4.5 (cross-Region 추론 프로파일).
+- **Guardrail**: topic·content Standard tier + cross-Region profile `apac.guardrail.v1:0`, contextual grounding 0.50. 원칙 질문 INPUT 차단 **2/35 → 30/35** (Classic tier 한국어 미지원 발견, KI-023).
+- **3층 방어**: 시스템 프롬프트 → Guardrail INPUT/OUTPUT → 코드 후처리(`core/guardrail.py`). 우회 표현 5건이 Guardrail INPUT을 통과하는 한계도 공개(KI-024).
+- **품질 실측 (100건, 3차)**: KB 보유 용어 차단 47% → 22%, KB 미보유 용어 거절 86%(원칙 2 "근거 없는 답변 금지" 작동), 쿼리당 $0.0103, p95 13.4s.
+- **하네스**: `--dry-run` 기본 + `--apply` 명시 + 외부 호출 전 사람 승인. drift 15건(KI-010~024)을 찾아 수정·등재, 회귀 테스트 239 passed. 전체 이야기는 [블로그](planning/blog_harness_roi_1.md).
+
+---
+
+## Daily 2-Brief (frontend, 운영 중)
 
 > 매일 아침·저녁 두 번, **간밤 글로벌 → 오늘 국내 장** 흐름을 자동 브리핑.
 > 메인 LLM (GPT) 이 만든 브리핑을 보조 LLM (Gemini) 이 즉시 교차검증해 hallucination·투자권유 표현을 찾아 화면에 표시한다.
@@ -28,7 +54,7 @@
 
 ---
 
-## 핵심 기능
+### 핵심 기능
 
 | 기능 | 어떻게 |
 | --- | --- |
@@ -40,7 +66,7 @@
 
 ---
 
-## 아키텍처
+### 아키텍처
 
 ![Architecture](docs/haru_architecture.png)
 
@@ -71,7 +97,7 @@ Amplify SSR (Next.js 14 App Router)
 
 ---
 
-## 기술 스택
+### 기술 스택
 
 - **Frontend / SSR**: Next.js 14 (App Router) · TypeScript · Tailwind · Lucide
 - **LLM**: OpenAI GPT-5-mini (메인) · Google Gemini 2.5-flash (교차검증)
@@ -81,7 +107,7 @@ Amplify SSR (Next.js 14 App Router)
 
 ---
 
-## 빠른 실행 (로컬)
+### 빠른 실행 (로컬, frontend)
 
 ```bash
 cd frontend
@@ -95,20 +121,51 @@ npm run dev                         # http://localhost:3000
 
 ---
 
+## 백엔드 로컬 실행
+
+```bash
+cd backend
+uv sync
+cp .env.example .env    # 필요한 키를 채운다 (비워 두면 KB·DART는 mock 응답)
+PYTHONPATH=. uv run uvicorn app.main:app --reload --port 8000
+```
+
+- Swagger: http://localhost:8000/docs
+- frontend 개발 서버는 `/backend/*` 요청을 `http://localhost:8000/api/v1/*`로 프록시한다(`frontend/next.config.mjs`).
+- API·테스트·벤치마크 상세: [`backend/README.md`](backend/README.md)
+
+---
+
 ## 레포 구조
 
 ```
 .
 ├── frontend/                Next.js 14 App Router · TypeScript · Tailwind
-│   ├── app/                 라우트 (page.tsx · api/*)
-│   ├── components/          BriefView · ThemesView · StockDetail 등
-│   ├── lib/                 pipeline · llm · kis · dart · store · s3
+│   ├── app/                 라우트 (page.tsx · api/* · glossary)
+│   ├── components/          BriefView · ThemesView · StockDetail · GlossarySearch 등
+│   ├── lib/                 pipeline · llm · kis · dart · store · s3 (server-only 가드)
 │   ├── scripts/             build-krx.mjs · lambda-handler.ts
 │   └── dist/                esbuild 번들 (Lambda 배포용)
+├── backend/                 FastAPI · Pydantic v2 · boto3 · structlog
+│   ├── app/                 api/v1 · core(guardrail·prompts) · services(rag·hantu_readonly) · models
+│   ├── scripts/             kb/ · guardrail/ · bench/ (--dry-run 기본, --apply 명시)
+│   └── tests/               unit · integration · regression
+├── .kiro/                   steering(product·tech·principles) · specs/bedrock-kb-and-guardrail
+├── planning/                known-issues · metrics · testsets · 블로그
 ├── docs/                    아키텍처 다이어그램 · 핸드오버 문서
 ├── screenshots/             포트폴리오용 화면 캡처 (1280px · retina)
 └── README.md                ← 이 파일
 ```
+
+---
+
+## 알려진 이슈와 로드맵
+
+- [`planning/known-issues.md`](planning/known-issues.md)에 drift 15건(KI-010~024)을 원인·수정·회귀 테스트와 함께 공개한다. 기존 `/brief`·`/themes` 경로가 Guardrail 밖에 있다는 점(KI-018)도 포함한다.
+- 다음 로드맵:
+  - Phase 5c: KB 커버리지 확장 (WACC, 우선주, DCF 등 자주 묻는 미보유 용어)
+  - Sprint 3: frontend 체감 통합 (StockDetail + 워크북·체크리스트·저널 UI)
+  - Phase 6: pre-commit hook, teardown `--scope`, env 베이크인 제거(KI-019)
 
 ---
 
