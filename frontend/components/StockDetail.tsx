@@ -385,6 +385,7 @@ export default function StockDetail({
                           <GlossaryText
                             text={ind.label}
                             className="text-[12px] font-semibold text-slate-500 dark:text-slate-400"
+                            showAiDetail
                           />
                           {ind.tone && (
                             <span
@@ -434,6 +435,7 @@ export default function StockDetail({
                     <GlossaryText
                       text={r.label}
                       className="text-[14px] font-semibold text-slate-500 dark:text-slate-400"
+                      showAiDetail
                     />
                     <span className="text-right text-[14px] font-black text-slate-900 dark:text-slate-100">
                       {formatKRW(r.value)}
