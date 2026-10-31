@@ -248,3 +248,26 @@
   - Next.js `env` config는 편리하지만 "서버 전용"이라고 암묵적으로 가정하지 않는다. server-only 코드에는 명시적 `import "server-only"` 가드가 필수.
   - `server-only` 패키지는 Next.js 서버 번들 밖(일반 Node, esbuild)에서는 import 시 예외를 던진다. Lambda 등 비-Next 번들 경로는 `--conditions=react-server`가 필요하다. typecheck로는 드러나지 않으므로, 가드만 추가하면 스케줄된 Lambda가 다음 trigger에서 실패한다.
 - **관련**: KI-018(같은 영역의 Guardrail 미적용), 원칙 3(Secrets 유출 금지)
+
+## KI-020 — Guardrail이 정상 용어 질문을 과잉 차단
+
+- **발견**: 2026-10-31, Phase 5a 1차 벤치마크 100건 중 49건 INTERVENED
+- **상태**: open (분석 중)
+- **증상**: "ROE 설명해줘", "주당순이익", "우선주", "WACC" 같은 일반 용어 질문도 차단된다.
+  - 정상 용어 질문(투자용어 + KB 샘플)의 성공 건 59건 중 37건(63%) 차단. 투자용어 28건 중 21건, KB 샘플 31건 중 16건.
+  - 차단된 응답은 거의 모두 `answer_len=37`, citation 0건. 37자는 면책 문구 길이와 같다.
+- **보조 결함**: Guardrail 출력 차단 메시지(`blockedOutputsMessaging`)가 면책 문구와 동일("본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다.").
+  - `enforce_disclaimer`가 본문의 중복 문구를 제거하면서 답변이 비고, 사용자는 면책 문구 한 줄만 본다.
+  - citation이 없으므로 `source`가 `general_knowledge`로 잘못 표시된다.
+- **원인 추정 (미확정)**: Contextual Grounding(threshold 0.75, BLOCK) 과잉 작동. glossary 프롬프트는 KB에 없으면 일반 지식으로 답하도록 허용하는데, 그런 답변의 grounding score가 0.75 미만이라 BLOCK되는 것으로 의심. 1차 실행은 Guardrail trace를 켜지 않아 어떤 정책이 막았는지 근거가 없다.
+- **조사 다음 단계**: Guardrail trace를 켜고 정상 용어 5건 재호출해 BLOCK 정책 확정.
+- **관련**: KI-007 (use case 승인), KI-017 (regexesConfig), 원칙 5 (면책 문구)
+
+## KI-021 — estimate_cost CloudWatch 지표 중복 합산
+
+- **발견**: 2026-10-31, Phase 5a 1차 벤치마크 비용 집계
+- **상태**: resolved
+- **증상**: 쿼리당 $0.0129로 약 2배 과대 계산. CloudWatch가 같은 토큰을 "차원 없는 계정 전체 합"과 "모델별" 두 번 보고하는데, 스크립트가 `list_metrics`의 모든 차원을 더했다(input 160,776 = 80,388 × 2).
+- **수정**: `cloudwatch_tokens`가 `BEDROCK_MODEL_ID` 차원 하나만 조회. 수정 후 쿼리당 $0.0069(성공 76건 기준, Guardrail 가정 포함).
+- **회귀 방지**: `tests/unit/test_bench_estimate_cost.py` — Fake CloudWatch가 이중 보고해도 모델 차원 값만 집계, 차원 없는 합계는 요청하지 않음.
+- **교훈**: CloudWatch 지표는 같은 값이 여러 차원 조합으로 중복 보고된다. 합산할 때는 Dimension을 명시해 하나만 고른다.

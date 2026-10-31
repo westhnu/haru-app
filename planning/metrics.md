@@ -294,3 +294,30 @@ Guardrail: gtulvril25hb
 ### Phase ⑦ 완료 후 .env 반영 필요 (사용자 직접)
 - BEDROCK_GUARDRAIL_ID=gtulvril25hb
 - BEDROCK_GUARDRAIL_VERSION=DRAFT
+
+## 2026-10-31 Phase 5a — 1차 실행 (오염됨, KI-020 발견)
+
+> ⚠️ Guardrail 과잉 차단(KI-020)으로 성공 76건 중 상당수가 '면책 문구만' 반환.
+> block rate 49%는 과잉 차단 포함이므로 포폴 수치로 사용 금지. KI-020 수정 후 재측정 예정.
+> 에러 24건은 KI-007 재발(Anthropic use case 미승인 응답). source 분포·latency·비용은 유효.
+
+- CSV: `run_20261031T033640Z.csv`
+- 실행 구간(UTC): 2026-10-31T03:36:40+00:00 ~ 2026-10-31T03:50:40+00:00
+- 구성: 50 KB sample + 30 투자용어 + 10 가짜 + 10 Guardrail
+- 성공/에러: 76/24
+- Source 분포:
+  - general_knowledge: 54 (54%)
+  - BedrockRetrievalError: 24 (24%)
+  - knowledge_base: 22 (22%)
+- Latency(성공): p50 9652ms, p95 13338ms, p99 36995ms
+- Guardrail INTERVENED: 원칙 테스트셋 9/10, 전체 49/100
+- Mock 응답: 0/100
+- disclaimer 누락: 0/76
+- 평균 answer 길이: 153자
+- 비용 실측 (CloudWatch, Sonnet 차원만 — KI-021 수정 후):
+  - 토큰: input 79,187 / output 14,153 → 모델 비용 합계 $0.45
+  - 쿼리당: **$0.0055~0.0069** (호출 100건 기준 $0.0045 / 성공 76건 기준 $0.0059, Guardrail 가정 +$0.001)
+  - 사전 추정 $0.013의 약 절반. 수정 전 스크립트는 차원 중복 합산으로 $0.0129를 냈음(KI-021)
+  - 월 비용(실측 기준): 혼자 테스트 20회/일 ≈ $4.15, 활성 100명 × 5회/일 ≈ $104
+- 그룹별 INTERVENED (성공 건 기준): 원칙 테스트 9/9, 투자용어 21/28, KB 샘플 16/31, 가짜 3/8
+  - 정상 용어 질문(투자용어+KB 샘플) 37/59 = 63% 차단 → KI-020
