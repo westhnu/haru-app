@@ -230,12 +230,14 @@ sync 완료: job=WUK6SJJHKB status=COMPLETE
 | 4차 재개 | 부분 성공 (144/302) | 76s | ~$0.001 | KI-016 (2048B filterable) | nonFilterableMetadataKeys 지정 |
 | Teardown #2 + Rebuild | index/KB/DS 재생성 | ~3m | $0 | — | — |
 | 5차 재개 | 302/302 COMPLETE | 65s | ~$0.0016 | — | — |
+| Phase ⑦ 1차 --apply | ValidationException | 1s | $0 | KI-017 (KR_RRN enum 미지원) | regexesConfig 전환 + 회귀 테스트 |
+| Phase ⑦ 재 apply | 성공 | ~1s | $0 | — | — |
 
-- 총 발견 drift: 7건 (KI-010 ~ KI-016)
+- 총 발견 drift: **8건** (KI-010 ~ KI-017)
 - 모든 drift가 운영 환경 도달 전 포획 (사용자 체감 장애 0, 데이터 손실 0)
 - 전체 사이클 운영 롤백 비용: $0 (임베딩 실측 총합 < $0.01)
 - 하네스 설계 요소: --dry-run 기본 / --apply 명시 / --confirm teardown / 각 단계 사람 승인 체크포인트 / 외부 호출 전 read-only 재확인 / fail-fast with raw 로그
-- 수정 방식: 7건 중 6건 코드 수정 + 회귀 테스트 + known-issues 등재. KI-012는 Phase 6 리팩토링(T-603) 예약.
+- 수정 방식: 8건 중 7건 코드 수정 + 회귀 테스트 + known-issues 등재. KI-012는 Phase 6 리팩토링(T-603) 예약.
 
 ### Phase ⑥ 완료 후 .env 반영 필요 (사용자 직접)
 - BEDROCK_KB_ID=ITEUSMR3IL
@@ -265,3 +267,30 @@ Traceback (most recent call last):
 botocore.errorfactory.ValidationException: An error occurred (ValidationException) when calling the CreateGuardrail operation: 1 validation error detected: Value at 'sensitiveInformationPolicyConfig.piiEntitiesConfig.1.member.type' failed to satisfy constraint: Member must satisfy enum value set: [US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER, US_BANK_ROUTING_NUMBER, MAC_ADDRESS, AWS_ACCESS_KEY, VEHICLE_IDENTIFICATION_NUMBER, CREDIT_DEBIT_CARD_EXPIRY, NAME, CA_HEALTH_NUMBER, UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER, INTERNATIONAL_BANK_ACCOUNT_NUMBER, CREDIT_DEBIT_CARD_CVV, PHONE, URL, UK_NATIONAL_INSURANCE_NUMBER, UK_NATIONAL_HEALTH_SERVICE_NUMBER, DRIVER_ID, AWS_SECRET_KEY, ADDRESS, US_PASSPORT_NUMBER, PIN, USERNAME, US_SOCIAL_SECURITY_NUMBER, LICENSE_PLATE, SWIFT_CODE, PASSWORD, IP_ADDRESS, EMAIL, US_BANK_ACCOUNT_NUMBER, CREDIT_DEBIT_CARD_NUMBER, CA_SOCIAL_INSURANCE_NUMBER, AGE]
 ```
 - 종료: 2026-10-31T02:17:22Z
+
+- 재시작: 2026-10-31T02:33:59Z (KI-017 수정 반영)
+```
+2026-10-31 11:34:00 [info     ] create_step                    dry_run=False resource_id=gtulvril25hb resource_type=guardrail result=created
+Guardrail: gtulvril25hb
+→ .env에 추가: BEDROCK_GUARDRAIL_ID=gtulvril25hb, BEDROCK_GUARDRAIL_VERSION=DRAFT
+```
+- 종료: 2026-10-31T02:34:00Z exit=
+
+### Phase ⑦ Guardrail — 요약 (성공, KI-017 수정 반영)
+- Guardrail id: gtulvril25hb
+- Guardrail ARN: arn:aws:bedrock:ap-northeast-2:205474063205:guardrail/gtulvril25hb
+- Version: DRAFT (status READY)
+- 6종 정책 전부 반영 확인:
+  - Denied Topic x2 ✓ (investment-advice, future-price-guarantee)
+  - Word Filter 4개 ✓ (리딩방, 한 방, 무조건 수익, 보장)
+  - Sensitive Info — regexesConfig(KR_RRN, `\d{6}-[1-8]\d{6}`, ANONYMIZE) ✓ (KI-017 수정 검증, piiEntities 빈 배열)
+  - Content HIGH x3 ✓ (Hate/Sexual/Violence input+output)
+  - Contextual Grounding 0.75 ✓ (BLOCK)
+- 차단 메시지: input "본 서비스는 종목 추천을 제공하지 않습니다." / output "본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다."
+- 소요: ~1s
+- 비용: $0 (생성 자체는 무료, invoke 시만 과금)
+- 발견 KI: KI-017 (piiEntitiesConfig의 KR_RRN 미지원 → regexesConfig 커스텀 패턴)
+
+### Phase ⑦ 완료 후 .env 반영 필요 (사용자 직접)
+- BEDROCK_GUARDRAIL_ID=gtulvril25hb
+- BEDROCK_GUARDRAIL_VERSION=DRAFT
