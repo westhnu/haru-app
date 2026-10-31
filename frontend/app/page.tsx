@@ -5,7 +5,7 @@ import {
   Sunset,
   Sparkles,
   Network,
-  ShieldCheck,
+  BookOpen,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
@@ -41,12 +41,12 @@ const features = [
     active: true,
   },
   {
-    href: "#",
-    title: "AI 품질 리포트",
-    time: "준비 중",
-    description: "브리핑의 정확성과 교차검증 결과를 매일 누적해 기록해요.",
-    icon: ShieldCheck,
-    active: false,
+    href: "/workbook",
+    title: "내 워크북",
+    time: "신규",
+    description: "종목별 분석 메모를 모아 보관해요.",
+    icon: BookOpen,
+    active: true,
   },
 ];
 

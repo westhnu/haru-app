@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Info, BarChart3 } from "lucide-react";
+import { ArrowLeft, Info, BarChart3, BookOpen } from "lucide-react";
 import type { IndicatorTone, StockResponse } from "@/lib/stocktypes";
 import PriceChart from "@/components/PriceChart";
 import GlossaryText from "@/components/GlossaryText";
+import WorkbookPanel from "@/components/WorkbookPanel";
 
 const TONE: Record<IndicatorTone, { cls: string; label: string }> = {
   good: { cls: "bg-emerald-50 text-emerald-700", label: "양호" },
@@ -67,12 +68,16 @@ function formatPrice(value: number, currency?: string): string {
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${currency}`;
 }
 
+export type StockTab = "info" | "financial" | "workbook";
+
 export default function StockDetail({
   code,
   name,
+  initialTab = "info",
 }: {
   code: string;
   name?: string;
+  initialTab?: StockTab;
 }) {
   const router = useRouter();
   const [data, setData] = useState<StockResponse | null>(null);
@@ -87,7 +92,7 @@ export default function StockDetail({
       router.push("/");
     }
   }, [router]);
-  const [tab, setTab] = useState<"info" | "financial">("info");
+  const [tab, setTab] = useState<StockTab>(initialTab);
   // 스크롤 시 종목명이 화면에서 사라지면 mini 종목명을 sticky bar 에 표시
   const titleRef = useRef<HTMLHeadingElement | null>(null);
   const [showMini, setShowMini] = useState(false);
@@ -261,9 +266,8 @@ export default function StockDetail({
               )}
             </div>
 
-            {/* 탭 — 재무는 DART 라이브가 있을 때만 노출 (해외 종목엔 unsupported) */}
-            {data.meta.dartMode !== "unsupported" && (
-              <div className="mt-4 flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 p-1">
+            {/* 탭 — 재무는 DART 라이브가 있을 때만 노출 (해외 종목엔 unsupported). 워크북은 항상 노출 */}
+            <div className="mt-4 flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 p-1">
                 <button
                   onClick={() => setTab("info")}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
@@ -275,19 +279,31 @@ export default function StockDetail({
                   <Info className="h-4 w-4" />
                   종목정보
                 </button>
+                {data.meta.dartMode !== "unsupported" && (
+                  <button
+                    onClick={() => setTab("financial")}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
+                      tab === "financial"
+                        ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm"
+                        : "text-slate-500 dark:text-slate-400"
+                    }`}
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    재무제표
+                  </button>
+                )}
                 <button
-                  onClick={() => setTab("financial")}
+                  onClick={() => setTab("workbook")}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${
-                    tab === "financial"
+                    tab === "workbook"
                       ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm"
                       : "text-slate-500 dark:text-slate-400"
                   }`}
                 >
-                  <BarChart3 className="h-4 w-4" />
-                  재무제표
+                  <BookOpen className="h-4 w-4" />
+                  워크북
                 </button>
               </div>
-            )}
 
             {/* 종목정보 */}
             {tab === "info" && (
@@ -415,8 +431,13 @@ export default function StockDetail({
               </div>
             )}
 
+            {/* 워크북 */}
+            {tab === "workbook" && (
+              <WorkbookPanel stockCode={code} stockName={data.profile.name || name || code} />
+            )}
+
             {/* 재무 */}
-            {tab === "financial" && (
+            {tab === "financial" && data.meta.dartMode !== "unsupported" && (
               <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-3">
                   <span className="text-[13px] font-black text-slate-900 dark:text-slate-100">

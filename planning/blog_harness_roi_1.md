@@ -326,3 +326,44 @@ Phase 5a까지 수치로 측정한 Bedrock KB + Guardrail 아키텍처가 실제
 - **Mock 응답 캐시 제외**: 설정 변경 시 혼동 방지
 - **Markdown 미렌더링**: 초기엔 \`\`\`**bold**\`\`\` raw asterisk 노출 → react-markdown으로 수정
 - **Citation whitespace**: 청크 포맷(용어/정식 명칭/영문 라인) 뭉침 → \`whitespace-pre-wrap\`로 복원
+
+---
+
+## Sprint 3b — Workbook UI (memo 블록 CRUD)
+
+Phase 5a 완결 후 두 번째 체감 UI. StockDetail에 "워크북" 탭 + 전용 `/workbook` 페이지. memo 블록 추가·삭제 가능 (수정은 삭제+재추가로 간소화).
+
+### 체감 UI 6장
+
+| # | 상태 | 스크린샷 |
+|---|---|---|
+| 07 | StockDetail에 워크북 탭 추가 (삼성전자 샘플 메모 + "임시 저장" 배지 + 원칙 1 안내) | ![tab](screenshots/sprint3b/07_workbook_tab.jpg) |
+| 08 | 블록 추가 다이얼로그 (타입 chip 5종: 메모만 활성, 재무·뉴스·차트·체크리스트는 "준비 중" disabled) | ![dialog-empty](screenshots/sprint3b/08_add_dialog_empty.jpg) |
+| 09 | 메모 입력 (글자 수 카운터 35/1000, 저장 버튼 활성) | ![dialog-typed](screenshots/sprint3b/09_add_dialog_typed.jpg) |
+| 10 | 저장 후 리스트 즉시 반영 (블록 2개, `updated_at` 04:44로 갱신) | ![block-added](screenshots/sprint3b/10_block_added.jpg) |
+| 11 | `/workbook` 전용 페이지 — 종목별 그룹 + "서버 재시작 시 샘플만 남아요" 안내 | ![list](screenshots/sprint3b/11_workbook_list_page.jpg) |
+| 12 | 홈 "AI 품질 리포트(준비 중)" 자리 → "내 워크북" 진입점 교체 | ![home](screenshots/sprint3b/12_home_workbook_entry.jpg) |
+
+### Backend 확장 요약
+
+- `WorkbookBlock.id` 필드 추가 (uuid), `block_type` Literal 5종 제한
+- `POST /api/v1/workbooks/{id}/blocks` (추가)
+- `DELETE /api/v1/workbooks/{id}/blocks/{block_id}` (삭제, 204)
+- `GET /api/v1/workbooks?stock_code=` (필터)
+- `MemoContent` Pydantic 검증 (1~1000자, 공백 제거, extra 키 거부)
+- `Workbook.touch()` auto 갱신 (updated_at)
+- 테스트 7건 추가 (총 246 passed)
+
+### Frontend 설계 결정
+
+- **탭 통합**: 기존 StockDetail "종목정보/재무제표" 뒤에 "워크북" 세 번째 탭 (BookOpen 아이콘). 해외 종목은 재무 탭만 숨기고 워크북은 항상 노출.
+- **`?tab=workbook` 딥링크**: `/workbook` 목록에서 종목 카드 클릭 → 해당 StockDetail의 워크북 탭 자동 선택 (Kiro 자체 추가, 지시안엔 없었음)
+- **Update 제외**: 복잡도 낮춤. "삭제 + 재추가"로 대체 (MVP 범위 결정)
+- **"임시 저장" 배지**: in-memory 저장소 명시. UX·narrative 투명성.
+
+### Kiro가 사전 포획한 추가 결함
+
+- **지원 안 하는 block_type도 422로 거부**: Literal 5종 중 `financial/news/chart/checklist_ref`는 외부 API 연결 전까지 422 반환 (받아주면 검증 안 된 임의 dict가 저장됨)
+- **테스트 전역 상태 격리**: _WORKBOOKS가 모듈 전역이라 테스트끼리 데이터 공유. 각 테스트가 새 워크북 만들어 쓰고 샘플은 안 건드리게 설계
+- **원칙 라우터 PII 처리 공백 지적**: 지금은 저장만이라 OK, 나중에 메모를 LLM에 넘기면 (예: AI 요약) `mask_pii` + `apply_output_guard` 지점 필요 — known-issue 등재 후보
+- **Amplify 운영 결함 재지적** (KI-025와 같은 패턴): 홈 "내 워크북" 카드가 운영에서 백엔드 접근 불가 → main merge 전 feature flag 또는 백엔드 배포 필요
