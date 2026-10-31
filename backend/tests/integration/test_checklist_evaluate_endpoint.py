@@ -36,7 +36,7 @@ def _new(client: TestClient, code: str) -> tuple[str, str]:
 def test_evaluate_endpoint_success_does_not_persist() -> None:
     payload = {
         "suggested_status": "satisfied",
-        "reasoning": "부채비율 40.0%입니다.",
+        "reasoning": "부채비율 40.0%. 200% 미만 충족.",
         "used_facts": ["부채비율(%)"],
     }
     client = client_with(
@@ -63,7 +63,7 @@ def test_evaluate_endpoint_unsupported_market() -> None:
     client = client_with(dart, FakeRuntime("{}"))
     cl_id, item_id = _new(client, "NVDA")
     r = client.post(f"/api/v1/checklists/{cl_id}/items/{item_id}/evaluate")
-    assert r.status_code == 422 and "DART" in r.json()["detail"]
+    assert r.status_code == 422 and "국내 상장" in r.json()["detail"]
     assert dart.calls == []
 
 

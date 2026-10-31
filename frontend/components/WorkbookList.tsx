@@ -46,7 +46,7 @@ export default function WorkbookList() {
       <div className="flex items-center justify-center gap-2 py-16">
         <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
         <span className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-          워크북을 불러오는 중...
+          워크북 로딩
         </span>
       </div>
     );
@@ -70,7 +70,7 @@ export default function WorkbookList() {
   if (groups.length === 0) {
     return (
       <p className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-10 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-        아직 워크북이 없어요. 종목 상세의 &quot;워크북&quot; 탭에서 만들어 보세요.
+        워크북 없음. 종목 상세 &quot;워크북&quot; 탭에서 생성.
       </p>
     );
   }

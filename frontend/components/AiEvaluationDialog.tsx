@@ -148,7 +148,7 @@ export default function AiEvaluationDialog({
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
               <p className="text-[13px] font-semibold text-slate-500 dark:text-slate-400">
-                AI가 DART 재무 데이터를 분석 중... (최대 10초)
+                DART 재무 데이터 분석 중
               </p>
             </div>
           )}
@@ -224,7 +224,7 @@ export default function AiEvaluationDialog({
           )}
 
           <p className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
-            AI 평가는 참고용입니다. 최종 판단은 본인에게 있습니다.
+            AI 평가는 참고용. 최종 판단은 본인 책임.
             {evaluation?.disclaimer ? ` ${evaluation.disclaimer}` : ""}
           </p>
         </div>
@@ -246,7 +246,7 @@ export default function AiEvaluationDialog({
               className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-slate-900 dark:bg-slate-100 py-2.5 text-[13px] font-bold text-white dark:text-slate-900 transition hover:bg-slate-800 disabled:opacity-40"
             >
               {applying && <Loader2 className="h-4 w-4 animate-spin" />}
-              이 판정 적용
+              판정 적용
             </button>
           )}
         </div>

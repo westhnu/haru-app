@@ -229,7 +229,7 @@ export default function StockDetail({
               <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[13px] font-semibold text-amber-900">
                 <p className="font-black">해외 종목은 라이브 시세 미지원</p>
                 <p className="mt-1 leading-6">
-                  이 종목은 한국투자증권(KIS) Open API 의 조회 대상이 아니에요. 시세·재무 차트는 표시되지 않습니다. 브리핑 본문의 텍스트 정보만 참고해 주세요.
+                  한국투자증권(KIS) Open API 조회 대상 아님. 시세·재무 차트 미표시. 브리핑 본문 텍스트만 참고.
                 </p>
               </div>
             )}
@@ -392,7 +392,7 @@ export default function StockDetail({
                     )}
                   </div>
                   <p className="mt-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-                    양호·보통·주의는 업종(섹터) 평균 대비 참고 평가예요.
+                    양호·보통·주의: 업종(섹터) 평균 대비 참고 평가.
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {data.indicators.map((ind, i) => (
@@ -485,8 +485,7 @@ export default function StockDetail({
             )}
 
             <p className="px-1 pt-5 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
-              재무 데이터 출처: DART(전자공시시스템). 본 정보는 투자 참고용이며 특정
-              종목 매수·매도 권유가 아닙니다.
+              재무 데이터 출처: DART(전자공시시스템). 투자 참고용. 특정 종목 매수·매도 권유 아님.
             </p>
           </>
         )}

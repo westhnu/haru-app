@@ -5,6 +5,7 @@ import re
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.guardrail import find_tone_violations
 from app.main import create_app
 
 TODAY = "/api/v1/today"
@@ -45,7 +46,7 @@ def _entry(client: TestClient, **over: object) -> dict:
 def test_empty_state(client: TestClient) -> None:
     card = client.get(TODAY).json()
     assert card["next_action"] == "empty"
-    assert card["cta_label"] == "종목 검색" and card["cta_href"] == ""
+    assert card["cta_label"] == "검색" and card["cta_href"] == ""
     assert card["context"] == {}
 
 
@@ -55,7 +56,7 @@ def test_checklist_incomplete(client: TestClient) -> None:
     card = client.get(TODAY).json()
     assert card["next_action"] == "checklist_incomplete"
     assert "매수 결정 (본인 기록)" in card["message"]
-    assert "3개 중 1개 충족" in card["message"] and "1개는 아직" in card["message"]
+    assert "1/3 충족" in card["message"] and "1건 판단 보류" in card["message"]
     assert card["cta_href"].startswith("/stock/000660?") and card["cta_href"].endswith(
         "&tab=workbook"
     )
@@ -124,3 +125,6 @@ def test_disclaimer_always_present_and_no_date_guess(client: TestClient) -> None
     for c in cards:
         assert c["disclaimer"] == "본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다."
         assert not DATE_GUESS.search(c["message"]), c["message"]
+        # 말투 가이드 (F1): message·CTA 모두 명사형
+        assert find_tone_violations(c["message"]) == [], c["message"]
+        assert find_tone_violations(c["cta_label"]) == [], c["cta_label"]

@@ -20,7 +20,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from app.config import Settings, get_settings
 from app.core.grounding import find_ungrounded_figures
-from app.core.guardrail import DISCLAIMER, has_forbidden_phrase, mask_pii
+from app.core.guardrail import DISCLAIMER, has_forbidden_phrase, has_tone_violation, mask_pii
 from app.core.prompts import SYSTEM_PROMPT_CHECKLIST_EVAL
 from app.models.checklist import REASONING_MAX_LENGTH, AiEvaluation, EvaluationSource
 from app.models.stock import STATEMENT_LABELS, STOCK_CODE_PATTERN, DartResult
@@ -33,14 +33,14 @@ VALID_STATUSES = frozenset({"satisfied", "unsatisfied", "uncertain"})
 _PERCENT_IN_TEXT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:%|퍼센트)")
 _JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
 
-FALLBACK_PREFIX = "제공된 DART 데이터로 판단할 수 없습니다."
-REASON_MOCK = "개발용 DART 데이터라 AI 평가를 하지 않았습니다. 실제 DART 연동 후 다시 시도하세요."
-REASON_BEDROCK_FAILED = "AI 평가 호출에 실패했습니다. 잠시 후 다시 시도하세요."
-REASON_STOPPED = "Guardrail 개입 또는 응답 잘림으로 AI 판정을 쓰지 않았습니다."
-REASON_INVALID = (
-    "AI 응답이 검증을 통과하지 못해 판정을 보류합니다. 원칙과 DART 원문을 직접 확인하세요."
-)
-REASON_NO_FACTS = "평가에 쓸 수 있는 재무 비율이 이 보고서에 없습니다. DART 원문을 확인하세요."
+# 말투 가이드(F1): 명사형·단문.
+# 모든 fallback 문구는 has_tone_violation을 통과해야 한다 (테스트 고정).
+FALLBACK_PREFIX = "판단 보류."
+REASON_MOCK = "개발용 DART 데이터. AI 평가 미실행."
+REASON_BEDROCK_FAILED = "AI 평가 호출 실패. 재시도."
+REASON_STOPPED = "응답 차단 (Guardrail) 또는 응답 잘림."
+REASON_INVALID = "AI 응답 검증 실패. DART 원문 직접 확인."
+REASON_NO_FACTS = "데이터 부족. 이 보고서에 평가용 재무 비율 없음."
 
 logger = structlog.get_logger(__name__)
 
@@ -116,6 +116,8 @@ def validate_eval(
         return f"ungrounded_figures:{ungrounded}"
     if has_forbidden_phrase(reasoning):
         return "forbidden_phrase"
+    if has_tone_violation(reasoning):
+        return "tone_violation"
     return status, reasoning, used
 
 

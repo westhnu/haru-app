@@ -47,8 +47,8 @@ class TodayService:
         if entry is None and workbook is None:
             return TodayCard(
                 next_action=NextAction.EMPTY,
-                message="오늘 종목 하나를 열어 체크리스트를 채워 보세요.",
-                cta_label="종목 검색",
+                message="체크리스트 시작. 종목 검색부터.",
+                cta_label="검색",
             )
         if entry is not None:
             return self._from_entry(session, entry)
@@ -74,17 +74,16 @@ class TodayService:
                 return TodayCard(
                     next_action=NextAction.CHECKLIST_INCOMPLETE,
                     message=(
-                        f"{base} 체크리스트 {total}개 중 {satisfied}개 충족, "
-                        f"{uncertain}개는 아직 판단하지 않았어요."
+                        f"{base} 체크리스트 {satisfied}/{total} 충족, {uncertain}건 판단 보류."
                     ),
-                    cta_label="체크리스트 이어서 채우기",
+                    cta_label="체크리스트 이어서",
                     cta_href=workbook_tab_href(entry.stock_code, entry.stock_name),
                     context=context | {"score_uncertain": uncertain},
                 )
         return TodayCard(
             next_action=NextAction.REVIEW_DECISION,
-            message=f"{base} 저널에서 결정 근거를 다시 보고 회고를 이어가세요.",
-            cta_label="저널 보기",
+            message=f"{base} 회고 필요. 저널에서 결정 재검토.",
+            cta_label="저널",
             cta_href="/journal",
             context=context,
         )
@@ -92,11 +91,8 @@ class TodayService:
     def _from_workbook(self, workbook: Workbook) -> TodayCard:
         return TodayCard(
             next_action=NextAction.START_NEW,
-            message=(
-                f"최근 분석: {workbook.stock_name} 워크북. "
-                "체크리스트를 채운 뒤 결정을 기록해 보세요."
-            ),
-            cta_label="체크리스트 열기",
+            message=(f"최근 분석: {workbook.stock_name} 워크북. 체크리스트·결정 기록 필요."),
+            cta_label="체크리스트",
             cta_href=workbook_tab_href(workbook.stock_code, workbook.stock_name),
             context={"stock_code": workbook.stock_code, "stock_name": workbook.stock_name},
         )

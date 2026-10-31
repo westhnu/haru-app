@@ -81,7 +81,7 @@ export default function GlossarySearch({ suggestedTerms, initialQuery }: Props) 
           disabled={loading || !query.trim()}
           className="mt-3 w-full rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {loading ? "검색 중..." : "질문하기"}
+          {loading ? "검색 중" : "검색"}
         </button>
       </form>
 

@@ -76,7 +76,7 @@ export default function WorkbookEditDialog({
       onSaved();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "저장에 실패했습니다");
+      setError(err instanceof Error ? err.message : "저장 실패");
     } finally {
       setSaving(false);
     }
@@ -141,7 +141,7 @@ export default function WorkbookEditDialog({
               maxLength={MEMO_MAX_LENGTH}
               rows={6}
               disabled={saving}
-              placeholder="이 종목을 보며 정리하고 싶은 생각을 적어 두세요. (예: 매수 근거, 확인할 지표)"
+              placeholder="메모 작성 (예: 매수 근거, 확인할 지표)"
               className="w-full resize-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-[14px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="mt-1 text-right text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">

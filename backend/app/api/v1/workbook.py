@@ -16,6 +16,7 @@ from app.models.workbook import (
 router = APIRouter(prefix="/api/v1/workbooks", tags=["workbook"])
 
 SessionDep = Annotated[Session, Depends(get_session)]
+WORKBOOK_NOT_FOUND = "워크북 없음."
 
 
 @router.get("", response_model=WorkbookListResponse)
@@ -33,7 +34,7 @@ def create_workbook(req: WorkbookCreateRequest, session: SessionDep) -> Workbook
 def get_workbook(workbook_id: str, session: SessionDep) -> Workbook:
     wb = workbook_repo.get_workbook(session, workbook_id)
     if wb is None:
-        raise HTTPException(status_code=404, detail="Workbook not found")
+        raise HTTPException(status_code=404, detail=WORKBOOK_NOT_FOUND)
     return wb
 
 
@@ -41,12 +42,12 @@ def get_workbook(workbook_id: str, session: SessionDep) -> Workbook:
 def add_block(workbook_id: str, req: WorkbookBlockAddRequest, session: SessionDep) -> WorkbookBlock:
     block = workbook_repo.add_block(session, workbook_id, req.block_type, req.content)
     if block is None:
-        raise HTTPException(status_code=404, detail="Workbook not found")
+        raise HTTPException(status_code=404, detail=WORKBOOK_NOT_FOUND)
     return block
 
 
 @router.delete("/{workbook_id}/blocks/{block_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_block(workbook_id: str, block_id: str, session: SessionDep) -> Response:
     if not workbook_repo.delete_block(session, workbook_id, block_id):
-        raise HTTPException(status_code=404, detail="Workbook or block not found")
+        raise HTTPException(status_code=404, detail="워크북 또는 블록 없음.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)

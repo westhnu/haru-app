@@ -17,8 +17,8 @@ function parseNonNegative(raw: string, integer: boolean): { value: number | null
   const s = raw.trim();
   if (!s) return { value: null };
   const n = Number(s);
-  if (!Number.isFinite(n) || n < 0) return { value: null, error: "0 이상의 숫자를 입력하세요" };
-  if (integer && !Number.isInteger(n)) return { value: null, error: "수량은 정수로 입력하세요" };
+  if (!Number.isFinite(n) || n < 0) return { value: null, error: "0 이상 숫자만 입력 가능" };
+  if (integer && !Number.isInteger(n)) return { value: null, error: "수량: 정수만 입력 가능" };
   return { value: n };
 }
 
@@ -111,7 +111,7 @@ export default function JournalEntryDialog({
       setSaved(true);
       onSaved?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "저장에 실패했습니다");
+      setError(err instanceof Error ? err.message : "저장 실패");
     } finally {
       setSaving(false);
     }
@@ -157,9 +157,9 @@ export default function JournalEntryDialog({
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
           {saved ? (
             <div className="py-6 text-center">
-              <p className="text-[14px] font-bold text-slate-900 dark:text-slate-100">기록했어요.</p>
+              <p className="text-[14px] font-bold text-slate-900 dark:text-slate-100">저장 완료.</p>
               <p className="mt-1 text-[12px] font-semibold text-slate-400 dark:text-slate-500">
-                &quot;투자 저널&quot;에서 전체 기록을 볼 수 있어요.
+                전체 기록: &quot;투자 저널&quot;.
               </p>
             </div>
           ) : (
@@ -199,7 +199,7 @@ export default function JournalEntryDialog({
                   maxLength={REASONING_MAX_LENGTH}
                   rows={5}
                   disabled={saving}
-                  placeholder="왜 이렇게 결정했는지 적어 두세요. 나중에 회고할 때 다시 봅니다."
+                  placeholder="결정 이유 기록 (회고용)"
                   className="w-full resize-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-[14px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="mt-1 text-right text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">
@@ -241,10 +241,10 @@ export default function JournalEntryDialog({
 
               {(defaultChecklistId || defaultWorkbookId) && (
                 <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-                  현재 {[defaultWorkbookId && "워크북", defaultChecklistId && "체크리스트"]
+                  연결:{" "}
+                  {[defaultWorkbookId && "현재 워크북", defaultChecklistId && "체크리스트"]
                     .filter(Boolean)
-                    .join("·")}
-                  과 함께 기록됩니다.
+                    .join(" · ")}
                 </p>
               )}
 
@@ -257,8 +257,7 @@ export default function JournalEntryDialog({
           )}
 
           <p className="rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-            가상 기록이며 실제 주문·거래가 아닙니다. Haru는 종목을 추천하지 않으며, 최종 결정은
-            사용자에게 있습니다.
+            가상 기록. 실제 주문·거래 아님. 종목 추천 없음, 최종 결정은 본인.
           </p>
         </div>
 

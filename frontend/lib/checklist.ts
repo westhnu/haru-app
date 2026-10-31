@@ -7,7 +7,7 @@ export type ItemStatus = "satisfied" | "unsatisfied" | "uncertain";
 export const STATUS_LABELS: Record<ItemStatus, string> = {
   satisfied: "충족",
   unsatisfied: "미충족",
-  uncertain: "판단 어려움",
+  uncertain: "판단 보류",
 };
 export const STATUS_ORDER: readonly ItemStatus[] = ["satisfied", "unsatisfied", "uncertain"];
 export const PRINCIPLE_MAX_LENGTH = 200;
@@ -81,8 +81,8 @@ export function scoreOf(items: ChecklistItem[]): { satisfied: number; total: num
 export type EvaluationSource = "bedrock" | "template" | "mock";
 
 export const EVALUATION_SOURCE_LABELS: Record<EvaluationSource, string> = {
-  bedrock: "Bedrock AI 평가",
-  template: "판단 보류 (데이터 부족·검증 실패)",
+  bedrock: "AI 평가 (Bedrock)",
+  template: "판단 보류 (검증 실패)",
   mock: "개발용 데이터",
 };
 

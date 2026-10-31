@@ -35,7 +35,7 @@ export default function PriceChart({
   if (prices.length < 2) {
     return (
       <div className="flex h-[180px] items-center justify-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-        표시할 시세가 없어요
+        시세 데이터 없음
       </div>
     );
   }

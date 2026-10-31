@@ -26,8 +26,8 @@ router = APIRouter(prefix="/api/v1/checklists", tags=["checklist"])
 
 SessionDep = Annotated[Session, Depends(get_session)]
 EvalServiceDep = Annotated[ChecklistEvalService, Depends(get_checklist_eval_service)]
-NOT_FOUND = "Checklist not found"
-ITEM_NOT_FOUND = "Checklist or item not found"
+NOT_FOUND = "체크리스트 없음."
+ITEM_NOT_FOUND = "체크리스트 또는 원칙 없음."
 
 
 @router.get("")
@@ -101,7 +101,7 @@ def evaluate_item(
     except UnsupportedMarketError as exc:
         raise HTTPException(
             422,
-            "DART 미지원 종목입니다. AI 평가는 국내 상장 종목(6자리 코드)만 지원합니다.",
+            "국내 상장 종목 아님. AI 평가는 6자리 종목 코드만 지원.",
         ) from exc
     except DartError as exc:
         status_code, detail = DART_ERROR_RESPONSES.get(type(exc), DEFAULT_DART_ERROR)

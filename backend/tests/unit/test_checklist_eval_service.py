@@ -7,7 +7,9 @@ import pytest
 from botocore.exceptions import ClientError
 
 from app.config import Settings
+from app.core.guardrail import has_tone_violation
 from app.models.stock import DartResult, StockFinancials, StockSource
+from app.services import checklist_eval_service as ces
 from app.services.checklist_eval_service import (
     FALLBACK_PREFIX,
     ChecklistEvalService,
@@ -90,7 +92,7 @@ def test_evaluate_satisfied() -> None:
     rt = FakeRuntime(
         {
             "suggested_status": "satisfied",
-            "reasoning": "DART 2026년 반기보고서 기준 부채비율 40.0%로 기준 200%보다 낮습니다.",
+            "reasoning": "DART 2026년 반기보고서 기준 부채비율 40.0%. 200% 미만 충족.",
             "used_facts": ["부채비율(%)"],
         }
     )
@@ -110,7 +112,7 @@ def test_evaluate_uncertain_due_to_missing_data() -> None:
     rt = FakeRuntime(
         {
             "suggested_status": "uncertain",
-            "reasoning": "최근 3년치 ROE를 계산할 다년 데이터가 제공되지 않아 판단할 수 없습니다.",
+            "reasoning": "최근 3년 ROE 계산용 다년 데이터 없음. 판단 보류.",
             "used_facts": [],
         }
     )
@@ -125,23 +127,23 @@ def test_evaluate_uncertain_due_to_missing_data() -> None:
         # 업종 평균은 제공되지 않은 수치 → 환각
         {
             "suggested_status": "satisfied",
-            "reasoning": "업종 평균 70.0%보다 낮은 40.0%입니다.",
+            "reasoning": "업종 평균 70.0% 대비 부채비율 40.0%. 기준 충족.",
             "used_facts": ["부채비율(%)"],
         },
         # 금액 생성
         {
             "suggested_status": "satisfied",
-            "reasoning": "부채총계 4,000억원으로 낮습니다.",
+            "reasoning": "부채총계 4,000억원. 기준 충족.",
             "used_facts": ["부채비율(%)"],
         },
         # 제공되지 않은 항목 이름
         {
             "suggested_status": "satisfied",
-            "reasoning": "부채비율 40.0%입니다.",
+            "reasoning": "부채비율 40.0%. 기준 충족.",
             "used_facts": ["업종 평균 부채비율"],
         },
         # 근거 지표 없는 판정
-        {"suggested_status": "unsatisfied", "reasoning": "기준에 미달합니다.", "used_facts": []},
+        {"suggested_status": "unsatisfied", "reasoning": "기준 미달.", "used_facts": []},
         # 잘못된 status / 빈 reasoning / 너무 긴 reasoning
         {"suggested_status": "maybe", "reasoning": "x", "used_facts": []},
         {"suggested_status": "uncertain", "reasoning": "  ", "used_facts": []},
@@ -149,11 +151,18 @@ def test_evaluate_uncertain_due_to_missing_data() -> None:
         # 매수 권유 (코드 금지 표현)
         {
             "suggested_status": "satisfied",
-            "reasoning": "부채비율 40.0%로 지금 사세요.",
+            "reasoning": "부채비율 40.0%. 지금 사세요.",
             "used_facts": ["부채비율(%)"],
         },
+        # 말투 가이드 위반 (F1): 공손 종결·모호어
+        {
+            "suggested_status": "satisfied",
+            "reasoning": "부채비율 40.0%로 낮아 보여요.",
+            "used_facts": ["부채비율(%)"],
+        },
+        {"suggested_status": "uncertain", "reasoning": "아직 데이터 없음.", "used_facts": []},
         # JSON 아님
-        "부채비율이 낮아 충족합니다.",
+        "부채비율 낮음. 충족.",
     ],
 )
 def test_fallback_on_invalid_or_ungrounded_response(payload: Any) -> None:
@@ -169,7 +178,7 @@ def test_principle_threshold_is_not_flagged_as_ungrounded() -> None:
     rt = FakeRuntime(
         {
             "suggested_status": "satisfied",
-            "reasoning": "부채비율 40.0%로 200%보다 낮습니다.",
+            "reasoning": "부채비율 40.0%. 200% 미만 충족.",
             "used_facts": ["부채비율(%)"],
         }
     )
@@ -232,3 +241,10 @@ def test_prompt_contains_only_code_computed_ratios() -> None:
     dart = make_dart(revenue=1_000_000_000_000.0)
     prompt = build_eval_prompt(PRINCIPLE, dart, {"부채비율(%)": 40.0})
     assert "1000000000000" not in prompt and "부채비율(%)" in prompt
+
+
+def test_all_fallback_reasons_pass_tone_guide() -> None:
+    reasons = [v for k, v in vars(ces).items() if k.startswith("REASON_") or k == "FALLBACK_PREFIX"]
+    assert len(reasons) == 6
+    for r in reasons:
+        assert not has_tone_violation(f"{FALLBACK_PREFIX} {r}"), r
