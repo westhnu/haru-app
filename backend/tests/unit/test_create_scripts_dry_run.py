@@ -480,9 +480,20 @@ def test_guardrail_apply_creates_six_policies() -> None:
     kw = cg._build_kwargs()
     assert len(kw["topicPolicyConfig"]["topicsConfig"]) == 2
     assert len(kw["wordPolicyConfig"]["wordsConfig"]) == 4
-    assert kw["sensitiveInformationPolicyConfig"]["piiEntitiesConfig"][0]["type"] == "KR_RRN"
+    assert kw["sensitiveInformationPolicyConfig"]["regexesConfig"][0]["name"] == "KR_RRN"
     assert len(kw["contentPolicyConfig"]["filtersConfig"]) == 3
     assert kw["contextualGroundingPolicyConfig"]["filtersConfig"][0]["threshold"] == 0.75
+
+
+def test_guardrail_uses_regexes_config_for_kr_rrn_ki017() -> None:
+    # KI-017: piiEntitiesConfig(KR_RRN 미지원) 대신 regexesConfig 커스텀 패턴 사용.
+    kw = cg._build_kwargs()
+    sip = kw["sensitiveInformationPolicyConfig"]
+    assert "piiEntitiesConfig" not in sip
+    regex = sip["regexesConfig"][0]
+    assert regex["name"] == "KR_RRN"
+    assert regex["action"] in ("ANONYMIZE", "BLOCK")
+    assert "{6}" in regex["pattern"]
 
 
 def test_guardrail_idempotent_skips_when_exists() -> None:

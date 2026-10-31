@@ -38,7 +38,18 @@ TOPIC_POLICY = {
     ]
 }
 WORD_POLICY = {"wordsConfig": [{"text": w} for w in ("리딩방", "한 방", "무조건 수익", "보장")]}
-SENSITIVE_POLICY = {"piiEntitiesConfig": [{"type": "KR_RRN", "action": "ANONYMIZE"}]}
+# KI-017: Bedrock piiEntitiesConfig enum은 한국 PII(KR_RRN) 미지원 → 커스텀 regexesConfig 사용.
+# 패턴은 core/guardrail.py의 _RRN과 정합(성별코드 1-8). lookaround는 Bedrock 호환성 위해 제외.
+SENSITIVE_POLICY = {
+    "regexesConfig": [
+        {
+            "name": "KR_RRN",
+            "description": "한국 주민등록번호 패턴 (6자리-7자리, 성별코드 1-8)",
+            "pattern": r"\d{6}-[1-8]\d{6}",
+            "action": "ANONYMIZE",
+        }
+    ]
+}
 CONTENT_POLICY = {
     "filtersConfig": [
         {"type": t, "inputStrength": "HIGH", "outputStrength": "HIGH"}
@@ -79,7 +90,8 @@ def run(dry_run: bool = True, bedrock: Any | None = None) -> bool:
             result="would_create",
         )
         print(f"[dry-run] 생성 예정 Guardrail: {GUARDRAIL_NAME} (정책 6종, DRAFT)")
-        print("  DeniedTopic x2, WordFilter x4, PII(KR_RRN), Content(H/S/V HIGH), Grounding 0.75")
+        print("  DeniedTopic x2, WordFilter x4, regexesConfig(KR_RRN 정규식)")
+        print("  Content(H/S/V HIGH), Grounding 0.75")
         print("→ 생성 후 .env에 추가: BEDROCK_GUARDRAIL_ID=<id>, BEDROCK_GUARDRAIL_VERSION=DRAFT")
         return True
     bedrock = bedrock or get_bedrock_client()

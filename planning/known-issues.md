@@ -203,3 +203,14 @@
 - **교훈**: 벡터 스토어 metadata 모델은 서비스마다 다르고, filterable 필드에 숨은 바이트 한도가 있을 수 있다. 큰 chunk 본문은 non-filterable에 넣는 것이 S3 Vectors + Bedrock KB의 정석. citation 출처(`AMAZON_BEDROCK_METADATA.sourceLocation`)는 non-filterable로 빼도 retrieval 결과에 보존됨.
 - **회귀 방지**: `test_create_index_sets_non_filterable_metadata_ki016`
 - **관련**: T-401.5-B, KI-015, Phase 4 ⑥
+
+## KI-017 — Bedrock Guardrail piiEntitiesConfig가 한국 PII(KR_RRN) 미지원
+
+- **발견**: 2026-10-31, Phase ⑦ 1차 `--apply` ValidationException
+- **상태**: resolved
+- **증상**: `CreateGuardrail` 호출 시 `Value at 'sensitiveInformationPolicyConfig.piiEntitiesConfig.1.member.type' failed to satisfy constraint: Member must satisfy enum value set: [US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER, ..., AGE]` — enum에 US/UK/CA 등 서구 PII만 포함, KR_RRN 미지원.
+- **조사 방법**: botocore service model(authoritative) + AWS Bedrock guardrails-sensitive-filters 공식 문서 교차 확인으로 `regexesConfig` 스키마(name/pattern/action 필수, action enum=BLOCK/ANONYMIZE/NONE) 확인.
+- **완화**: `piiEntitiesConfig`에서 KR_RRN 제거, `regexesConfig`로 커스텀 패턴(`\d{6}-[1-8]\d{6}`) 지정. `core/guardrail.py`의 `_RRN` 정규식과 정합(성별코드 1-8). lookaround는 Bedrock 호환성 불확실 → 제외.
+- **교훈**: 지역화된 PII는 Bedrock 내장 enum이 아니라 regexesConfig로 커스텀 지정하는 것이 정석. 공식 schema를 service model에서 직접 확인하는 것이 재작업 비용 최소화.
+- **회귀 방지**: `test_guardrail_uses_regexes_config_for_kr_rrn_ki017`
+- **관련**: T-407, 원칙 1 이중 방어

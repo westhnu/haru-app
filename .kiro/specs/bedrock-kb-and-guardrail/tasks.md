@@ -286,6 +286,11 @@
 - **HITL**: 필수 승인
 - **타임아웃**: 120초
 
+> **[설계 drift KI-017 — Phase ⑦ 1차 apply]**
+> - 증상: `piiEntitiesConfig.type` enum에 KR_RRN 미지원 → ValidationException
+> - 결정: `regexesConfig`로 전환, `core/guardrail.py` 패턴 재사용(`\d{6}-[1-8]\d{6}`, ANONYMIZE)
+> - 회귀 방지: `test_guardrail_uses_regexes_config_for_kr_rrn_ki017`
+
 ### T-408 · `.env`에 `BEDROCK_GUARDRAIL_ID` 입력
 
 - **DoD**: 앱 시작 시 `Settings` 검증 통과 확인

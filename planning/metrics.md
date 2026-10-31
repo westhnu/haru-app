@@ -240,3 +240,28 @@ sync 완료: job=WUK6SJJHKB status=COMPLETE
 ### Phase ⑥ 완료 후 .env 반영 필요 (사용자 직접)
 - BEDROCK_KB_ID=ITEUSMR3IL
 - HARU_KB_S3_VECTOR_INDEX_ARN: 변경 없음 (재생성 후 ARN 동일)
+
+## 2026-10-31 Phase ⑦ Guardrail 생성
+- 시작: 2026-10-31T02:17:21Z
+```
+Traceback (most recent call last):
+  File "/Users/westhnu/Agent/Claude/haru-app-mono/backend/scripts/guardrail/create_guardrail.py", line 118, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/westhnu/Agent/Claude/haru-app-mono/backend/scripts/guardrail/create_guardrail.py", line 114, in main
+    return 0 if run(dry_run=dry_run) else 1
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/westhnu/Agent/Claude/haru-app-mono/backend/scripts/guardrail/create_guardrail.py", line 97, in run
+    resp = bedrock.create_guardrail(**_build_kwargs())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/westhnu/Agent/Claude/haru-app-mono/backend/.venv/lib/python3.12/site-packages/botocore/client.py", line 606, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/westhnu/Agent/Claude/haru-app-mono/backend/.venv/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/westhnu/Agent/Claude/haru-app-mono/backend/.venv/lib/python3.12/site-packages/botocore/client.py", line 1094, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.errorfactory.ValidationException: An error occurred (ValidationException) when calling the CreateGuardrail operation: 1 validation error detected: Value at 'sensitiveInformationPolicyConfig.piiEntitiesConfig.1.member.type' failed to satisfy constraint: Member must satisfy enum value set: [US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER, US_BANK_ROUTING_NUMBER, MAC_ADDRESS, AWS_ACCESS_KEY, VEHICLE_IDENTIFICATION_NUMBER, CREDIT_DEBIT_CARD_EXPIRY, NAME, CA_HEALTH_NUMBER, UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER, INTERNATIONAL_BANK_ACCOUNT_NUMBER, CREDIT_DEBIT_CARD_CVV, PHONE, URL, UK_NATIONAL_INSURANCE_NUMBER, UK_NATIONAL_HEALTH_SERVICE_NUMBER, DRIVER_ID, AWS_SECRET_KEY, ADDRESS, US_PASSPORT_NUMBER, PIN, USERNAME, US_SOCIAL_SECURITY_NUMBER, LICENSE_PLATE, SWIFT_CODE, PASSWORD, IP_ADDRESS, EMAIL, US_BANK_ACCOUNT_NUMBER, CREDIT_DEBIT_CARD_NUMBER, CA_SOCIAL_INSURANCE_NUMBER, AGE]
+```
+- 종료: 2026-10-31T02:17:22Z
