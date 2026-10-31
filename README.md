@@ -27,7 +27,7 @@
 ## Daily 2-Brief (frontend, 운영 중)
 
 > 매일 아침·저녁 두 번, **간밤 글로벌 → 오늘 국내 장** 흐름을 자동 브리핑.
-> 메인 LLM (GPT) 이 만든 브리핑을 보조 LLM (Gemini) 이 즉시 교차검증해 hallucination·투자권유 표현을 찾아 화면에 표시한다.
+> 메인 LLM (gpt-5-mini) 이 만든 브리핑을 다른 모델 family 의 검증 LLM (gpt-4o-mini) 이 즉시 교차검증해 hallucination·투자권유 표현을 찾아 화면에 표시한다.
 
 [![Live Demo](https://img.shields.io/badge/Live-main.dlz2aim8js0bv.amplifyapp.com-000000?logo=awsamplify)](https://main.dlz2aim8js0bv.amplifyapp.com)
 [![Brief API](https://img.shields.io/badge/API-/api/brief-009688?logo=fastapi)](https://main.dlz2aim8js0bv.amplifyapp.com/api/brief?type=morning)
@@ -58,7 +58,7 @@
 
 | 기능 | 어떻게 |
 | --- | --- |
-| **이중 LLM 교차검증** | GPT-5-mini 가 브리핑 생성 → Gemini 2.5-flash 가 hallucination·원본 불일치·투자권유 표현 검증 (LLM-as-judge). 실패 단계는 graceful degradation. |
+| **이중 LLM 교차검증** | gpt-5-mini 가 브리핑 생성 → gpt-4o-mini 가 hallucination·원본 불일치·투자권유 표현 검증 (LLM-as-judge). 단일 vendor(OpenAI)에서 모델 family 를 달리해 confirmation bias 를 줄인다. 메인 생성은 retry × 2, 실패 단계는 graceful degradation. |
 | **시세·재무 라이브 데이터** | 국내 종목 시세·일봉·수급은 [KIS Open API](https://apiportal.koreainvestment.com/) (PROD), 재무는 [DART](https://opendart.fss.or.kr/) 라이브. 해외·매핑 없는 종목만 데모. |
 | **이슈 → 테마 → 종목** | Tavily 검색으로 오늘 이슈 수집 → LLM zero-shot 으로 테마·관련 종목·신뢰도 매핑. 종목 태그 클릭 시 KIS 데이터로 상세 페이지. |
 | **하루 2회 자동 스케줄** | AWS EventBridge Scheduler 가 08:00·17:00 KST 에 Lambda 호출 → S3 저장. Amplify SSR 은 S3 에서 읽기만 → 페이지 로드는 LLM 없이 즉시. |
@@ -81,7 +81,7 @@ EventBridge Scheduler (08:00 / 17:00 KST)
 AWS Lambda  haru-cron-worker  (nodejs20.x, 1024MB, 600s)
         │   ├─ Tavily ─ 이슈 수집
         │   ├─ GPT-5-mini ─ 브리핑 생성
-        │   ├─ Gemini 2.5-flash ─ 교차검증
+        │   ├─ gpt-4o-mini ─ 교차검증
         │   └─ 테마 매핑
         ▼
 S3  haru-store-205474063205
@@ -100,7 +100,8 @@ Amplify SSR (Next.js 14 App Router)
 ### 기술 스택
 
 - **Frontend / SSR**: Next.js 14 (App Router) · TypeScript · Tailwind · Lucide
-- **LLM**: OpenAI GPT-5-mini (메인) · Google Gemini 2.5-flash (교차검증)
+- **LLM (Daily 2-Brief)**: OpenAI gpt-5-mini (메인) · gpt-4o-mini (교차검증, 단일 vendor + 모델 family 분리)
+- **LLM (백엔드 용어 RAG)**: AWS Bedrock Claude Sonnet 4.5 + Bedrock Guardrail
 - **데이터**: KIS Open API (시세·일봉·수급) · DART (재무) · Tavily (이슈)
 - **인프라**: AWS Amplify (SSR Hosting) · AWS Lambda + EventBridge (cron) · S3 (영속 저장)
 - **번들링**: esbuild (Lambda) · Next.js (web)
@@ -111,7 +112,7 @@ Amplify SSR (Next.js 14 App Router)
 
 ```bash
 cd frontend
-cp .env.example .env.local         # KIS / DART / OpenAI / Gemini / Tavily 키 채우기
+cp .env.example .env.local         # KIS / DART / OpenAI / Tavily 키 채우기
 npm install
 npm run build:krx                   # KRX 종목코드 매핑 생성 (2,700+ 종목)
 npm run dev                         # http://localhost:3000
