@@ -413,17 +413,17 @@
 > 설계안: `planning/ki-020-topic-redesign.md`. 1차 수정(C+D)은 응답 소실만 해결하고 차단 자체는 그대로다.
 
 ### T-511 · 원칙 1 테스트셋 50건 작성
-- [ ] 종목 매매 권유·가격 보장·리딩방·우회 표현 포함 50건
+- [x] 종목 매매 권유·가격 보장·리딩방·우회 표현 포함 50건 (`planning/testsets/principle_test_50.json`, 원칙 35 + 정상 15)
 - **DoD**: 50건 모두 현재 Guardrail에서 INTERVENED 확인
 - **HITL**: Allow Once (ApplyGuardrail 실호출)
 
 ### T-512 · `investment-advice` definition 후보 오프라인 평가
-- [ ] 후보 1~3을 ApplyGuardrail로 5건 재현셋 + 50건 원칙셋 평가
+- [x] 후보 1~3을 ApplyGuardrail로 50건 원칙셋 평가 (`scripts/bench/topic_eval.py`, Classic baseline + Standard 4조합, baseline-S 3회) → baseline-S 선택 (KI-023/024). 5건 재현셋은 50건 normal 15건으로 대체
 - **DoD**: 원칙셋 차단 100% 유지하면서 정상 5건 차단이 가장 적은 후보 1개 선택
 - **HITL**: 필수 승인 (Guardrail 설정 변경 포함 시)
 
 ### T-513 · Guardrail DRAFT 갱신 + 100건 벤치 재실행
-- [ ] `update_guardrail.py`로 선택 후보 적용
+- [x] `update_guardrail.py`로 선택 후보 적용 (Standard tier + crossRegion apac, 2026-10-31)
 - [ ] 벤치 쿼리셋 확장 (50 KB + 30 투자용어 + 10 가짜 + 20 원칙)
 - **DoD**: 정상 쿼리 차단 < 5%, 원칙 쿼리 차단 100%
 - **HITL**: 필수 승인 (AWS 리소스 수정 + Bedrock 실호출)

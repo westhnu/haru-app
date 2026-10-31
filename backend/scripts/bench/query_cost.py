@@ -3,8 +3,13 @@
 실제 Bedrock을 호출한다(요금 발생). 사람 승인 후에만 실행한다.
 rag_service는 원본 응답의 guardrailAction을 RagResponse에 싣지 않으므로,
 boto 클라이언트를 감싸 원본 응답에서 직접 기록한다.
+
+2차(KI-020 B 후): 쿼리 사이 500ms 간격, 예외 시 1s/2s/4s 지수 백오프로 최대 3회 재시도.
+KI-007(use case 미제출 ValidationException) 간헐 에러도 재시도 대상이다.
+재시도 횟수와 첫 에러 종류를 CSV에 남겨 retry 효과를 집계한다.
 """
 
+import argparse
 import csv
 import json
 import random
@@ -24,6 +29,9 @@ METRICS_MD = BACKEND_DIR.parent / "planning" / "metrics.md"
 SEED = 42
 KB_SAMPLE_SIZE = 50
 CONTEXT_TYPE = "glossary"
+SLEEP_BETWEEN_S = 0.5
+RETRY_DELAYS_S = (1, 2, 4)
+DEFAULT_TITLE = "Phase 5a — 쿼리 벤치마크"
 
 HARDCODED_30 = [
     "PER이 뭐야?",
@@ -123,19 +131,40 @@ def _row(idx: int, group: str, query: str, latency_ms: float) -> dict[str, Any]:
         "guardrail_action": "",
         "disclaimer_present": False,
         "error": "",
+        "retries": 0,
+        "first_error": "",
         "timestamp_utc": "",
     }
 
 
-def run_one(svc: RagService, rec: RecordingClient, idx: int, group: str, q: str) -> dict[str, Any]:
-    started = time.monotonic()
-    try:
-        resp = svc.ask(q, context_type=CONTEXT_TYPE)
-    except Exception as exc:  # 벤치는 실패도 데이터로 기록하고 계속 진행한다
-        row = _row(idx, group, q, (time.monotonic() - started) * 1000)
-        row.update(status="error", error=type(exc).__name__)
+def run_one(
+    svc: RagService,
+    rec: RecordingClient,
+    idx: int,
+    group: str,
+    q: str,
+    sleep: Any = time.sleep,
+) -> dict[str, Any]:
+    """latency는 성공한 마지막 시도만 잰다(백오프 대기 제외)."""
+    retries, first_error, last_exc = 0, "", None
+    for attempt in range(len(RETRY_DELAYS_S) + 1):
+        if attempt:
+            sleep(RETRY_DELAYS_S[attempt - 1])
+            retries += 1
+        started = time.monotonic()
+        try:
+            resp = svc.ask(q, context_type=CONTEXT_TYPE)
+        except Exception as exc:  # 벤치는 실패도 데이터로 기록하고 재시도·진행한다
+            last_exc = exc
+            first_error = first_error or type(exc).__name__
+            continue
+        last_exc = None
+        break
+    row = _row(idx, group, q, (time.monotonic() - started) * 1000)
+    row.update(retries=retries, first_error=first_error)
+    if last_exc is not None:
+        row.update(status="error", error=type(last_exc).__name__)
     else:
-        row = _row(idx, group, q, (time.monotonic() - started) * 1000)
         row.update(
             source=resp.source,
             summary_source=resp.summary_source,
@@ -163,7 +192,12 @@ def _pctile(xs: list[float], p: int) -> float:
     return xs[min(len(xs) - 1, int(len(xs) * p / 100))] if xs else 0.0
 
 
-def summarize(rows: list[dict[str, Any]], csv_path: Path, window: tuple[str, str]) -> str:
+def summarize(
+    rows: list[dict[str, Any]],
+    csv_path: Path,
+    window: tuple[str, str],
+    title: str = DEFAULT_TITLE,
+) -> str:
     total = len(rows)
     ok = [r for r in rows if r["status"] == "ok"]
     lat = sorted(r["latency_ms"] for r in ok)
@@ -174,7 +208,7 @@ def summarize(rows: list[dict[str, Any]], csv_path: Path, window: tuple[str, str
     gr_hit = sum(1 for r in gr if r["guardrail_action"] == "INTERVENED")
     all_hit = sum(1 for r in rows if r["guardrail_action"] == "INTERVENED")
     lines = [
-        f"\n## {window[0][:10]} Phase 5a — 쿼리 벤치마크 ({total}건 실측)",
+        f"\n## {window[0][:10]} {title} ({total}건 실측)",
         f"- CSV: `{csv_path.name}`",
         f"- 실행 구간(UTC): {window[0]} ~ {window[1]}",
         "- 구성: 50 KB sample + 30 투자용어 + 10 가짜 + 10 Guardrail",
@@ -191,9 +225,28 @@ def summarize(rows: list[dict[str, Any]], csv_path: Path, window: tuple[str, str
         f"- Mock 응답: {sum(1 for r in rows if r['is_mock'])}/{total}",
         f"- disclaimer 누락: {sum(1 for r in ok if not r['disclaimer_present'])}/{len(ok)}",
         f"- 평균 answer 길이: {sum(r['answer_len'] for r in rows) / total:.0f}자",
+        _retry_line(rows),
         "",
     ]
     return "\n".join(lines)
+
+
+def _retry_line(rows: list[dict[str, Any]]) -> str:
+    retried = [r for r in rows if r["retries"]]
+    recovered = sum(1 for r in retried if r["status"] == "ok")
+    total = sum(r["retries"] for r in rows)
+    first = _count(r["first_error"] for r in rows if r["first_error"])
+    return (
+        f"- 재시도: {len(retried)}건 쿼리, 총 {total}회 "
+        f"(재시도 후 성공 {recovered}건, 첫 에러 {first})"
+    )
+
+
+def _count(items: Any) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for i in items:
+        out[i] = out.get(i, 0) + 1
+    return out
 
 
 def preflight() -> Settings:
@@ -205,7 +258,10 @@ def preflight() -> Settings:
     return settings
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Phase 5a 쿼리 벤치마크 (실호출, 요금 발생)")
+    parser.add_argument("--title", default=DEFAULT_TITLE, help="metrics.md 섹션 제목")
+    args = parser.parse_args(argv)
     settings = preflight()
     rec = RecordingClient(get_agent_runtime_client())
     svc = RagService(settings, agent_client=rec)
@@ -213,16 +269,19 @@ def main() -> None:
     start = datetime.now(UTC)
     rows = []
     for i, (group, q) in enumerate(queries, 1):
+        if i > 1:
+            time.sleep(SLEEP_BETWEEN_S)
         row = run_one(svc, rec, i, group, q)
         rows.append(row)
         print(
             f"[{i:3d}/{len(queries)}] {row['latency_ms']:6.0f}ms "
-            f"{row['source'] or row['error']:18s} {row['guardrail_action']:12s} {q[:30]}",
+            f"{row['source'] or row['error']:18s} {row['guardrail_action']:12s} "
+            f"retry={row['retries']} {q[:30]}",
             flush=True,
         )
     window = (start.isoformat(timespec="seconds"), datetime.now(UTC).isoformat(timespec="seconds"))
     csv_path = write_csv(rows, start.strftime("%Y%m%dT%H%M%SZ"))
-    summary = summarize(rows, csv_path, window)
+    summary = summarize(rows, csv_path, window, args.title)
     print(f"\nCSV: {csv_path}\n{summary}")
     with METRICS_MD.open("a", encoding="utf-8") as f:
         f.write(summary)

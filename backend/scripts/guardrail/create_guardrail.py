@@ -22,8 +22,16 @@ BLOCKED_INPUT_MSG = "본 서비스는 종목 추천을 제공하지 않습니다
 # KI-020: 면책 문구와 같으면 답변이 소실되므로 별도 안내 문구를 쓴다.
 BLOCKED_OUTPUT_MSG = GUARDRAIL_BLOCKED_ANSWER
 
+# KI-023: Classic tier는 EN/FR/ES만 지원해 한국어 topic 판정이 동작하지 않았다.
+# topic·content는 Standard tier로 두고 cross-Region profile(서울 source → APAC)을 붙인다.
+# contextual grounding은 서울에서 Standard 미지원이라 tier를 지정하지 않는다(Classic).
+STANDARD_TIER = {"tierName": "STANDARD"}
+GUARDRAIL_PROFILE_ID = "apac.guardrail.v1:0"
+CROSS_REGION_CONFIG = {"guardrailProfileIdentifier": GUARDRAIL_PROFILE_ID}
+
 # REQ-GR-01 — 6개 정책 (design.md GUARDRAIL_CONFIG).
 TOPIC_POLICY = {
+    "tierConfig": STANDARD_TIER,
     "topicsConfig": [
         {
             "name": "investment-advice",
@@ -37,7 +45,7 @@ TOPIC_POLICY = {
             "examples": ["내일 급등합니다", "수익을 보장합니다"],
             "type": "DENY",
         },
-    ]
+    ],
 }
 WORD_POLICY = {"wordsConfig": [{"text": w} for w in ("리딩방", "한 방", "무조건 수익", "보장")]}
 # KI-017: Bedrock piiEntitiesConfig enum은 한국 PII(KR_RRN) 미지원 → 커스텀 regexesConfig 사용.
@@ -56,7 +64,8 @@ CONTENT_POLICY = {
     "filtersConfig": [
         {"type": t, "inputStrength": "HIGH", "outputStrength": "HIGH"}
         for t in ("HATE", "SEXUAL", "VIOLENCE")
-    ]
+    ],
+    "tierConfig": STANDARD_TIER,
 }
 GROUNDING_POLICY = {"filtersConfig": [{"type": "GROUNDING", "threshold": 0.75, "action": "BLOCK"}]}
 
@@ -69,6 +78,7 @@ def _build_kwargs() -> dict[str, Any]:
         "sensitiveInformationPolicyConfig": SENSITIVE_POLICY,
         "contentPolicyConfig": CONTENT_POLICY,
         "contextualGroundingPolicyConfig": GROUNDING_POLICY,
+        "crossRegionConfig": CROSS_REGION_CONFIG,
         "blockedInputMessaging": BLOCKED_INPUT_MSG,
         "blockedOutputsMessaging": BLOCKED_OUTPUT_MSG,
     }
@@ -94,6 +104,7 @@ def run(dry_run: bool = True, bedrock: Any | None = None) -> bool:
         print(f"[dry-run] 생성 예정 Guardrail: {GUARDRAIL_NAME} (정책 6종, DRAFT)")
         print("  DeniedTopic x2, WordFilter x4, regexesConfig(KR_RRN 정규식)")
         print("  Content(H/S/V HIGH), Grounding 0.75")
+        print(f"  topic/content tier=STANDARD, crossRegion={GUARDRAIL_PROFILE_ID} (KI-023)")
         print("→ 생성 후 .env에 추가: BEDROCK_GUARDRAIL_ID=<id>, BEDROCK_GUARDRAIL_VERSION=DRAFT")
         return True
     bedrock = bedrock or get_bedrock_client()

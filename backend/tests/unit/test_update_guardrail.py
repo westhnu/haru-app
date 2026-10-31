@@ -55,3 +55,22 @@ def test_update_dry_run_makes_no_call() -> None:
     fake = FakeBedrock()
     assert ug.run(dry_run=True, bedrock=fake, guardrail_id=GUARDRAIL_ID) is True
     assert fake.calls == []
+
+
+def test_build_kwargs_standard_tier_and_cross_region_ki023() -> None:
+    kw = cg._build_kwargs()
+    assert kw["topicPolicyConfig"]["tierConfig"] == {"tierName": "STANDARD"}
+    assert kw["contentPolicyConfig"]["tierConfig"] == {"tierName": "STANDARD"}
+    assert kw["crossRegionConfig"] == {"guardrailProfileIdentifier": "apac.guardrail.v1:0"}
+    # 서울은 grounding Standard 미지원 → tierConfig 미지정(Classic)
+    assert "tierConfig" not in kw["contextualGroundingPolicyConfig"]
+    # topic 정의는 baseline-S 그대로 (KI-020 B: 정의 재설계 효과 없음)
+    names = [t["name"] for t in kw["topicPolicyConfig"]["topicsConfig"]]
+    assert names == ["investment-advice", "future-price-guarantee"]
+
+
+def test_update_sends_standard_tier_and_cross_region_ki023() -> None:
+    kw = _apply()
+    assert kw["topicPolicyConfig"]["tierConfig"] == {"tierName": "STANDARD"}
+    assert kw["contentPolicyConfig"]["tierConfig"] == {"tierName": "STANDARD"}
+    assert kw["crossRegionConfig"] == {"guardrailProfileIdentifier": "apac.guardrail.v1:0"}

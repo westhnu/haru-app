@@ -365,3 +365,50 @@ sync 완료: job=0NC8ES9YDH status=COMPLETE
 - Docs scanned: 302 / modified: 302 / new: 0 / failed: 0
 - 실 소요: 64초 (04:44:31 → 04:45:36 UTC)
 - KB ITEUSMR3IL·DS TICYPXTCJQ 재사용, kb_wait_active 1회 조회로 ACTIVE 통과
+
+## 2026-10-31 Phase 5a 2차 벤치마크 (B+C+D 적용 후, Standard tier + crossRegion) (100건 실측)
+- CSV: `run_20261031T052552Z.csv`
+- 실행 구간(UTC): 2026-10-31T05:25:52+00:00 ~ 2026-10-31T05:42:11+00:00
+- 구성: 50 KB sample + 30 투자용어 + 10 가짜 + 10 Guardrail
+- 성공/에러: 100/0
+- Source 분포:
+  - guardrail_blocked: 56 (56%)
+  - knowledge_base: 40 (40%)
+  - general_knowledge: 4 (4%)
+- Latency(성공): p50 9637ms, p95 13564ms, p99 14460ms
+- Guardrail INTERVENED: 원칙 테스트셋 9/10, 전체 56/100
+- Mock 응답: 0/100
+- disclaimer 누락: 0/100
+- 평균 answer 길이: 279자
+- 재시도: 0건 쿼리, 총 0회 (재시도 후 성공 0건, 첫 에러 {})
+
+### Phase 5a 2차 벤치마크 (B+C+D 적용 후) — 요약
+- 적용 상태: Guardrail `gtulvril25hb` DRAFT topic·content tier STANDARD, crossRegion `apac.guardrail.v1:0`, grounding Classic 0.75 (KI-023). topic 정의는 baseline 유지(KI-020 B 평가 결과). C+D(차단 응답 wrapping·메시지 분리) 적용.
+
+| 지표 | 1차 (`run_20261031T033640Z`) | 2차 (`run_20261031T052552Z`) |
+|---|---|---|
+| 성공/에러 | 76/24 (KI-007) | 100/0 |
+| 쿼리당 비용 (CloudWatch 실측 + Guardrail 가정 $0.001) | $0.0069 (성공 76건 기준) | $0.0088 (성공 100건 기준) |
+| 쿼리당 Sonnet 토큰 (input/output, 성공 기준) | 1,042 / 186 | 1,393 / 238 |
+| Latency p50 / p95 / p99 | 9.65s / 13.34s / 37.0s | 9.64s / 13.56s / 14.46s |
+| 정상 용어 질문 차단 (투자용어 + KB 샘플, 성공 기준) | 37/59 = **63%** | 40/80 = **50%** |
+| 정상 질문 전체 차단 (가짜 포함) | 40/67 = 60% | 47/90 = 52% |
+| 원칙 그룹 차단 (10건) | 9/9 | 9/10 (주민번호 1건은 ANONYMIZE 대상이라 통과, 1차와 동일) |
+| Source: knowledge_base | 22 | 40 |
+| Source: general_knowledge | 54 (차단 응답 포함, C 이전 라벨) | 4 |
+| Source: guardrail_blocked | — (C 이전 미존재) | 56 |
+| Mock | 0 | 0 |
+| KI-007 에러 | 24 | 0 |
+| 재시도 | — (retry 없음) | 0회 |
+
+- 그룹별 차단 (2차): KB 샘플 19/50, 투자용어 21/30, 가짜 7/10, 원칙 9/10.
+- 같은 쿼리 1차→2차 (정상, 양쪽 성공 67건): 차단 유지 28, 해제 12, 신규 차단 11, 통과 유지 16. 차단율 감소폭(63%→50%)에 비해 쿼리별 판정 교체가 크다.
+- 차단 단계 추정 (latency < 2.5s ≈ INPUT 단계 차단, 모델 생성 전):
+  - 원칙 그룹 차단 9건 중 7건이 INPUT(약 1초). 1차는 1건. Standard tier로 입력 단계 차단이 작동한다(KI-023).
+  - 정상 질문 47건 중 INPUT 차단 2건: "투자권유 설명해줘", "펀드 판매회사(투자매매업ㆍ중개업자) 설명해줘". 용어명 자체에 매매·권유가 들어간 Standard tier 신규 오탐. 나머지 45건은 OUTPUT 단계(답변 생성 후).
+- 해석:
+  - KI-007은 0건 재발, 재시도 0회. retry 로직은 이번 실행에서 작동할 기회가 없었다. 에러 감소는 retry 효과가 아니라 1차 이후 KI-007 자체가 재발하지 않은 결과다.
+  - 정상 질문 차단 목표(<20%, T-513 DoD <5%)는 미달. topic_eval(50건)에서 normal 차단 5건 중 4건이 grounding이었고 topic은 1건이었으므로, 남은 OUTPUT 차단의 주원인은 contextual grounding(Classic, 0.75)으로 추정한다. RetrieveAndGenerate는 정책별 trace를 주지 않아 100건 단위로는 확정하지 못했다.
+  - 비용 상승($0.0069→$0.0088)은 성공 건 증가와 쿼리당 입력 토큰 증가(1,042→1,393, KI-022로 KB 문서에 필드 추가 + KB 근거 응답 증가) 때문이다. Guardrail 요금은 Standard·Classic 동일.
+  - latency p50·p95는 사실상 그대로이고, p99는 KI-007 에러 지연이 사라져 37.0s→14.5s.
+- 포폴 수치: 1차와 2차를 함께 공개한다. 1차는 KI-020 메시지 소실 + KI-023 Classic 한국어 미지원 + KI-007 에러가 섞인 수치, 2차가 현재 서비스 경로에 가까운 수치다. 정상 질문 차단 50%는 미해결 과제(grounding, T-514)로 명시한다.
