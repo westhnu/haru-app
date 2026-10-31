@@ -110,3 +110,16 @@ def score(session: Session, checklist_id: str) -> ChecklistScoreResponse | None:
         uncertain=counts["uncertain"],
         score_pct=round(pct, SCORE_DECIMALS),
     )
+
+
+def get_latest_checklist_for_stock(session: Session, stock_code: str) -> Checklist | None:
+    """종목의 가장 최근에 수정된 체크리스트 1건."""
+    stmt = (
+        select(ChecklistORM)
+        .options(selectinload(ChecklistORM.items))
+        .where(ChecklistORM.stock_code == stock_code)
+        .order_by(ChecklistORM.updated_at.desc(), ChecklistORM.id.desc())
+        .limit(1)
+    )
+    orm = session.scalars(stmt).first()
+    return _to_model(orm) if orm else None

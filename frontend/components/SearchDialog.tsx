@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Book, ChevronRight, Search, X } from "lucide-react";
+import { HARU_BACKEND_ENABLED } from "@/lib/featureFlags";
 import krxCodesRaw from "@/lib/krx-codes.json";
 
 // 자주 찾는 해외 종목 — TwelveData free tier 로 조회 가능한 주요 티커.
@@ -148,6 +149,20 @@ export default function SearchDialog({
 
         {/* 결과 영역 */}
         <div className="max-h-[60vh] overflow-y-auto px-2 py-2">
+          {/* 용어 사전 — 플래그 on에서 BottomNav "용어" 탭을 대신하는 진입점 */}
+          {HARU_BACKEND_ENABLED && (
+            <Link
+              href={q.trim() ? `/glossary?q=${encodeURIComponent(q.trim())}` : "/glossary"}
+              onClick={handleClose}
+              className="mb-1 flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-3 transition hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800"
+            >
+              <Book className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-slate-700 dark:text-slate-200">
+                {q.trim() ? `용어 사전에서 "${q.trim()}" 찾기` : "용어 사전 열기"}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
+            </Link>
+          )}
           {!q && (
             <p className="px-4 py-6 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
               한국 종목 2,700+ 와 주요 미국 종목을 찾을 수 있어요.

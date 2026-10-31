@@ -65,3 +65,16 @@ def delete_block(session: Session, workbook_id: str, block_id: str) -> bool:
     wb.updated_at = utcnow()
     session.commit()
     return True
+
+
+def latest_workbook(session: Session, stock_code: str | None = None) -> Workbook | None:
+    """가장 최근에 수정된 워크북 1건 (updated_at 내림차순)."""
+    stmt = (
+        select(WorkbookORM)
+        .options(selectinload(WorkbookORM.blocks))
+        .order_by(WorkbookORM.updated_at.desc(), WorkbookORM.id.desc())
+    )
+    if stock_code is not None:
+        stmt = stmt.where(WorkbookORM.stock_code == stock_code)
+    orm = session.scalars(stmt.limit(1)).first()
+    return _to_model(orm) if orm else None

@@ -8,7 +8,12 @@ export const metadata: Metadata = {
 
 const SUGGESTED_TERMS = ["PER", "ROE", "EPS", "PBR", "ROA"];
 
-export default function GlossaryPage() {
+export default function GlossaryPage({
+  searchParams,
+}: {
+  searchParams: { q?: string | string[] };
+}) {
+  const q = typeof searchParams.q === "string" ? searchParams.q.slice(0, 200) : undefined;
   return (
     // 하단 고정 BottomNav에 가리지 않도록 아래 여백을 둔다.
     <main className="container mx-auto max-w-3xl px-4 pb-28 pt-8">
@@ -19,7 +24,7 @@ export default function GlossaryPage() {
           근거를 찾아 답변합니다.
         </p>
       </header>
-      <GlossarySearch suggestedTerms={SUGGESTED_TERMS} />
+      <GlossarySearch suggestedTerms={SUGGESTED_TERMS} initialQuery={q} />
     </main>
   );
 }

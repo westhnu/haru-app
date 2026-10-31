@@ -7,17 +7,34 @@ import {
   Network,
   BookOpen,
   NotebookPen,
+  Book,
+  ChevronDown,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
 import type { BriefType } from "@/lib/types";
 import { readBrief } from "@/lib/store";
+import { HARU_BACKEND_ENABLED } from "@/lib/featureFlags";
+import TodayCard from "@/components/TodayCard";
 
 // 현재 시각을 반영해야 하므로 매 요청 렌더
 export const dynamic = "force-dynamic";
 
-const features = [
+type Feature = {
+  key: string;
+  href: string;
+  title: string;
+  time: string;
+  description: string;
+  icon: typeof Sunrise;
+  active: boolean;
+  /** 로컬 FastAPI 백엔드가 있어야 동작 (NEXT_PUBLIC_HARU_BACKEND=1일 때만 노출) */
+  backend?: boolean;
+};
+
+const features: Feature[] = [
   {
+    key: "morning",
     href: "/brief/morning",
     title: "모닝 브리핑",
     time: "08:00",
@@ -26,6 +43,7 @@ const features = [
     active: true,
   },
   {
+    key: "evening",
     href: "/brief/evening",
     title: "이브닝 브리핑",
     time: "17:00",
@@ -34,6 +52,7 @@ const features = [
     active: true,
   },
   {
+    key: "themes",
     href: "/themes",
     title: "이슈·테마 매핑",
     time: "신규",
@@ -42,22 +61,42 @@ const features = [
     active: true,
   },
   {
+    key: "workbook",
     href: "/workbook",
     title: "내 워크북",
     time: "신규",
     description: "종목별 분석 메모를 모아 보관해요.",
     icon: BookOpen,
     active: true,
+    backend: true,
   },
   {
+    key: "journal",
     href: "/journal",
     title: "투자 저널",
     time: "신규",
     description: "결정과 근거를 기록하고 가상 포지션을 추적해요.",
     icon: NotebookPen,
     active: true,
+    backend: true,
+  },
+  {
+    key: "glossary",
+    href: "/glossary",
+    title: "용어 사전",
+    time: "AI",
+    description: "투자 용어를 Bedrock Knowledge Base 근거로 설명해요.",
+    icon: Book,
+    active: true,
+    backend: true,
   },
 ];
+
+// 플래그 on(로컬): 지금 시간대 브리핑 + 투자 저널만 먼저 보여주고 나머지는 접는다 (선택 피로 감소).
+const PRIMARY_KEYS_ON: Record<BriefType, string[]> = {
+  morning: ["morning", "journal"],
+  evening: ["evening", "journal"],
+};
 
 // 현재 KST 시각으로 지금 보여줄 브리핑 결정.
 // cron 이 모닝 08:00 / 이브닝 17:00 KST 에 갱신하므로
@@ -129,6 +168,69 @@ export default async function Home() {
   const verifyPassed = briefResp?.verify?.passed ?? null;
   const generatedAt = briefResp?.meta?.generatedAt;
   const isLive = briefResp?.meta?.mode === "live";
+
+  // 플래그 off(운영 Amplify): 기존 목록 그대로 두되, 백엔드가 있어야 동작하는 카드는 뺀다.
+  // 플래그 on(로컬): 핵심 2개 + "모든 기능 보기" 접힘.
+  const visible = features.filter((f) => HARU_BACKEND_ENABLED || !f.backend);
+  const primaryKeys = PRIMARY_KEYS_ON[period];
+  const primary = HARU_BACKEND_ENABLED
+    ? primaryKeys.map((k) => visible.find((f) => f.key === k)).filter((f): f is Feature => !!f)
+    : visible;
+  const more = HARU_BACKEND_ENABLED ? visible.filter((f) => !primaryKeys.includes(f.key)) : [];
+
+  const renderFeature = (f: Feature) => {
+    const Icon = f.icon;
+    const Inner = (
+      <div className="flex items-center gap-4 p-5">
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+            f.active
+              ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+              : "bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600"
+          }`}
+        >
+          <Icon className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3
+              className={`text-base font-black ${
+                f.active ? "text-slate-950 dark:text-white" : "text-slate-400 dark:text-slate-500"
+              }`}
+            >
+              {f.title}
+            </h3>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
+                f.active
+                  ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                  : "bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500"
+              }`}
+            >
+              {f.time}
+            </span>
+          </div>
+          <p className="mt-1 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
+            {f.description}
+          </p>
+        </div>
+        {f.active && (
+          <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 dark:text-slate-600" />
+        )}
+      </div>
+    );
+    return f.active ? (
+      <Link
+        key={f.key}
+        href={f.href}
+        className="block transition hover:bg-slate-50 dark:hover:bg-slate-900/60"
+      >
+        {Inner}
+      </Link>
+    ) : (
+      <div key={f.key}>{Inner}</div>
+    );
+  };
 
   return (
     <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
@@ -267,6 +369,9 @@ export default async function Home() {
             </Link>
           </section>
 
+          {/* 오늘의 흐름 — 플래그 off거나 백엔드에 닿지 않으면 렌더링 안 함 */}
+          <TodayCard />
+
           {/* 기능 */}
           <section className="pt-12 pb-4">
             <p className="text-sm font-black text-slate-500 dark:text-slate-400">기능</p>
@@ -277,60 +382,22 @@ export default async function Home() {
             </h2>
 
             <div className="mt-7 divide-y divide-slate-100 dark:divide-slate-800 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-              {features.map((f) => {
-                const Icon = f.icon;
-                const Inner = (
-                  <div className="flex items-center gap-4 p-5">
-                    <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                        f.active
-                          ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                          : "bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600"
-                      }`}
-                    >
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3
-                          className={`text-base font-black ${
-                            f.active ? "text-slate-950 dark:text-white" : "text-slate-400 dark:text-slate-500"
-                          }`}
-                        >
-                          {f.title}
-                        </h3>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
-                            f.active
-                              ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                              : "bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500"
-                          }`}
-                        >
-                          {f.time}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
-                        {f.description}
-                      </p>
-                    </div>
-                    {f.active && (
-                      <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 dark:text-slate-600" />
-                    )}
-                  </div>
-                );
-                return f.active ? (
-                  <Link
-                    key={f.title}
-                    href={f.href}
-                    className="block transition hover:bg-slate-50 dark:hover:bg-slate-900/60"
-                  >
-                    {Inner}
-                  </Link>
-                ) : (
-                  <div key={f.title}>{Inner}</div>
-                );
-              })}
+              {primary.map(renderFeature)}
             </div>
+            {more.length > 0 && (
+              <details className="group mt-3 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-[14px] font-black text-slate-700 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
+                  모든 기능 보기
+                  <span className="flex items-center gap-1 text-[12px] font-bold text-slate-400 dark:text-slate-500">
+                    {more.length}개
+                    <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+                  </span>
+                </summary>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800 border-t border-slate-100 dark:border-slate-800">
+                  {more.map(renderFeature)}
+                </div>
+              </details>
+            )}
           </section>
 
           {/* 사용법 — 매거진 스타일 numbered */}
@@ -386,7 +453,8 @@ export default async function Home() {
             </ol>
           </section>
 
-          {/* 마무리 메시지 */}
+          {/* 마무리 메시지 — 플래그 on(로컬)에서는 '오늘의 흐름'과 역할이 겹쳐 숨긴다 */}
+          {!HARU_BACKEND_ENABLED && (
           <section className="rounded-[32px] bg-slate-100 dark:bg-slate-800 p-6">
             <div
               className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white ${theme.close}`}
@@ -403,6 +471,7 @@ export default async function Home() {
               필요한 맥락만 전해드릴게요.
             </p>
           </section>
+          )}
 
           <p className="px-1 pt-8 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
             본 브리핑은 공개 정보를 AI가 정리한 참고 자료이며, 특정 종목

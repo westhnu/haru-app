@@ -59,3 +59,14 @@ def get_virtual_positions(session: Session) -> list[VirtualPosition]:
         )
         for code, name, qty, cost in session.execute(stmt)
     ]
+
+
+def latest_entry(session: Session, stock_code: str | None = None) -> JournalEntry | None:
+    """가장 최근 기록 1건 (created_at 내림차순, 같은 시각이면 id 내림차순)."""
+    stmt = select(JournalEntryORM).order_by(
+        JournalEntryORM.created_at.desc(), JournalEntryORM.id.desc()
+    )
+    if stock_code is not None:
+        stmt = stmt.where(JournalEntryORM.stock_code == stock_code)
+    orm = session.scalars(stmt.limit(1)).first()
+    return _to_model(orm) if orm else None

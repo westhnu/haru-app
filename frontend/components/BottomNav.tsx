@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Home, Sunrise, Network, Search, Book } from "lucide-react";
+import { Home, Sunrise, Network, Search, Book, BookOpen, NotebookPen } from "lucide-react";
 import SearchDialog from "@/components/SearchDialog";
+import { HARU_BACKEND_ENABLED } from "@/lib/featureFlags";
 
 /**
- * 모바일 하단 고정 4탭 + iOS safe-area 대응.
- * - 홈 / 브리핑 (현재 시간대로 결정 — 클라이언트 시간 사용) / 테마 / 검색
+ * 모바일 하단 고정 5탭 + iOS safe-area 대응.
+ * - 플래그 off(운영): 홈 / 브리핑 / 테마 / 용어 / 검색 (기존 그대로)
+ * - 플래그 on(로컬 백엔드): 홈 / 종목 / 저널 / 브리핑 / 검색
+ *   테마·용어 진입점은 홈 "모든 기능 보기"와 검색 다이얼로그의 "용어 사전"으로 옮긴다.
+ * 브리핑은 현재 시간대(KST, 클라이언트 시간)로 모닝/이브닝을 고른다.
  */
 export default function BottomNav() {
   const pathname = usePathname();
@@ -28,39 +32,61 @@ export default function BottomNav() {
   const briefPath =
     hour >= 8 && hour < 17 ? "/brief/morning" : "/brief/evening";
 
-  const items: {
+  type NavItem = {
     label: string;
     href?: string;
     onClick?: () => void;
     icon: typeof Home;
     active: boolean;
-  }[] = [
-    { label: "홈", href: "/", icon: Home, active: pathname === "/" },
-    {
-      label: "브리핑",
-      href: briefPath,
-      icon: Sunrise,
-      active: pathname.startsWith("/brief"),
-    },
-    {
-      label: "테마",
-      href: "/themes",
-      icon: Network,
-      active: pathname.startsWith("/themes"),
-    },
-    {
-      label: "용어",
-      href: "/glossary",
-      icon: Book,
-      active: pathname.startsWith("/glossary"),
-    },
-    {
-      label: "검색",
-      onClick: () => setSearchOpen(true),
-      icon: Search,
-      active: searchOpen,
-    },
-  ];
+  };
+  const home: NavItem = { label: "홈", href: "/", icon: Home, active: pathname === "/" };
+  const brief: NavItem = {
+    label: "브리핑",
+    href: briefPath,
+    icon: Sunrise,
+    active: pathname.startsWith("/brief"),
+  };
+  const search: NavItem = {
+    label: "검색",
+    onClick: () => setSearchOpen(true),
+    icon: Search,
+    active: searchOpen,
+  };
+  const items: NavItem[] = HARU_BACKEND_ENABLED
+    ? [
+        home,
+        {
+          label: "종목",
+          href: "/workbook",
+          icon: BookOpen,
+          active: pathname.startsWith("/workbook") || pathname.startsWith("/stock"),
+        },
+        {
+          label: "저널",
+          href: "/journal",
+          icon: NotebookPen,
+          active: pathname.startsWith("/journal"),
+        },
+        brief,
+        search,
+      ]
+    : [
+        home,
+        brief,
+        {
+          label: "테마",
+          href: "/themes",
+          icon: Network,
+          active: pathname.startsWith("/themes"),
+        },
+        {
+          label: "용어",
+          href: "/glossary",
+          icon: Book,
+          active: pathname.startsWith("/glossary"),
+        },
+        search,
+      ];
 
   return (
     <>

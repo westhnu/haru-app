@@ -1,18 +1,22 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Search } from "lucide-react";
 import GlossaryResult, { type GlossaryAnswer } from "./GlossaryResult";
 
 type Props = {
   suggestedTerms: string[];
+  /** /glossary?q= 로 들어오면 입력을 채우고 한 번 바로 검색한다 (검색 다이얼로그 "용어 사전에서 찾기"). */
+  initialQuery?: string;
 };
 
 // next.config rewrites: /backend/* → FastAPI /api/v1/* (Guardrail 경유, KI-018)
 const ASK_ENDPOINT = "/backend/glossary/ask";
 
-export default function GlossarySearch({ suggestedTerms }: Props) {
-  const [query, setQuery] = useState("");
+export default function GlossarySearch({ suggestedTerms, initialQuery }: Props) {
+  const [query, setQuery] = useState(initialQuery ?? "");
+  // Strict Mode(dev)는 effect를 두 번 돌린다. ref로 막아 Bedrock 호출(과금)을 한 번만 한다.
+  const autoSearched = useRef(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [answer, setAnswer] = useState<GlossaryAnswer | null>(null);
@@ -39,6 +43,14 @@ export default function GlossarySearch({ suggestedTerms }: Props) {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!initialQuery?.trim() || autoSearched.current) return;
+    autoSearched.current = true;
+    doSearch(initialQuery);
+    // initialQuery가 바뀔 때만 (같은 값으로 재진입 시 재검색 안 함)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
