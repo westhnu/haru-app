@@ -4,7 +4,8 @@
 /build
 .env*.local
 .env
-.env.example
+# .env.example은 공유용 템플릿이라 추적한다 (원칙 3: 키 이름만, 값 없음)
+!.env.example
 
 # 생성된 브리핑 저장본 (런타임 데이터)
 /data/*.json
