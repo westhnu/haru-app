@@ -228,3 +228,23 @@
 - **중장기 완화 (세션 4+)**: LLM 호출을 FastAPI `/api/v1/glossary/ask` 패턴으로 통일 → Bedrock Claude Sonnet 4.5 + Guardrail + core.guardrail 자동 통과. 또는 openai sdk 호출을 자체 wrapper로 감싸 `enforce_disclaimer` 후처리 적용.
 - **세션 2 범위**: 수정 안 함. 신규 경로(/workbook, /checklist, /journal, /glossary)는 `/backend/*` 프록시로 FastAPI를 경유해 이중 방어를 통과.
 - **교훈**: 안전 레이어 적용 범위를 명시적으로 관리하는 것이 "암묵적 미적용"보다 안전하다.
+
+## KI-019 — next.config env 베이크인 + server-only 가드 부재 (구조적 secrets 유출 리스크)
+
+- **발견**: 2026-10-31, 세션 2a frontend 조사
+- **상태**: partially-resolved (server-only 가드로 1·2번 차단, env 베이크인 제거는 중장기)
+- **증상**: `frontend/next.config.mjs`의 `env` 블록에 14개 키 선언(OPENAI_API_KEY, KIS_APP_KEY_PROD, KIS_APP_SECRET_PROD, DART_API_KEY, CRON_SECRET, TAVILY_API_KEY 등). Next.js `env` config는 값을 빌드 시점에 **번들에 평문 inline**한다. 클라이언트 컴포넌트가 `process.env.X`를 참조하거나, 참조하는 모듈을 import하면 브라우저로 유출된다.
+- **현재 유출 여부 (import 그래프 재귀 추적)**: **없음**. `'use client'` 파일 8개의 직접 참조 0건. `ThemesView → thememap → llm/tavily` 경로는 `import type`이라 컴파일 시 제거됨.
+- **구조적 위험**:
+  1. **한 줄 리스크** — `import type`을 일반 `import`로 바꾸거나 값 하나만 가져와도 즉시 유출.
+  2. **방어 레이어 부재** — `lib/*.ts`에 `import "server-only"` 가드가 없어 client에서 import해도 빌드 에러가 나지 않음.
+  3. **서버 산출물 평문 저장** — `env` 블록이 Lambda/Amplify 빌드 산출물에 평문으로 들어감. 산출물 접근 권한 = 시크릿 접근 권한.
+- **즉시 완화 (이 커밋)**:
+  - `lib/kis.ts`, `lib/dart.ts`, `lib/llm.ts`, `lib/tavily.ts`, `lib/twelvedata.ts`, `lib/s3.ts`, `lib/thememap.ts` 7개에 `import "server-only"` 추가 → client import 시 빌드 실패로 1·2번 차단.
+  - `package.json`의 `build:lambda`에 `--conditions=react-server` 추가 → esbuild Lambda 번들에서도 `server-only`가 `empty.js`로 해석됨.
+  - 검증: 조건 적용 번들은 키 없는 깨끗한 env에서 import OK. 대조군(조건 없이 빌드)은 `This module cannot be imported from a Client Component module`로 기동 실패 → 조건이 실제로 필요함을 확인.
+- **중장기 완화 (별도 Phase)**: `env` 베이크인 제거, SSR 런타임에서 AWS Secrets Manager / SSM Parameter Store로 주입(3번 해소). Amplify SSR 제약과 secrets 관리의 트레이드오프.
+- **교훈**:
+  - Next.js `env` config는 편리하지만 "서버 전용"이라고 암묵적으로 가정하지 않는다. server-only 코드에는 명시적 `import "server-only"` 가드가 필수.
+  - `server-only` 패키지는 Next.js 서버 번들 밖(일반 Node, esbuild)에서는 import 시 예외를 던진다. Lambda 등 비-Next 번들 경로는 `--conditions=react-server`가 필요하다. typecheck로는 드러나지 않으므로, 가드만 추가하면 스케줄된 Lambda가 다음 trigger에서 실패한다.
+- **관련**: KI-018(같은 영역의 Guardrail 미적용), 원칙 3(Secrets 유출 금지)

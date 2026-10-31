@@ -1,3 +1,4 @@
+import "server-only";
 import type { FinancialRow } from "./stocktypes";
 import { readCache, writeCache } from "./cache";
 

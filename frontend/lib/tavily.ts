@@ -1,3 +1,4 @@
+import "server-only";
 import type { BriefType, Source } from "./types";
 
 const TAVILY_ENDPOINT = "https://api.tavily.com/search";

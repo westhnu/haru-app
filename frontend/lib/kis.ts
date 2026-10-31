@@ -1,3 +1,4 @@
+import "server-only";
 import type { Indicator, IndicatorTone, PricePoint } from "./stocktypes";
 
 // ── 한국투자증권(KIS) Open API 클라이언트 (시세 조회) ──────────────
