@@ -295,3 +295,34 @@ A: 2차 벤치에서 정상 질문 50%가 차단돼 결함으로 봤습니다. �
 **Q: 왜 Guardrail만 믿지 않나요?**
 
 A: Standard tier에서도 "물타기 해야 할까?", "지금 들어가도 돼?" 같은 우회 표현 5건이 INPUT을 통과했습니다(KI-024). 그래서 시스템 프롬프트, Guardrail INPUT/OUTPUT, 코드 후처리(`apply_output_guard`) 3층으로 막고, 각 층의 한계를 함께 공개합니다. 코드 후처리 정규식도 명시적 표현만 잡기 때문에, 시스템 프롬프트 거절률 실측이 다음 과제입니다.
+
+---
+
+## Sprint 3a — StockDetail "용어 자세히" 체감 UI
+
+Phase 5a까지 수치로 측정한 Bedrock KB + Guardrail 아키텍처가 실제 UI에서 어떻게 녹아드는지 확인.
+
+| # | 상태 | 스크린샷 |
+|---|---|---|
+| 01 | 로컬 툴팁 + "자세히" 버튼 (기존 UX 유지) | ![tooltip](screenshots/01_tooltip.jpg) |
+| 02 | 바텀시트 로딩 ("AWS Bedrock KB에서 근거를 찾는 중... 최대 15초") | ![loading](screenshots/02_loading.jpg) |
+| 03 | Bedrock KB 답변 (Markdown 렌더링, 실측 ~10초) | ![answer](screenshots/03_kb_answer_markdown.jpg) |
+| 04 | Citation chunk + 출처 (term_002, term_005) + Disclaimer footer | ![citation](screenshots/04_citation_disclaimer.jpg) |
+| 05 | sessionStorage 캐시 ("이번 세션에서 받은 답변을 다시 보여드려요") — 즉시 반환 | ![cache](screenshots/05_cache_instant.jpg) |
+| 06 | KB 미보유 용어 ("WACC란?") — "답변 제한" 배지 + "근거 자료 없음" 안내 (**원칙 2 작동 가시화**) | ![kb-miss](screenshots/06_kb_miss_glossary.jpg) |
+
+### 디자인 결정 요약
+
+- **녹아듦 체감**: 기존 로컬 툴팁(302 용어 즉시) + "자세히" opt-in prop으로 Bedrock KB 호출 (명시 트리거, p95 14s 수용)
+- **방어선 가시화**: KB 미보유 시 "답변 제한" 라벨이 **원칙 2 (근거 없는 답변 반환 금지)** 작동을 사용자에게 보여줌
+- **비용·latency 완화**: sessionStorage 캐시로 재클릭 즉시 반환, Strict Mode 중복 fetch 사전 차단 (next tick 지연)
+- **Markdown 렌더링**: react-markdown으로 Bedrock Sonnet 응답의 **bold**·bullet·헤더 포맷 보존
+
+### Kiro가 사전 포획한 추가 결함 (지금 세션)
+
+- **Strict Mode 중복 Bedrock 호출**: dev 환경에서 effect 2회 실행 → next tick 지연으로 첫 번째 abort
+- **Portal 렌더링**: 툴팁 inline span 안의 다이얼로그 DOM 중첩 간섭 → body portal
+- **조사 처리**: 받침 유무로 "이/가" 자동 (영문 약어는 "이" 고정)
+- **Mock 응답 캐시 제외**: 설정 변경 시 혼동 방지
+- **Markdown 미렌더링**: 초기엔 \`\`\`**bold**\`\`\` raw asterisk 노출 → react-markdown으로 수정
+- **Citation whitespace**: 청크 포맷(용어/정식 명칭/영문 라인) 뭉침 → \`whitespace-pre-wrap\`로 복원
