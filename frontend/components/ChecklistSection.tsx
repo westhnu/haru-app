@@ -114,7 +114,7 @@ export default function ChecklistSection({
   };
 
   const onDelete = (cl: Checklist, item: ChecklistItem) => {
-    if (!window.confirm(`"${item.principle}" 원칙 삭제?`)) return;
+    if (!window.confirm(`"${item.principle}" 원칙을 삭제할까요?`)) return;
     run(item.id, async () => {
       await deleteItem(cl.id, item.id);
       await refresh();
@@ -156,7 +156,7 @@ export default function ChecklistSection({
         <div className="flex items-center justify-center gap-2 py-8">
           <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
           <span className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-            로딩
+            불러오는 중이에요
           </span>
         </div>
       )}
@@ -180,7 +180,7 @@ export default function ChecklistSection({
       {load.kind === "ready" && !checklist && (
         <div className="py-6 text-center">
           <p className="text-[13px] font-semibold text-slate-500 dark:text-slate-400">
-            체크리스트 없음. 본인 투자 원칙으로 종목 점검.
+            체크리스트가 비어 있어요. 본인의 투자 원칙으로 이 종목을 점검해 보세요.
           </p>
           <button
             type="button"
@@ -200,7 +200,7 @@ export default function ChecklistSection({
 
           {checklist.items.length === 0 ? (
             <p className="mt-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 px-4 py-5 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-              원칙 없음. 아래에서 첫 원칙 추가.
+              원칙이 없어요. 아래에서 첫 원칙을 추가해 보세요.
             </p>
           ) : (
             <ul className="mt-3 space-y-2">
@@ -319,7 +319,7 @@ function ScoreLine({ items }: { items: ChecklistItem[] }) {
       </div>
       {uncertain > 0 && (
         <p className="mt-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-          판단 보류 {uncertain}건. 직접 확인 후 상태 선택.
+          판단 보류 {uncertain}개. 직접 확인한 뒤 상태를 골라 주세요.
         </p>
       )}
     </div>

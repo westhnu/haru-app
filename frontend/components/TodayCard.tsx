@@ -39,7 +39,8 @@ export default function TodayCard() {
 
   if (state.kind === "loading") {
     return (
-      <section aria-label="오늘의 흐름" className="mt-6 animate-pulse-soft rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+      <section aria-label="오늘의 흐름" aria-busy="true" className="mt-6 animate-pulse-soft rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+        <span className="sr-only">오늘의 흐름을 불러오는 중</span>
         <div className="h-3 w-20 rounded-full bg-slate-200 dark:bg-slate-700" />
         <div className="mt-4 h-4 w-full rounded-full bg-slate-100 dark:bg-slate-800" />
         <div className="mt-2 h-4 w-3/4 rounded-full bg-slate-100 dark:bg-slate-800" />

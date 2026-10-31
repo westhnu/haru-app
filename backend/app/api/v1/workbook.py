@@ -16,7 +16,7 @@ from app.models.workbook import (
 router = APIRouter(prefix="/api/v1/workbooks", tags=["workbook"])
 
 SessionDep = Annotated[Session, Depends(get_session)]
-WORKBOOK_NOT_FOUND = "워크북 없음."
+WORKBOOK_NOT_FOUND = "워크북을 찾을 수 없어요."
 
 
 @router.get("", response_model=WorkbookListResponse)
@@ -49,5 +49,5 @@ def add_block(workbook_id: str, req: WorkbookBlockAddRequest, session: SessionDe
 @router.delete("/{workbook_id}/blocks/{block_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_block(workbook_id: str, block_id: str, session: SessionDep) -> Response:
     if not workbook_repo.delete_block(session, workbook_id, block_id):
-        raise HTTPException(status_code=404, detail="워크북 또는 블록 없음.")
+        raise HTTPException(status_code=404, detail="워크북 또는 블록을 찾을 수 없어요.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)

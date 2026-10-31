@@ -38,7 +38,7 @@ const features: Feature[] = [
     href: "/brief/morning",
     title: "모닝 브리핑",
     time: "08:00",
-    description: "간밤 글로벌 시장 → 오늘 국내 장 영향 정리.",
+    description: "간밤 글로벌 시장이 오늘 국내 장에 줄 영향을 정리해 드려요.",
     icon: Sunrise,
     active: true,
   },
@@ -47,7 +47,7 @@ const features: Feature[] = [
     href: "/brief/evening",
     title: "이브닝 브리핑",
     time: "17:00",
-    description: "오늘 국내 장 마감 · 오늘 밤 미국 장 대비 포인트.",
+    description: "오늘 국내 장 마감을 짚고, 오늘 밤 미국 장 포인트를 챙겨 보세요.",
     icon: Sunset,
     active: true,
   },
@@ -56,7 +56,7 @@ const features: Feature[] = [
     href: "/themes",
     title: "이슈·테마 매핑",
     time: "신규",
-    description: "이슈 → 테마·종목 연결.",
+    description: "하나의 이슈가 어떤 테마·종목으로 번지는지 살펴보세요.",
     icon: Network,
     active: true,
   },
@@ -65,7 +65,7 @@ const features: Feature[] = [
     href: "/workbook",
     title: "내 워크북",
     time: "신규",
-    description: "종목별 분석 메모 보관.",
+    description: "종목별 분석 메모를 한곳에 모아 두세요.",
     icon: BookOpen,
     active: true,
     backend: true,
@@ -75,7 +75,7 @@ const features: Feature[] = [
     href: "/journal",
     title: "투자 저널",
     time: "신규",
-    description: "결정·근거 기록, 가상 포지션 추적.",
+    description: "지난 결정을 저널에서 되돌아보세요. 가상 포지션도 함께 볼 수 있어요.",
     icon: NotebookPen,
     active: true,
     backend: true,
@@ -85,23 +85,28 @@ const features: Feature[] = [
     href: "/glossary",
     title: "용어 사전",
     time: "AI",
-    description: "투자 용어 설명. Bedrock Knowledge Base 근거.",
+    description: "어려운 투자 용어를 Bedrock Knowledge Base 근거로 풀어 드려요.",
     icon: Book,
     active: true,
     backend: true,
   },
 ];
 
-// 사용법 3단계 (말투 가이드 F1: 명사형). 플래그 off(운영)는 브리핑 흐름, on(로컬)은 결정 흐름.
+// 사용법 3단계 (말투 가이드 F1.5: 제목은 L3 라벨, 설명은 L2 서비스 톤).
+// 플래그 off(운영)는 브리핑 흐름, on(로컬)은 결정 흐름.
 const STEPS_BRIEF = [
-  { num: "01", title: "받기", desc: "아침 8시, 저녁 5시.\nAI 시장 정리, 하루 2회 갱신." },
-  { num: "02", title: "살펴보기", desc: "브리핑부터 종목 차트까지 한 흐름.\n어려운 단어는 탭 한 번으로 풀이." },
-  { num: "03", title: "결정하기", desc: "최종 판단은 본인 증권사에서.\n추천 없음, 정리만." },
+  { num: "01", title: "받기", desc: "아침 8시, 저녁 5시.\nAI가 시장을 정리해 하루 두 번 갱신해요." },
+  {
+    num: "02",
+    title: "살펴보기",
+    desc: "브리핑부터 종목 차트까지 한 흐름으로 이어져요.\n어려운 단어는 눌러서 바로 풀이를 볼 수 있어요.",
+  },
+  { num: "03", title: "결정하기", desc: "마지막 판단은 본인 증권사에서 하세요.\n추천 없이 정리만 해 드려요." },
 ];
 const STEPS_BACKEND = [
-  { num: "01", title: "종목 검색", desc: "국내 종목 2,700+ · 주요 미국 종목." },
-  { num: "02", title: "체크리스트 작성 · AI 평가", desc: "본인 원칙 점검. AI 평가는 DART 근거 참고용." },
-  { num: "03", title: "결정 기록 · 저널 회고", desc: "결정 근거 기록 (본인 기록). 저널에서 재검토." },
+  { num: "01", title: "종목 검색", desc: "궁금한 종목을 검색해요." },
+  { num: "02", title: "체크리스트 · AI 평가", desc: "체크리스트를 채우고 AI 평가로 교차 확인해요." },
+  { num: "03", title: "결정 기록 · 회고", desc: "결정을 저널에 기록하고 다시 돌아봐요." },
 ];
 
 // 플래그 on(로컬): 지금 시간대 브리핑 + 투자 저널만 먼저 보여주고 나머지는 접는다 (선택 피로 감소).
@@ -281,17 +286,17 @@ export default async function Home() {
             <h1 className="mt-5 text-[2.4rem] font-black leading-[1.12] tracking-tight text-slate-950 dark:text-white">
               매일 아침·저녁,
               <br />
-              시장 정리와
+              시장을 정리하고
               <br />
               <span
                 className={`bg-gradient-to-r bg-clip-text text-transparent ${theme.grad}`}
               >
-                투자 결정 기록.
+                투자 결정을 기록하세요.
               </span>
             </h1>
 
             <p className="mt-5 text-[1.05rem] font-semibold leading-8 text-slate-500 dark:text-slate-400">
-              흩어진 뉴스·시세 정리. AI 조사 · 판단 본인.
+              흩어진 뉴스와 시세를 Haru가 정리해 드려요. 판단은 본인의 몫이에요.
             </p>
 
             <Link
@@ -368,7 +373,7 @@ export default async function Home() {
                 />
                 <p className="text-[14.5px] font-semibold leading-[1.7] text-slate-700 dark:text-slate-300">
                   {oneLine ??
-                    "첫 갱신 대기. 매일 08:00·17:00 KST 자동 갱신."}
+                    "첫 브리핑을 기다리고 있어요. 매일 08:00·17:00 KST에 자동으로 갱신돼요."}
                 </p>
               </blockquote>
 
@@ -387,9 +392,9 @@ export default async function Home() {
           <section className="pt-12 pb-4">
             <p className="text-sm font-black text-slate-500 dark:text-slate-400">기능</p>
             <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white">
-              투자 판단에 필요한
+              투자 판단에 필요한 화면을
               <br />
-              화면 한곳에.
+              한곳에 모았어요.
             </h2>
 
             <div className="mt-7 divide-y divide-slate-100 dark:divide-slate-800 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -415,7 +420,9 @@ export default async function Home() {
           <section className="pt-12 pb-14">
             <p className="text-sm font-black text-slate-500 dark:text-slate-400">사용법</p>
             <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white">
-              세 단계.
+              세 단계면
+              <br />
+              충분해요.
             </h2>
 
             <ol className="mt-10 space-y-9">
@@ -457,14 +464,14 @@ export default async function Home() {
               본인 증권사에서.
             </h2>
             <p className="mt-3 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
-              자동매매·종목 추천 없음. 하루 2회, 결정에 필요한 맥락만 정리.
+              자동매매나 종목 추천은 하지 않아요. 하루 두 번, 결정에 필요한 맥락만 전해 드려요.
             </p>
           </section>
           )}
 
           <p className="px-1 pt-8 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
-            본 브리핑: 공개 정보를 AI가 정리한 참고 자료. 특정 종목 매수·매도 권유 아님.
-            투자 판단과 책임은 본인.
+            본 브리핑은 공개 정보를 AI가 정리한 참고 자료이며, 특정 종목의 매수·매도 권유가
+            아니에요. 투자 판단과 책임은 본인에게 있어요.
           </p>
         </div>
       </div>

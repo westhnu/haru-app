@@ -65,7 +65,7 @@ export default function JournalList() {
   }, [load]);
 
   const onDelete = async (entry: JournalEntry) => {
-    if (!window.confirm("기록 삭제? 복구 불가.")) return;
+    if (!window.confirm("이 기록을 삭제할까요? 되돌릴 수 없어요.")) return;
     setBusy(entry.id);
     setError(null);
     try {
@@ -83,7 +83,7 @@ export default function JournalList() {
       <div className="flex items-center justify-center gap-2 py-16">
         <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
         <span className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-          저널 로딩
+          저널을 불러오는 중이에요
         </span>
       </div>
     );
@@ -114,7 +114,7 @@ export default function JournalList() {
           가상 기록
         </span>
         <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-          실제 주문·거래 아님.
+          실제 주문·거래가 아니에요.
         </span>
       </div>
 
@@ -127,7 +127,7 @@ export default function JournalList() {
         </p>
         {load.positions.length === 0 ? (
           <p className="px-5 py-5 text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-            가상 포지션 없음. &quot;매수 결정&quot; 기록 시 입력한 가상 수량·단가만 합산.
+            가상 포지션이 없어요. &quot;매수 결정&quot;을 기록할 때 가상 수량·단가를 적으면 여기에 모여요.
           </p>
         ) : (
           <ul>
@@ -150,13 +150,13 @@ export default function JournalList() {
           </ul>
         )}
         <p className="border-t border-slate-100 dark:border-slate-800 px-5 py-2.5 text-[11px] font-medium text-slate-400 dark:text-slate-500">
-          시세 미연동. 현재가·손익 미표시.
+          시세 연동 전이라 현재가·손익은 표시하지 않아요.
         </p>
       </section>
 
       {groups.length === 0 ? (
         <p className={`${card} px-5 py-10 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500`}>
-          저널 기록 없음. 종목 상세 &quot;워크북&quot; 탭 → &quot;결정 기록하기&quot;.
+          저널에 기록이 없어요. 종목에서 결정을 남기면 여기에 쌓여요.
         </p>
       ) : (
         groups.map((g) => (

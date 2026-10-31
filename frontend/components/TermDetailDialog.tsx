@@ -173,7 +173,7 @@ export default function TermDetailDialog({
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
               <p className="text-[13px] font-semibold text-slate-500 dark:text-slate-400">
-                Bedrock KB 근거 검색 중
+                Bedrock KB에서 근거를 찾고 있어요
               </p>
             </div>
           )}
@@ -186,7 +186,7 @@ export default function TermDetailDialog({
             <>
               {state.cached && (
                 <p className="mb-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-                  이번 세션 캐시 답변.
+                  이번 세션에서 받은 답변이에요.
                 </p>
               )}
               <GlossaryResult answer={state.answer} />

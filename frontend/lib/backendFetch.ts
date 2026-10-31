@@ -16,7 +16,7 @@ export async function backendFetch<T>(url: string, init?: RequestInit): Promise<
     r = await fetch(url, { cache: "no-store", ...init });
   } catch (e) {
     if (init?.signal?.aborted) throw e; // 사용자 취소는 그대로 전달
-    throw new BackendApiError("요청 실패. 재시도. (백엔드 localhost:8000 실행 여부 확인)", 0);
+    throw new BackendApiError("요청에 실패했어요. 다시 시도해 보세요. (백엔드 localhost:8000 실행 여부를 확인해 보세요)", 0);
   }
   if (!r.ok) {
     // FastAPI HTTPException은 {"detail": "사용자용 문구"}를 준다. 있으면 그 문구를 쓴다.
@@ -28,7 +28,7 @@ export async function backendFetch<T>(url: string, init?: RequestInit): Promise<
       /* 본문 없음 */
     }
     // 프록시가 백엔드에 못 붙으면 Next가 500을 돌려준다.
-    const hint = r.status >= 500 && !detail ? " — 백엔드 실행 여부 확인" : "";
+    const hint = r.status >= 500 && !detail ? " — 백엔드 실행 여부를 확인해 보세요" : "";
     throw new BackendApiError(detail ?? `요청 실패 (${r.status})${hint}`, r.status);
   }
   return (r.status === 204 ? undefined : await r.json()) as T;

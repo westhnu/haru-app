@@ -132,7 +132,7 @@ export default function SearchDialog({
             type="text"
             inputMode="search"
             autoComplete="off"
-            placeholder="종목 검색 (예: 삼성전자, NVDA, 005930)"
+            placeholder="종목을 검색해 보세요 (예: 삼성전자, NVDA, 005930)"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold text-slate-900 dark:text-slate-100 placeholder:font-medium placeholder:text-slate-400 dark:text-slate-500 focus:outline-none"
@@ -158,19 +158,19 @@ export default function SearchDialog({
             >
               <Book className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
               <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-slate-700 dark:text-slate-200">
-                {q.trim() ? `용어 사전: ${q.trim()}` : "용어 사전"}
+                {q.trim() ? `용어 사전에서 "${q.trim()}" 찾기` : "용어 사전으로 이동"}
               </span>
               <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
             </Link>
           )}
           {!q && (
             <p className="px-4 py-6 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-              국내 종목 2,700+ · 주요 미국 종목 검색.
+              국내 종목 2,700개 이상과 주요 미국 종목을 찾을 수 있어요.
             </p>
           )}
           {q && results.length === 0 && (
             <p className="px-4 py-6 text-center text-[13px] font-semibold text-slate-500 dark:text-slate-400">
-              결과 없음
+              검색 결과가 없어요
             </p>
           )}
           {results.map((r) => (

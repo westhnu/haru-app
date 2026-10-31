@@ -71,7 +71,7 @@ export default function WorkbookPanel({
 
   const onDelete = useCallback(
     async (workbookId: string, blockId: string) => {
-      if (!window.confirm("블록 삭제? 복구 불가.")) return;
+      if (!window.confirm("메모를 삭제할까요? 삭제하면 복구할 수 없어요.")) return;
       setBusy(blockId);
       setActionError(null);
       try {
@@ -95,7 +95,7 @@ export default function WorkbookPanel({
       <div className={`${card} flex items-center justify-center gap-2 py-10`}>
         <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
         <span className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-          워크북 로딩
+          워크북을 불러오는 중이에요
         </span>
       </div>
     );
@@ -147,10 +147,10 @@ export default function WorkbookPanel({
         {!wb ? (
           <div className="py-6 text-center">
             <p className="text-[14px] font-bold text-slate-700 dark:text-slate-200">
-              워크북 없음.
+              만든 워크북이 없어요.
             </p>
             <p className="mt-1 text-[12px] font-semibold text-slate-400 dark:text-slate-500">
-              워크북 생성 후 메모 추가.
+              워크북을 만들고 메모를 추가해 보세요.
             </p>
             <button
               type="button"
@@ -185,7 +185,7 @@ export default function WorkbookPanel({
 
             {wb.blocks.length === 0 ? (
               <p className="mt-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 px-4 py-6 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
-                메모 없음. &quot;블록 추가&quot;로 첫 메모 작성.
+                작성한 메모가 없어요. &quot;블록 추가&quot;로 첫 메모를 남겨 보세요.
               </p>
             ) : (
               <ul className="mt-4 space-y-2">
@@ -216,7 +216,7 @@ export default function WorkbookPanel({
                         </button>
                       </div>
                       <p className="mt-1 whitespace-pre-wrap break-words text-[14px] leading-relaxed text-slate-800 dark:text-slate-200">
-                        {text ?? "화면 미지원 블록 종류."}
+                        {text ?? "화면에서 지원하지 않는 블록 종류예요."}
                       </p>
                     </li>
                   );
@@ -248,7 +248,7 @@ export default function WorkbookPanel({
       </button>
 
       <p className="px-1 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
-        워크북: 본인 생각 정리 공간. 종목 추천 없음. 최종 결정은 본인.
+        워크북은 본인의 생각을 정리하는 공간이에요. 종목 추천은 하지 않으며, 최종 결정은 본인의 몫이에요.
       </p>
 
       <JournalEntryDialog

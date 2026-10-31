@@ -148,7 +148,7 @@ export default function AiEvaluationDialog({
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
               <p className="text-[13px] font-semibold text-slate-500 dark:text-slate-400">
-                DART 재무 데이터 분석 중
+                DART 재무 데이터를 분석하고 있어요
               </p>
             </div>
           )}

@@ -17,18 +17,18 @@ router = APIRouter(prefix="/api/v1/stock", tags=["stock"])
 DART_ERROR_RESPONSES: dict[type[DartError], tuple[int, str]] = {
     DartStockNotFoundError: (
         status.HTTP_404_NOT_FOUND,
-        "DART 미등록 종목 코드.",
+        "DART에 등록되지 않은 종목 코드예요.",
     ),
     DartNoFinancialsError: (
         status.HTTP_404_NOT_FOUND,
-        "조회 가능한 정기보고서 재무제표 없음.",
+        "조회할 수 있는 정기보고서 재무제표가 없어요.",
     ),
     DartRateLimitError: (
         status.HTTP_503_SERVICE_UNAVAILABLE,
-        "DART 조회 한도 초과. 재시도.",
+        "DART 조회 한도에 걸렸어요. 잠시 후 다시 시도해 보세요.",
     ),
 }
-DEFAULT_DART_ERROR = (status.HTTP_502_BAD_GATEWAY, "DART 조회 실패.")
+DEFAULT_DART_ERROR = (status.HTTP_502_BAD_GATEWAY, "DART 조회에 실패했어요.")
 
 
 @router.get("/{code}/summary")

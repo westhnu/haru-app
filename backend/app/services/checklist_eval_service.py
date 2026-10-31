@@ -20,7 +20,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from app.config import Settings, get_settings
 from app.core.grounding import find_ungrounded_figures
-from app.core.guardrail import DISCLAIMER, has_forbidden_phrase, has_tone_violation, mask_pii
+from app.core.guardrail import DISCLAIMER, has_forbidden_phrase, has_tone_violation_l1, mask_pii
 from app.core.prompts import SYSTEM_PROMPT_CHECKLIST_EVAL
 from app.models.checklist import REASONING_MAX_LENGTH, AiEvaluation, EvaluationSource
 from app.models.stock import STATEMENT_LABELS, STOCK_CODE_PATTERN, DartResult
@@ -33,14 +33,15 @@ VALID_STATUSES = frozenset({"satisfied", "unsatisfied", "uncertain"})
 _PERCENT_IN_TEXT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:%|퍼센트)")
 _JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
 
-# 말투 가이드(F1): 명사형·단문.
-# 모든 fallback 문구는 has_tone_violation을 통과해야 한다 (테스트 고정).
+# 말투 가이드(F1.5): fallback은 코드가 만드는 안내라 L2(서비스 톤). 접두 "판단 보류."는 L3 라벨.
+# 모든 fallback 문구는 has_tone_violation_l2를 통과해야 한다 (테스트 고정).
+# AI reasoning 자체는 L1(엄격) 검증을 유지한다 (validate_eval).
 FALLBACK_PREFIX = "판단 보류."
-REASON_MOCK = "개발용 DART 데이터. AI 평가 미실행."
-REASON_BEDROCK_FAILED = "AI 평가 호출 실패. 재시도."
-REASON_STOPPED = "응답 차단 (Guardrail) 또는 응답 잘림."
-REASON_INVALID = "AI 응답 검증 실패. DART 원문 직접 확인."
-REASON_NO_FACTS = "데이터 부족. 이 보고서에 평가용 재무 비율 없음."
+REASON_MOCK = "개발용 DART 데이터라 AI 평가를 하지 않았어요."
+REASON_BEDROCK_FAILED = "AI 평가 호출에 실패했어요. 잠시 후 다시 시도해 보세요."
+REASON_STOPPED = "Guardrail에 걸렸거나 응답이 중단됐어요."
+REASON_INVALID = "AI 응답이 검증을 통과하지 못했어요. DART 원문을 직접 확인해 보세요."
+REASON_NO_FACTS = "평가에 쓸 재무 데이터가 부족해요."
 
 logger = structlog.get_logger(__name__)
 
@@ -116,7 +117,7 @@ def validate_eval(
         return f"ungrounded_figures:{ungrounded}"
     if has_forbidden_phrase(reasoning):
         return "forbidden_phrase"
-    if has_tone_violation(reasoning):
+    if has_tone_violation_l1(reasoning):
         return "tone_violation"
     return status, reasoning, used
 

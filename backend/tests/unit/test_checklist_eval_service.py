@@ -7,7 +7,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from app.config import Settings
-from app.core.guardrail import has_tone_violation
+from app.core.guardrail import has_tone_violation_l2
 from app.models.stock import DartResult, StockFinancials, StockSource
 from app.services import checklist_eval_service as ces
 from app.services.checklist_eval_service import (
@@ -243,8 +243,8 @@ def test_prompt_contains_only_code_computed_ratios() -> None:
     assert "1000000000000" not in prompt and "부채비율(%)" in prompt
 
 
-def test_all_fallback_reasons_pass_tone_guide() -> None:
+def test_all_fallback_reasons_pass_tone_guide_l2() -> None:
     reasons = [v for k, v in vars(ces).items() if k.startswith("REASON_") or k == "FALLBACK_PREFIX"]
     assert len(reasons) == 6
     for r in reasons:
-        assert not has_tone_violation(f"{FALLBACK_PREFIX} {r}"), r
+        assert not has_tone_violation_l2(f"{FALLBACK_PREFIX} {r}"), r

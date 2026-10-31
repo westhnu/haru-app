@@ -87,40 +87,71 @@ def mask_pii(text: str) -> str:
     return _ACCOUNT.sub(_mask_account, masked)
 
 
-# --- 말투 가이드 (Phase F1, planning/tone_guide.md) ----------------------------------------
-# 사용자 노출 문구는 명사형·단문.
-# 문장 단위로 종결 어미를 보고, 문구 전체에서 모호어·수동·호명을 본다.
-# 원칙 5 면책 문구(DISCLAIMER)와 AI_EVAL_NOTICE는 고정 문구라 검사 전에 걷어낸다(whitelist).
+# --- 말투 가이드 (Phase F1.5, planning/tone_guide.md) -------------------------------------
+# L1 엄격: AI 생성 텍스트(평가 reasoning·KB 답변 fallback). 명사형·단문 — 환각·사족 방지.
+# L2 서비스: 사용자 안내·빈 상태·에러·메시지 템플릿. 자연스러운 평서문·제안형(~요, ~세요) 허용.
+# L3 액션: 버튼·탭·상태 라벨·배지. 명사·짧은 동사 — L1 규칙으로 검사한다.
+# 원칙 5 면책 문구(DISCLAIMER)·AI_EVAL_NOTICE·SAFE_REPLACEMENT는 고정 문구라 검사 전에 걷어낸다.
 TONE_WHITELIST: tuple[str, ...] = (DISCLAIMER, AI_EVAL_NOTICE, SAFE_REPLACEMENT)
 # "필요"·"개요"·"중요"처럼 '요'로 끝나는 명사를 오탐하지 않도록 어미를 나열한다.
 _POLITE_ENDING = re.compile(
     r"(해요|에요|예요|이야|어요|아요|여요|워요|네요|군요|죠|세요|까요|게요|래요|대요|"
     r"보여요|니다|바랍니다)$"
 )
-_TONE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("passive", re.compile(r"되지\s*않았|처리되었|확인되었|판단되지")),
-    ("vague", re.compile(r"아직|조금|곧|거의|다소|대략|약간")),
-    ("address", re.compile(r"당신|여러분|사용자님")),
+_PASSIVE = re.compile(r"되지\s*않았|처리되었|확인되었|판단되지")
+_VAGUE = re.compile(r"아직|조금|곧|거의|다소|대략|약간")
+_ADDRESS = re.compile(r"당신|여러분|사용자님")
+_L1_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("passive", _PASSIVE),
+    ("vague", _VAGUE),
+    ("address", _ADDRESS),
     ("over_polite", re.compile(r"주세요|바랍니다")),
+)
+# L2: "~해 주세요"는 자연스러운 안내라 허용하고, "~바랍니다"·"~주시면 감사"만 과공손으로 본다.
+_L2_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("over_polite", re.compile(r"바랍니다|주시면\s*감사")),
+    ("passive", _PASSIVE),
+    ("vague", _VAGUE),
+    ("address", _ADDRESS),
+    ("self_reference", re.compile(r"저희\s*Haru|Haru는\s+")),
+    # "투자!"처럼 단어 안의 '자!'를 오탐하지 않게 앞이 공백·문두일 때만 본다.
+    ("exclamation", re.compile(r"(?:^|[\s\"'(])(?:자|오|좋아요)!")),
 )
 _SENTENCE_SPLIT = re.compile(r"[.!?。\n]+")
 _TRAILING = " \t\"'”’)]»"
 
 
-def find_tone_violations(text: str) -> list[str]:
-    """말투 가이드 위반 종류 목록. 빈 목록이면 통과. (예: ["ending:보여요", "vague:아직"])"""
+def _strip_whitelist(text: str) -> str:
     for fixed in TONE_WHITELIST:
         text = text.replace(fixed, " ")
+    return text
+
+
+def find_tone_violations_l1(text: str) -> list[str]:
+    """L1(엄격) 위반 종류 목록. 빈 목록이면 통과. (예: ["ending:보여요", "vague:아직"])"""
+    text = _strip_whitelist(text)
     found: list[str] = []
     for sentence in _SENTENCE_SPLIT.split(text):
-        tail = sentence.rstrip(_TRAILING)
-        m = _POLITE_ENDING.search(tail)
+        m = _POLITE_ENDING.search(sentence.rstrip(_TRAILING))
         if m:
             found.append(f"ending:{m.group(1)}")
-    for kind, pattern in _TONE_PATTERNS:
+    for kind, pattern in _L1_PATTERNS:
         found += [f"{kind}:{m.group(0)}" for m in pattern.finditer(text)]
     return found
 
 
-def has_tone_violation(text: str) -> bool:
-    return bool(find_tone_violations(text))
+def has_tone_violation_l1(text: str) -> bool:
+    return bool(find_tone_violations_l1(text))
+
+
+def find_tone_violations_l2(text: str) -> list[str]:
+    """L2(서비스) 위반 종류 목록. 종결 어미(~요·~세요)는 허용한다."""
+    text = _strip_whitelist(text)
+    found: list[str] = []
+    for kind, pattern in _L2_PATTERNS:
+        found += [f"{kind}:{m.group(0).strip()}" for m in pattern.finditer(text)]
+    return found
+
+
+def has_tone_violation_l2(text: str) -> bool:
+    return bool(find_tone_violations_l2(text))

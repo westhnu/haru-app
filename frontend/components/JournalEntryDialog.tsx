@@ -17,8 +17,8 @@ function parseNonNegative(raw: string, integer: boolean): { value: number | null
   const s = raw.trim();
   if (!s) return { value: null };
   const n = Number(s);
-  if (!Number.isFinite(n) || n < 0) return { value: null, error: "0 이상 숫자만 입력 가능" };
-  if (integer && !Number.isInteger(n)) return { value: null, error: "수량: 정수만 입력 가능" };
+  if (!Number.isFinite(n) || n < 0) return { value: null, error: "0 이상의 숫자를 입력해 주세요" };
+  if (integer && !Number.isInteger(n)) return { value: null, error: "수량은 정수로 입력해 주세요" };
   return { value: n };
 }
 
@@ -111,7 +111,7 @@ export default function JournalEntryDialog({
       setSaved(true);
       onSaved?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "저장 실패");
+      setError(err instanceof Error ? err.message : "저장하지 못했어요");
     } finally {
       setSaving(false);
     }
@@ -157,9 +157,9 @@ export default function JournalEntryDialog({
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
           {saved ? (
             <div className="py-6 text-center">
-              <p className="text-[14px] font-bold text-slate-900 dark:text-slate-100">저장 완료.</p>
+              <p className="text-[14px] font-bold text-slate-900 dark:text-slate-100">기록했어요.</p>
               <p className="mt-1 text-[12px] font-semibold text-slate-400 dark:text-slate-500">
-                전체 기록: &quot;투자 저널&quot;.
+                &quot;투자 저널&quot;에서 전체 기록을 볼 수 있어요.
               </p>
             </div>
           ) : (
@@ -199,7 +199,7 @@ export default function JournalEntryDialog({
                   maxLength={REASONING_MAX_LENGTH}
                   rows={5}
                   disabled={saving}
-                  placeholder="결정 이유 기록 (회고용)"
+                  placeholder="왜 이렇게 결정했는지 적어 두세요. 회고할 때 다시 봐요."
                   className="w-full resize-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-[14px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="mt-1 text-right text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">
@@ -257,7 +257,7 @@ export default function JournalEntryDialog({
           )}
 
           <p className="rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-            가상 기록. 실제 주문·거래 아님. 종목 추천 없음, 최종 결정은 본인.
+            가상 기록이에요. 실제 주문·거래가 아니며, 종목 추천 없이 최종 결정은 본인이 해요.
           </p>
         </div>
 
