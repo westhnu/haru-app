@@ -57,3 +57,4 @@ backend/data/*.db-shm
 
 # uv cache
 .uv/
+backend/.cache/

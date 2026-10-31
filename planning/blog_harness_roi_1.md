@@ -436,3 +436,94 @@ Phase 5a + Sprint 3a + 3b + 3c로 Haru MVP 전체 체감 가능:
 | **투자 저널 + 가상 포트폴리오** | 결정 기록 다이얼로그 + `/journal` 전용 | 15~18 (Sprint 3c) |
 
 총 스크린샷 18장, 블로그 글 400+ 줄, Drift 16건 narrative + 체감 UI 4종 완결 상태.
+
+---
+
+## Phase A+B — SQLite 영속성 + AI 체크리스트 채점 (실사용 수준 승격)
+
+Sprint 3c 완결 후 기획자 관점 재검토에서 "데이터 영속성 없음 + AI 가치 부재"가 가장 큰 blocker로 지적됨. Phase A·B로 두 공백 해결.
+
+### Phase A — SQLite 영속성 승격
+
+**Before**: in-memory `dict`, uvicorn 재시작 시 전부 사라짐 → "임시 저장" 배지 UI에 노출 → **사용자가 매일 쓸 수 없는 신호**
+
+**After**:
+- SQLAlchemy 2.1 + SQLite (`backend/data/haru.db`), 테스트는 in-memory
+- `app/db/`: engine (FK PRAGMA·StaticPool·UTC 시각 보존·µs 정밀도), ORM, repositories
+- `lifespan`에서 `init_db` + `seed_if_empty` (테이블별 idempotent)
+- 라우터 전부 `Depends(get_session)` + repository 호출로 교체
+- 저널 FK 사전 검증 (없으면 422, 500 방지)
+- CORS에 PATCH/DELETE 추가
+- conftest: autouse in-memory SQLite fixture로 테스트 격리
+- "임시 저장" 배지 전부 제거
+
+**Kiro가 사전 포획한 추가 결함** (전부 실측 기반):
+- **SQLite FK PRAGMA 기본 OFF** → CASCADE/SET NULL 작동 안 함 → `connect` 이벤트로 명시 활성화
+- **SQLite timezone 저장 안 함** → UTCDateTime 커스텀 타입 (브라우저 9h 어긋남 방지)
+- **`func.now()` 초 단위 정밀도** → 같은 초에 추가한 블록 순서 뒤섞임 → Python에서 µs까지 생성
+- **conftest `dependency_overrides` 안 먹힘** (매번 `create_app()`하는 테스트 패턴에서) → monkeypatch로 전환
+- **상대 경로 database_url 문제** (실행 위치마다 DB 위치 다름) → 절대 경로로 고정
+
+### Phase B — AI 체크리스트 채점 (Converse + DART + 원칙 2 강제)
+
+**Before**: 사용자 수동 라디오 선택만 (충족/미충족/판단 어려움). "AI 체크리스트"라고 홍보했지만 코드에 AI 평가 로직 0건.
+
+**After**:
+- `ChecklistEvalService`: Bedrock Converse API 직접 호출 (RetrieveAndGenerate 안 씀)
+- `DartTool` 직접 재사용 + `ratio_facts` (summary 함수는 Bedrock 2회 호출이라 skip)
+- Guardrail Standard tier 적용 (Phase 5a에서 확정된 설정)
+- `stopReason != end_turn` → template fallback
+- **코드 검증 6단**: JSON 파싱 → status Literal → reasoning 길이 → used_facts 라벨 매칭 → `find_ungrounded_figures` → `has_forbidden_phrase`
+- 검증 하나라도 실패 → "판단 보류" 템플릿 + 서버 로그 (사용자에게 실패 사유 노출 안 함)
+- `mock DART` → 모델 호출 0회 (`evaluation_source: "mock"`)
+- 해외 종목 → DART 호출 전 422 (6자리 코드 아니면)
+- 샘플 원칙 혼합: 판정 가능 2 + 데이터 부족 refuse 1
+
+**설계상 핵심 원칙**:
+- 원칙 2 (근거 인용 필수) **코드로 강제** — 환각 수치 포함 응답은 자동 "판단 보류"
+- 원칙 문장의 기준값(200% 등)은 환각으로 안 봄 (정상 답 false positive 방지)
+- `apply_output_guard` 안 씀 (면책 중복 방지, disclaimer 별도 필드)
+- stock_code는 체크리스트에서만 가져옴 (body 입력 거부, 다른 종목 평가 경로 차단)
+
+### 체감 스크린샷 (Phase A+B)
+
+| # | 상태 | 스크린샷 |
+|---|---|---|
+| 20 | AI 평가 — **데이터 없음 refuse** (PER: "업종 평균 데이터 없음, PER 지표 없음") | ![refuse](screenshots/phase-ab/20_ai_eval_refuse_per.jpg) |
+| 21 | 새 샘플 체크리스트 (판정 가능 2 + refuse 1, 다크 모드) + 각 원칙 "AI 평가" 버튼 (Sparkles 아이콘) | ![samples](screenshots/phase-ab/21_checklist_new_samples.jpg) |
+| 22 | AI 평가 — **데이터 있음 정량 판정** ("DART 2026년 반기보고서 기준 부채비율 31.1%로, 200% 미만 기준을 명확히 충족") | ![satisfied](screenshots/phase-ab/22_ai_eval_satisfied.jpg) |
+
+### Phase B의 결정적 narrative
+
+이 두 스크린샷(20·22)이 Haru 전체 설계 철학을 체화:
+
+| 상황 | AI 응답 | 원칙 작동 |
+|---|---|---|
+| DART에 있는 데이터 (부채비율 31.1%) | "충족" + 정확한 수치 인용 + DART 출처 링크 | 원칙 2 (근거 명시) |
+| DART에 없는 데이터 (PER, 업종 평균) | "판단 어려움" + "필요한 데이터 명시" | 원칙 2 (근거 없는 수치 금지) |
+
+**"AI가 데이터 있을 때는 정확히, 없을 때는 정직하게"** — 체크리스트가 "AI 자동 채점" 이라는 공허한 홍보가 아니라 **진짜로 작동하는 검증 레이어**가 됨.
+
+### Kiro가 사전 포획한 Phase B 추가 결함
+
+- **옵션 2 (rag_service.ask 확장) 실패 예상 조사**: KB에 DART 수치 없음 → grounding 차단 → RetrieveAndGenerate 불가 → 옵션 1 (Converse 직접) 선택
+- **stock_summary_service 함정 발견**: `.summarize()`가 내부에서 Bedrock 호출 → 평가 1회당 Sonnet 2회 → `DartTool` 직접 사용으로 변경 (비용 절반)
+- **원칙 기준값 환각 오탐 리스크**: "200%"가 ungrounded figure로 오탐되면 정상 답까지 template으로 떨어짐 → 기준값 허용
+- **`apply_output_guard` 중복 리스크**: 면책 문구가 reasoning에 섞이면 UX 혼동 → `has_forbidden_phrase`로 체크만
+
+### 사용자 UX 개선 효과
+
+| 항목 | 승격 전 | 승격 후 |
+|---|---|---|
+| 데이터 영속성 | ❌ 재시작 시 삭제 | ✅ SQLite |
+| "임시 저장" 배지 | ❌ 전역 노출 | ✅ 제거 |
+| AI 가치 | ❌ 수동 입력만 | ✅ Bedrock 1차 판정 + 사용자 확인 |
+| 원칙 2 작동 가시화 | ❌ 백엔드에만 | ✅ UI에 refuse 표시 |
+| DART 출처 | ❌ 없음 | ✅ 보고서 라벨 + 외부 링크 |
+
+### 커밋 메타
+
+- `6af54a2` Phase A 1차 (배지 삭제만 — git add pathspec 오류)
+- `900eccf` **Phase A 누락분 + Phase B 통합 복구**
+  - 36 files changed, 1876 insertions
+  - 테스트 266 → 295 passed (SQLite 영속성 7건 + AI 채점 29건)
