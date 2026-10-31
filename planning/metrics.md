@@ -321,3 +321,26 @@ Guardrail: gtulvril25hb
   - 월 비용(실측 기준): 혼자 테스트 20회/일 ≈ $4.15, 활성 100명 × 5회/일 ≈ $104
 - 그룹별 INTERVENED (성공 건 기준): 원칙 테스트 9/9, 투자용어 21/28, KB 샘플 16/31, 가짜 3/8
   - 정상 용어 질문(투자용어+KB 샘플) 37/59 = 63% 차단 → KI-020
+
+### KI-020 Guardrail trace 분석 (ApplyGuardrail 재현, 5건, 2026-10-31)
+- CSV: `trace_summary_20261031T041847Z.csv` (답변 텍스트 미포함)
+- 방법: RetrieveAndGenerate는 정책별 trace를 주지 않음(서비스 모델 확인). 쿼리마다 KB retrieve(top 5) → Guardrail 없이 RetrieveAndGenerate → ApplyGuardrail INPUT → ApplyGuardrail OUTPUT(근거=retrieve 청크) 순으로 재현.
+- 결과: 5건 모두 OUTPUT에서 INTERVENED, INPUT은 5건 모두 통과.
+
+| query | action | BLOCK 정책 | grounding score (threshold 0.75) |
+|---|---|---|---|
+| ROE 설명해줘 | INTERVENED | topic(investment-advice) | 0.84 (통과) |
+| 우선주가 뭐야? | INTERVENED | grounding + topic(investment-advice) | 0.04 |
+| WACC란? | INTERVENED | grounding + topic(investment-advice) | 0.02 |
+| DCF 모델이 뭐야? | INTERVENED | grounding + topic(investment-advice) | 0.10 |
+| 주당순이익 설명해줘 | INTERVENED | grounding | 0.13 |
+
+- 공통 패턴: 원인은 하나가 아니다. Denied Topic `investment-advice`가 4/5, Contextual Grounding이 4/5를 막았다. ROE는 grounding을 통과(0.84)하고도 topic으로 막혔으므로, grounding threshold만 낮춰서는 해결되지 않는다. 막힌 쪽은 모두 사용자 질문(INPUT)이 아니라 모델 답변(OUTPUT)이다.
+- 관찰: grounding이 막힌 4건은 KB retrieve 상위 점수 0.60~0.66으로 해당 용어 문서가 근거로 충분히 잡히지 않았고, 답변(476~638자)이 근거보다 넓게 서술됨. topic 차단은 용어 설명 답변의 어떤 표현이 '매수·매도 권유'로 분류되는지 미확정(가설: 해석·활용 서술 또는 답변에 포함된 면책 문구).
+- 수정 방향 후보:
+  - A. Contextual Grounding threshold 0.75 완화 — 4/5에 영향. 단 score가 0.02~0.13이라 소폭 완화로는 부족, 대폭 완화는 근거 없는 답변을 통과시킴
+  - B. `investment-advice` 토픽 정의·예시를 '특정 종목 지목 + 매매 지시'로 좁힘 — 4/5에 영향. 원칙 1 회귀 테스트셋(10건)으로 재검증 필수
+  - C. 응답 wrapper 보강: INTERVENED 시 "근거를 찾지 못해 답변을 드리지 못합니다" 명시(현재는 면책 문구만 남음)
+  - D. Guardrail 차단 메시지를 면책 문구와 다르게 변경 — C와 함께 답변 소실 UX 해소
+- 분석 한계: RetrieveAndGenerate 내부 판정과 완전 일치는 아님(retrieve 결과를 근거로 재사용, 답변은 별도 생성). BLOCK 정책 식별과 grounding score 범위는 유효. 표본 5건.
+- 비용: Bedrock 호출 20건(retrieve 5, RetrieveAndGenerate 5, ApplyGuardrail 10), KI-007 에러 0건.
