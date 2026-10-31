@@ -1,4 +1,5 @@
 import { AlertCircle, FileText } from "lucide-react";
+import ReactMarkdown, { type Components } from "react-markdown";
 
 export type GlossaryCitation = {
   excerpt?: string;
@@ -42,6 +43,45 @@ type Props = {
   answer: GlossaryAnswer;
 };
 
+// Bedrock Sonnet 답변은 **굵게**·목록·소제목 markdown으로 온다. typography 플러그인 대신
+// 요소별 Tailwind 클래스를 직접 매핑한다(다크 모드 포함).
+// react-markdown은 기본적으로 raw HTML을 렌더링하지 않는다(rehype-raw 미사용) → 답변 속 HTML은 텍스트로 남는다.
+const MARKDOWN_COMPONENTS: Components = {
+  p: ({ children }) => (
+    <p className="mb-3 leading-relaxed text-slate-700 last:mb-0 dark:text-slate-200">{children}</p>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-slate-900 dark:text-slate-100">{children}</strong>
+  ),
+  ul: ({ children }) => (
+    <ul className="mb-3 ml-4 list-disc space-y-1 text-slate-700 dark:text-slate-200">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="mb-3 ml-4 list-decimal space-y-1 text-slate-700 dark:text-slate-200">
+      {children}
+    </ol>
+  ),
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  h1: ({ children }) => (
+    <h1 className="mb-2 mt-4 text-base font-bold text-slate-900 first:mt-0 dark:text-slate-100">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="mb-2 mt-4 text-sm font-bold text-slate-900 first:mt-0 dark:text-slate-100">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mb-2 mt-3 text-sm font-semibold text-slate-900 first:mt-0 dark:text-slate-100">
+      {children}
+    </h3>
+  ),
+  code: ({ children }) => (
+    <code className="rounded bg-slate-100 px-1 py-0.5 text-xs dark:bg-slate-800">{children}</code>
+  ),
+};
+
 export default function GlossaryResult({ answer }: Props) {
   const isMock = answer.is_mock === true;
   const sourceLabel = answer.source ? SOURCE_LABELS[answer.source] ?? answer.source : "응답";
@@ -61,10 +101,8 @@ export default function GlossaryResult({ answer }: Props) {
         )}
       </header>
 
-      <div className="px-5 py-4">
-        <p className="whitespace-pre-wrap leading-relaxed text-slate-800 dark:text-slate-200">
-          {body}
-        </p>
+      <div className="break-words px-5 py-4 text-slate-800 dark:text-slate-200">
+        <ReactMarkdown components={MARKDOWN_COMPONENTS}>{body}</ReactMarkdown>
       </div>
 
       {answer.citations && answer.citations.length > 0 && (
@@ -80,7 +118,7 @@ export default function GlossaryResult({ answer }: Props) {
                 className="rounded border border-slate-100 bg-slate-50 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-800/50"
               >
                 {c.excerpt && (
-                  <p className="mb-1 line-clamp-3 text-slate-700 dark:text-slate-300">
+                  <p className="mb-1 line-clamp-3 whitespace-pre-wrap break-words text-slate-700 dark:text-slate-300">
                     {c.excerpt}
                   </p>
                 )}
