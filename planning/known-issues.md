@@ -252,12 +252,13 @@
 ## KI-020 — Guardrail이 정상 용어 질문을 과잉 차단
 
 - **발견**: 2026-10-31, Phase 5a 1차 벤치마크 100건 중 49건 INTERVENED
-- **상태**: partially-resolved
+- **상태**: mitigated (2026-10-31 3차 벤치: KB 보유 용어 차단 47% → 22%, 목표 <20% 미달)
   - D (차단 메시지 분리): resolved (gtulvril25hb apply, 2026-10-31) — `blockedOutputsMessaging`을 `GUARDRAIL_BLOCKED_ANSWER`로 변경, `get-guardrail`로 정책 6종 유지 확인
   - C (차단 응답 wrapping): resolved — `rag_service`가 INTERVENED를 `source="guardrail_blocked"`, `guardrail_action="intervened"`로 반환
   - B (topic 재설계): resolved — 정의 후보 A/B/C는 효과 없음, 원인은 Classic tier 한국어 미지원(KI-023). Standard tier 전환 후 50건 테스트셋 normal topic 차단 2→1건(손절매). 100건 2차 벤치 정상 용어 질문 차단 63%→50%
   - 남은 원인: contextual grounding(Classic 0.75)이 OUTPUT 차단의 주원인으로 추정 (topic_eval normal 차단 5건 중 4건). Standard tier 신규 INPUT 오탐 2건(투자권유, 펀드 판매회사(투자매매업ㆍ중개업자) 설명해줘)
-  - A (grounding 조사): deferred — KB 검색 품질 조사 필요 (T-514)
+  - A (grounding 조사): resolved (T-514) — grounding 0.75 → 0.50. 0.75 미만 21건 중 16건은 KB 미보유 용어라 threshold로 풀 대상이 아님(원칙 2 거절). 환각 체크 8건 중 명백한 환각 0건.
+  - 잔여: Standard tier topic 오탐(투자권유·펀드 판매회사·익절·공개매수·모멘텀·적합성 원칙)과 답변 생성 편차. 측정 기준은 KB 보유/미보유 분리(`planning/metrics.md` 3차 벤치)
 - **증상**: "ROE 설명해줘", "주당순이익", "우선주", "WACC" 같은 일반 용어 질문도 차단된다.
   - 정상 용어 질문(투자용어 + KB 샘플)의 성공 건 59건 중 37건(63%) 차단. 투자용어 28건 중 21건, KB 샘플 31건 중 16건.
   - 차단된 응답은 거의 모두 `answer_len=37`, citation 0건. 37자는 면책 문구 길이와 같다.

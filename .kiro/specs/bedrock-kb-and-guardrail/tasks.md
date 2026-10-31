@@ -429,7 +429,7 @@
 - **HITL**: 필수 승인 (AWS 리소스 수정 + Bedrock 실호출)
 
 ### T-514 · grounding score 저하 원인 조사 (A)
-- [ ] KB 검색 상위 점수 0.60~0.66 원인 (청크 형식·질의 형식·임베딩) 조사
+- [x] grounding 차단 원인 조사 (T-514, 2026-10-31): 0.75 미만 21건 중 16건이 KB 미보유 용어. threshold 0.50 적용, 3차 벤치 KB 보유 용어 차단 22%
 - **DoD**: grounding 차단 원인 1개 이상 실측 근거로 확정
 - **HITL**: Allow Once
 

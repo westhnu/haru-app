@@ -67,7 +67,14 @@ CONTENT_POLICY = {
     ],
     "tierConfig": STANDARD_TIER,
 }
-GROUNDING_POLICY = {"filtersConfig": [{"type": "GROUNDING", "threshold": 0.75, "action": "BLOCK"}]}
+# T-514: 0.75 → 0.50. KB 보유 용어의 grounding 차단(0.53~0.64) 3건을 해소하면서,
+# KB 미보유 용어(대부분 0.01~0.29)는 계속 차단한다.
+# 환각 체크 8건 중 통과 1건(EV/EBITDA)은 사실 오류 없음.
+# 근거: planning/metrics/t514/grounding_scores_*.csv, hallucination_check.md
+GROUNDING_THRESHOLD = 0.50
+GROUNDING_POLICY = {
+    "filtersConfig": [{"type": "GROUNDING", "threshold": GROUNDING_THRESHOLD, "action": "BLOCK"}]
+}
 
 
 def _build_kwargs() -> dict[str, Any]:
@@ -103,7 +110,7 @@ def run(dry_run: bool = True, bedrock: Any | None = None) -> bool:
         )
         print(f"[dry-run] 생성 예정 Guardrail: {GUARDRAIL_NAME} (정책 6종, DRAFT)")
         print("  DeniedTopic x2, WordFilter x4, regexesConfig(KR_RRN 정규식)")
-        print("  Content(H/S/V HIGH), Grounding 0.75")
+        print(f"  Content(H/S/V HIGH), Grounding {GROUNDING_THRESHOLD}")
         print(f"  topic/content tier=STANDARD, crossRegion={GUARDRAIL_PROFILE_ID} (KI-023)")
         print("→ 생성 후 .env에 추가: BEDROCK_GUARDRAIL_ID=<id>, BEDROCK_GUARDRAIL_VERSION=DRAFT")
         return True

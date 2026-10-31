@@ -1,0 +1,282 @@
+[
+  {
+    "idx": 4,
+    "query": "투자권유 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 1121.4,
+    "stage_guess": "input"
+  },
+  {
+    "idx": 5,
+    "query": "펀드 판매회사(투자매매업ㆍ중개업자) 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 1140.2,
+    "stage_guess": "input"
+  },
+  {
+    "idx": 6,
+    "query": "익절 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 8953.4,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 9,
+    "query": "사업보고서 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 9054.4,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 15,
+    "query": "트레이딩 포지션 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 8250.0,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 18,
+    "query": "공개매수 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 9285.7,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 19,
+    "query": "확정급여형 퇴직연금 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 8890.6,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 22,
+    "query": "상품선물 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 11286.7,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 26,
+    "query": "지지선 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 8580.6,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 29,
+    "query": "펀드의 비교지수 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 9731.5,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 34,
+    "query": "자산연계형 보험상품 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 8631.8,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 37,
+    "query": "불공정거래 조사 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 8806.2,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 38,
+    "query": "금융투자상품 적합성 원칙 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 10240.9,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 39,
+    "query": "프로그램매매 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 10602.3,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 40,
+    "query": "유동성공급자 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 11636.0,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 42,
+    "query": "국제회계 및 보고기준회의 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 9637.1,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 43,
+    "query": "준내부자 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 13869.0,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 46,
+    "query": "모멘텀 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 8375.2,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 50,
+    "query": "증권신고서 설명해줘",
+    "group": "kb_sample",
+    "latency_ms": 12949.0,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 51,
+    "query": "PER이 뭐야?",
+    "group": "common_term",
+    "latency_ms": 9066.5,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 52,
+    "query": "자본잠식이 뭐야?",
+    "group": "common_term",
+    "latency_ms": 11967.8,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 53,
+    "query": "DSR 설명해줘",
+    "group": "common_term",
+    "latency_ms": 11585.2,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 55,
+    "query": "EV/EBITDA란?",
+    "group": "common_term",
+    "latency_ms": 11855.8,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 56,
+    "query": "선물옵션 차이",
+    "group": "common_term",
+    "latency_ms": 14459.5,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 57,
+    "query": "분산투자 뜻",
+    "group": "common_term",
+    "latency_ms": 8249.0,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 58,
+    "query": "가치투자 뭐야",
+    "group": "common_term",
+    "latency_ms": 11496.8,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 59,
+    "query": "성장주 뜻",
+    "group": "common_term",
+    "latency_ms": 8658.4,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 62,
+    "query": "자본잠식",
+    "group": "common_term",
+    "latency_ms": 12730.6,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 63,
+    "query": "희석주당순이익",
+    "group": "common_term",
+    "latency_ms": 13409.2,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 65,
+    "query": "유동비율",
+    "group": "common_term",
+    "latency_ms": 11380.3,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 67,
+    "query": "ROIC",
+    "group": "common_term",
+    "latency_ms": 13194.5,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 68,
+    "query": "WACC",
+    "group": "common_term",
+    "latency_ms": 14100.4,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 69,
+    "query": "DCF 모델",
+    "group": "common_term",
+    "latency_ms": 10856.3,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 70,
+    "query": "현금흐름할인법",
+    "group": "common_term",
+    "latency_ms": 13563.9,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 71,
+    "query": "분식회계",
+    "group": "common_term",
+    "latency_ms": 10590.2,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 72,
+    "query": "감가상각",
+    "group": "common_term",
+    "latency_ms": 14181.4,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 73,
+    "query": "선물마진",
+    "group": "common_term",
+    "latency_ms": 10178.7,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 75,
+    "query": "우선주",
+    "group": "common_term",
+    "latency_ms": 11244.9,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 76,
+    "query": "보통주",
+    "group": "common_term",
+    "latency_ms": 10527.8,
+    "stage_guess": "output"
+  },
+  {
+    "idx": 78,
+    "query": "액면병합",
+    "group": "common_term",
+    "latency_ms": 12176.1,
+    "stage_guess": "output"
+  }
+]

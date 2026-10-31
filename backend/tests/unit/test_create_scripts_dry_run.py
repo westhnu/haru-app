@@ -482,7 +482,7 @@ def test_guardrail_apply_creates_six_policies() -> None:
     assert len(kw["wordPolicyConfig"]["wordsConfig"]) == 4
     assert kw["sensitiveInformationPolicyConfig"]["regexesConfig"][0]["name"] == "KR_RRN"
     assert len(kw["contentPolicyConfig"]["filtersConfig"]) == 3
-    assert kw["contextualGroundingPolicyConfig"]["filtersConfig"][0]["threshold"] == 0.75
+    assert kw["contextualGroundingPolicyConfig"]["filtersConfig"][0]["threshold"] == 0.50  # T-514
 
 
 def test_guardrail_uses_regexes_config_for_kr_rrn_ki017() -> None:

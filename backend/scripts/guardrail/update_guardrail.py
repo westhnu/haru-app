@@ -43,6 +43,8 @@ def _print_plan(kwargs: dict[str, Any], dry_run: bool) -> None:
         f"  topic tier={topic_tier}, content tier={content_tier}, grounding tier={grounding_tier}"
     )
     print(f"  crossRegion={profile} (KI-023)")
+    g = kwargs["contextualGroundingPolicyConfig"]["filtersConfig"]
+    print(f"  grounding: {[(f['type'], f['threshold'], f['action']) for f in g]} (T-514)")
     topics = kwargs["topicPolicyConfig"]["topicsConfig"]
     print(f"  topics: {[t['name'] for t in topics]}")
 

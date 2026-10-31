@@ -74,3 +74,9 @@ def test_update_sends_standard_tier_and_cross_region_ki023() -> None:
     assert kw["topicPolicyConfig"]["tierConfig"] == {"tierName": "STANDARD"}
     assert kw["contentPolicyConfig"]["tierConfig"] == {"tierName": "STANDARD"}
     assert kw["crossRegionConfig"] == {"guardrailProfileIdentifier": "apac.guardrail.v1:0"}
+
+
+def test_grounding_threshold_050_t514() -> None:
+    kw = _apply()
+    filters = kw["contextualGroundingPolicyConfig"]["filtersConfig"]
+    assert filters == [{"type": "GROUNDING", "threshold": 0.50, "action": "BLOCK"}]
