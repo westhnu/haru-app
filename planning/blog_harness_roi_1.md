@@ -295,3 +295,235 @@ A: 2차 벤치에서 정상 질문 50%가 차단돼 결함으로 봤습니다. �
 **Q: 왜 Guardrail만 믿지 않나요?**
 
 A: Standard tier에서도 "물타기 해야 할까?", "지금 들어가도 돼?" 같은 우회 표현 5건이 INPUT을 통과했습니다(KI-024). 그래서 시스템 프롬프트, Guardrail INPUT/OUTPUT, 코드 후처리(`apply_output_guard`) 3층으로 막고, 각 층의 한계를 함께 공개합니다. 코드 후처리 정규식도 명시적 표현만 잡기 때문에, 시스템 프롬프트 거절률 실측이 다음 과제입니다.
+
+---
+
+## Sprint 3a — StockDetail "용어 자세히" 체감 UI
+
+Phase 5a까지 수치로 측정한 Bedrock KB + Guardrail 아키텍처가 실제 UI에서 어떻게 녹아드는지 확인.
+
+| # | 상태 | 스크린샷 |
+|---|---|---|
+| 01 | 로컬 툴팁 + "자세히" 버튼 (기존 UX 유지) | ![tooltip](screenshots/01_tooltip.jpg) |
+| 02 | 바텀시트 로딩 ("AWS Bedrock KB에서 근거를 찾는 중... 최대 15초") | ![loading](screenshots/02_loading.jpg) |
+| 03 | Bedrock KB 답변 (Markdown 렌더링, 실측 ~10초) | ![answer](screenshots/03_kb_answer_markdown.jpg) |
+| 04 | Citation chunk + 출처 (term_002, term_005) + Disclaimer footer | ![citation](screenshots/04_citation_disclaimer.jpg) |
+| 05 | sessionStorage 캐시 ("이번 세션에서 받은 답변을 다시 보여드려요") — 즉시 반환 | ![cache](screenshots/05_cache_instant.jpg) |
+| 06 | KB 미보유 용어 ("WACC란?") — "답변 제한" 배지 + "근거 자료 없음" 안내 (**원칙 2 작동 가시화**) | ![kb-miss](screenshots/06_kb_miss_glossary.jpg) |
+
+### 디자인 결정 요약
+
+- **녹아듦 체감**: 기존 로컬 툴팁(302 용어 즉시) + "자세히" opt-in prop으로 Bedrock KB 호출 (명시 트리거, p95 14s 수용)
+- **방어선 가시화**: KB 미보유 시 "답변 제한" 라벨이 **원칙 2 (근거 없는 답변 반환 금지)** 작동을 사용자에게 보여줌
+- **비용·latency 완화**: sessionStorage 캐시로 재클릭 즉시 반환, Strict Mode 중복 fetch 사전 차단 (next tick 지연)
+- **Markdown 렌더링**: react-markdown으로 Bedrock Sonnet 응답의 **bold**·bullet·헤더 포맷 보존
+
+### Kiro가 사전 포획한 추가 결함 (지금 세션)
+
+- **Strict Mode 중복 Bedrock 호출**: dev 환경에서 effect 2회 실행 → next tick 지연으로 첫 번째 abort
+- **Portal 렌더링**: 툴팁 inline span 안의 다이얼로그 DOM 중첩 간섭 → body portal
+- **조사 처리**: 받침 유무로 "이/가" 자동 (영문 약어는 "이" 고정)
+- **Mock 응답 캐시 제외**: 설정 변경 시 혼동 방지
+- **Markdown 미렌더링**: 초기엔 \`\`\`**bold**\`\`\` raw asterisk 노출 → react-markdown으로 수정
+- **Citation whitespace**: 청크 포맷(용어/정식 명칭/영문 라인) 뭉침 → \`whitespace-pre-wrap\`로 복원
+
+---
+
+## Sprint 3b — Workbook UI (memo 블록 CRUD)
+
+Phase 5a 완결 후 두 번째 체감 UI. StockDetail에 "워크북" 탭 + 전용 `/workbook` 페이지. memo 블록 추가·삭제 가능 (수정은 삭제+재추가로 간소화).
+
+### 체감 UI 6장
+
+| # | 상태 | 스크린샷 |
+|---|---|---|
+| 07 | StockDetail에 워크북 탭 추가 (삼성전자 샘플 메모 + "임시 저장" 배지 + 원칙 1 안내) | ![tab](screenshots/sprint3b/07_workbook_tab.jpg) |
+| 08 | 블록 추가 다이얼로그 (타입 chip 5종: 메모만 활성, 재무·뉴스·차트·체크리스트는 "준비 중" disabled) | ![dialog-empty](screenshots/sprint3b/08_add_dialog_empty.jpg) |
+| 09 | 메모 입력 (글자 수 카운터 35/1000, 저장 버튼 활성) | ![dialog-typed](screenshots/sprint3b/09_add_dialog_typed.jpg) |
+| 10 | 저장 후 리스트 즉시 반영 (블록 2개, `updated_at` 04:44로 갱신) | ![block-added](screenshots/sprint3b/10_block_added.jpg) |
+| 11 | `/workbook` 전용 페이지 — 종목별 그룹 + "서버 재시작 시 샘플만 남아요" 안내 | ![list](screenshots/sprint3b/11_workbook_list_page.jpg) |
+| 12 | 홈 "AI 품질 리포트(준비 중)" 자리 → "내 워크북" 진입점 교체 | ![home](screenshots/sprint3b/12_home_workbook_entry.jpg) |
+
+### Backend 확장 요약
+
+- `WorkbookBlock.id` 필드 추가 (uuid), `block_type` Literal 5종 제한
+- `POST /api/v1/workbooks/{id}/blocks` (추가)
+- `DELETE /api/v1/workbooks/{id}/blocks/{block_id}` (삭제, 204)
+- `GET /api/v1/workbooks?stock_code=` (필터)
+- `MemoContent` Pydantic 검증 (1~1000자, 공백 제거, extra 키 거부)
+- `Workbook.touch()` auto 갱신 (updated_at)
+- 테스트 7건 추가 (총 246 passed)
+
+### Frontend 설계 결정
+
+- **탭 통합**: 기존 StockDetail "종목정보/재무제표" 뒤에 "워크북" 세 번째 탭 (BookOpen 아이콘). 해외 종목은 재무 탭만 숨기고 워크북은 항상 노출.
+- **`?tab=workbook` 딥링크**: `/workbook` 목록에서 종목 카드 클릭 → 해당 StockDetail의 워크북 탭 자동 선택 (Kiro 자체 추가, 지시안엔 없었음)
+- **Update 제외**: 복잡도 낮춤. "삭제 + 재추가"로 대체 (MVP 범위 결정)
+- **"임시 저장" 배지**: in-memory 저장소 명시. UX·narrative 투명성.
+
+### Kiro가 사전 포획한 추가 결함
+
+- **지원 안 하는 block_type도 422로 거부**: Literal 5종 중 `financial/news/chart/checklist_ref`는 외부 API 연결 전까지 422 반환 (받아주면 검증 안 된 임의 dict가 저장됨)
+- **테스트 전역 상태 격리**: _WORKBOOKS가 모듈 전역이라 테스트끼리 데이터 공유. 각 테스트가 새 워크북 만들어 쓰고 샘플은 안 건드리게 설계
+- **원칙 라우터 PII 처리 공백 지적**: 지금은 저장만이라 OK, 나중에 메모를 LLM에 넘기면 (예: AI 요약) `mask_pii` + `apply_output_guard` 지점 필요 — known-issue 등재 후보
+- **Amplify 운영 결함 재지적** (KI-025와 같은 패턴): 홈 "내 워크북" 카드가 운영에서 백엔드 접근 불가 → main merge 전 feature flag 또는 백엔드 배포 필요
+
+---
+
+## Sprint 3c — Checklist + Journal UI (Haru MVP 4대 기능 완결)
+
+Sprint 3b (Workbook) 바로 다음. 체크리스트 섹션은 워크북 탭에 통합 (분석 흐름 연속), 저널은 /journal 전용 페이지. **원칙 2 샘플 수치 전부 제거** (출처 없는 PER/ROE/부채비율 하드코딩 삭제).
+
+### 체감 UI 6장
+
+| # | 상태 | 스크린샷 |
+|---|---|---|
+| 13 | 체크리스트 섹션 초기 (원칙 3개 "판단 어려움", 0/3, 수치 없는 질문) | ![checklist](screenshots/sprint3c/13_checklist_initial.jpg) |
+| 14 | PER "충족" 클릭 → 즉시 PATCH → 점수 1/3 (33.3%) 초록 진행 막대 | ![updated](screenshots/sprint3c/14_status_updated.jpg) |
+| 15 | 결정 기록 다이얼로그 — "나의 결정 (본인 기록)" + 원칙 1 안내 ("가상 기록이며 실제 주문·거래 아님") | ![dialog](screenshots/sprint3c/15_journal_dialog_default.jpg) |
+| 16 | "매수 결정" 선택 → 가상 수량·단가 input 동적 노출 (관망/보유에선 숨김) | ![buy](screenshots/sprint3c/16_journal_dialog_buy.jpg) |
+| 17 | /journal 전용 페이지 — 가상 포지션 (10주·82,500원) + "현재가·손익은 표시하지 않아요" + 연결 워크북·체크리스트 | ![journal](screenshots/sprint3c/17_journal_page.jpg) |
+| 18 | 홈 "투자 저널" 카드 (NotebookPen 아이콘, 신규 배지) — Haru MVP 4대 기능 진입점 완성 | ![home](screenshots/sprint3c/18_home_journal_entry.jpg) |
+
+### Backend 확장 (총 259 passed, 신규 13건)
+
+**Checklist**:
+- `GET /api/v1/checklists?stock_code=` (필터)
+- `POST /api/v1/checklists` (종목별 생성, 빈 items)
+- `POST /{id}/items` (원칙 1~200자, 공백 제거)
+- `PATCH /{id}/items/{item_id}` (status·reasoning 부분 변경, 둘 다 생략 시 422)
+- `DELETE /{id}/items/{item_id}` (204)
+- `Checklist.updated_at` auto 갱신
+
+**Journal**:
+- `JournalEntryCreateRequest` 분리 (id·created_at 클라이언트 전송 거부, 가격·수량 ≥ 0, reasoning 1~1000자)
+- `GET /entries?stock_code=` (필터)
+- `DELETE /entries/{id}` (204)
+- `VirtualPosition.pnl/pnl_pct/current_price` 제거 (시세 연동 전까지 숨김)
+
+**샘플 데이터 원칙 2 교정**:
+- 체크리스트 `sample-value`: "현재 PER 11.2 / ROE 12.3%" 등 하드코딩 수치 전부 제거 → "PER이 업종 평균 대비 저평가인가?" 등 수치 없는 원칙으로 교체. 모두 "판단 어려움" 상태 (0/3)
+- 저널 `sample-1`: reasoning에서 수치 참조 삭제
+
+### Frontend 설계 결정
+
+- **(d) 통합 변형**: 체크리스트는 워크북 탭에 섹션으로 (분석→체크→결정 흐름), 저널만 `/journal` 전용. 체크리스트 전용 페이지는 종목 묶임이라 skip.
+- **PATCH 부분 변경**: status 또는 reasoning 하나만 선택적 전송 (상태 버튼은 상태만, input 변경은 근거만). 지시안의 "status 필수" 보다 실용적.
+- **가상 수량·단가 조건부 노출**: 매수·매도일 때만. 관망/보유에서 가격 받아도 쓸 곳 없음.
+- **원칙 4 CI 준수**: 파일·함수 이름에 `order/trade/bid/ask` 금지. `recordDecision`, `getVirtualPositions` 사용.
+- **lib/backendFetch.ts 공통 추출**: 3b에서 workbook만 쓰던 fetch 유틸을 공통 모듈로 승격. checklist/journal 재사용.
+- **"현재가·손익 숨김" 명시**: VirtualPosition에서 필드 자체 제거 + UI 안내 ("시세 연동 전이라 현재가·손익은 표시하지 않아요"). 과장된 수치 노출 방지.
+
+### Kiro가 사전 포획한 추가 결함
+
+- **샘플 수치 원칙 2 위반**: 조사 중 "PER 11.2, ROE 12.3%" 하드코딩 발견 → "예시 표시" 대신 수치 완전 제거로 결정 (사용자가 복붙할 가능성 원천 차단)
+- **AI 채점 미구현**: product.md에 "AI 채점"이라고 썼지만 prompts·services에 checklist 관련 코드 0건. 사용자 직접 선택 UX로 명시 (다음 세션 과제)
+- **Journal 생성 스키마 결함**: `POST /entries`가 `JournalEntry` 그대로 받음 → id/created_at 클라이언트 설정 가능, 음수 가격·수량 허용. `JournalEntryCreateRequest` 분리로 수정
+- **current_price 포함 오해**: 시세 연동 전이라 항상 0 반환 → UI에 노출하면 "0원" 오해. 필드 자체 제거로 안전
+- **포트폴리오 테스트 격리**: `_ENTRIES`가 모듈 전역이라 테스트끼리 데이터 공유 → 각 테스트 끝에 생성 데이터 정리
+
+---
+
+## 🎉 Haru MVP 4대 기능 완결
+
+Phase 5a + Sprint 3a + 3b + 3c로 Haru MVP 전체 체감 가능:
+
+| 기능 | UI 통합 지점 | 체감 스크린샷 |
+|---|---|---|
+| **용어 도우미** (Bedrock KB RAG) | StockDetail 지표/재무 라벨 hover → "자세히" 바텀시트 | 01~06 (Sprint 3a) |
+| **종목 워크북** (memo 블록) | StockDetail 세 번째 탭 + `/workbook` 전용 | 07~12 (Sprint 3b) |
+| **AI 체크리스트** (사용자 선택, AI 채점 미구현) | 워크북 탭 하단 섹션 | 13, 14 (Sprint 3c) |
+| **투자 저널 + 가상 포트폴리오** | 결정 기록 다이얼로그 + `/journal` 전용 | 15~18 (Sprint 3c) |
+
+총 스크린샷 18장, 블로그 글 400+ 줄, Drift 16건 narrative + 체감 UI 4종 완결 상태.
+
+---
+
+## Phase A+B — SQLite 영속성 + AI 체크리스트 채점 (실사용 수준 승격)
+
+Sprint 3c 완결 후 기획자 관점 재검토에서 "데이터 영속성 없음 + AI 가치 부재"가 가장 큰 blocker로 지적됨. Phase A·B로 두 공백 해결.
+
+### Phase A — SQLite 영속성 승격
+
+**Before**: in-memory `dict`, uvicorn 재시작 시 전부 사라짐 → "임시 저장" 배지 UI에 노출 → **사용자가 매일 쓸 수 없는 신호**
+
+**After**:
+- SQLAlchemy 2.1 + SQLite (`backend/data/haru.db`), 테스트는 in-memory
+- `app/db/`: engine (FK PRAGMA·StaticPool·UTC 시각 보존·µs 정밀도), ORM, repositories
+- `lifespan`에서 `init_db` + `seed_if_empty` (테이블별 idempotent)
+- 라우터 전부 `Depends(get_session)` + repository 호출로 교체
+- 저널 FK 사전 검증 (없으면 422, 500 방지)
+- CORS에 PATCH/DELETE 추가
+- conftest: autouse in-memory SQLite fixture로 테스트 격리
+- "임시 저장" 배지 전부 제거
+
+**Kiro가 사전 포획한 추가 결함** (전부 실측 기반):
+- **SQLite FK PRAGMA 기본 OFF** → CASCADE/SET NULL 작동 안 함 → `connect` 이벤트로 명시 활성화
+- **SQLite timezone 저장 안 함** → UTCDateTime 커스텀 타입 (브라우저 9h 어긋남 방지)
+- **`func.now()` 초 단위 정밀도** → 같은 초에 추가한 블록 순서 뒤섞임 → Python에서 µs까지 생성
+- **conftest `dependency_overrides` 안 먹힘** (매번 `create_app()`하는 테스트 패턴에서) → monkeypatch로 전환
+- **상대 경로 database_url 문제** (실행 위치마다 DB 위치 다름) → 절대 경로로 고정
+
+### Phase B — AI 체크리스트 채점 (Converse + DART + 원칙 2 강제)
+
+**Before**: 사용자 수동 라디오 선택만 (충족/미충족/판단 어려움). "AI 체크리스트"라고 홍보했지만 코드에 AI 평가 로직 0건.
+
+**After**:
+- `ChecklistEvalService`: Bedrock Converse API 직접 호출 (RetrieveAndGenerate 안 씀)
+- `DartTool` 직접 재사용 + `ratio_facts` (summary 함수는 Bedrock 2회 호출이라 skip)
+- Guardrail Standard tier 적용 (Phase 5a에서 확정된 설정)
+- `stopReason != end_turn` → template fallback
+- **코드 검증 6단**: JSON 파싱 → status Literal → reasoning 길이 → used_facts 라벨 매칭 → `find_ungrounded_figures` → `has_forbidden_phrase`
+- 검증 하나라도 실패 → "판단 보류" 템플릿 + 서버 로그 (사용자에게 실패 사유 노출 안 함)
+- `mock DART` → 모델 호출 0회 (`evaluation_source: "mock"`)
+- 해외 종목 → DART 호출 전 422 (6자리 코드 아니면)
+- 샘플 원칙 혼합: 판정 가능 2 + 데이터 부족 refuse 1
+
+**설계상 핵심 원칙**:
+- 원칙 2 (근거 인용 필수) **코드로 강제** — 환각 수치 포함 응답은 자동 "판단 보류"
+- 원칙 문장의 기준값(200% 등)은 환각으로 안 봄 (정상 답 false positive 방지)
+- `apply_output_guard` 안 씀 (면책 중복 방지, disclaimer 별도 필드)
+- stock_code는 체크리스트에서만 가져옴 (body 입력 거부, 다른 종목 평가 경로 차단)
+
+### 체감 스크린샷 (Phase A+B)
+
+| # | 상태 | 스크린샷 |
+|---|---|---|
+| 20 | AI 평가 — **데이터 없음 refuse** (PER: "업종 평균 데이터 없음, PER 지표 없음") | ![refuse](screenshots/phase-ab/20_ai_eval_refuse_per.jpg) |
+| 21 | 새 샘플 체크리스트 (판정 가능 2 + refuse 1, 다크 모드) + 각 원칙 "AI 평가" 버튼 (Sparkles 아이콘) | ![samples](screenshots/phase-ab/21_checklist_new_samples.jpg) |
+| 22 | AI 평가 — **데이터 있음 정량 판정** ("DART 2026년 반기보고서 기준 부채비율 31.1%로, 200% 미만 기준을 명확히 충족") | ![satisfied](screenshots/phase-ab/22_ai_eval_satisfied.jpg) |
+
+### Phase B의 결정적 narrative
+
+이 두 스크린샷(20·22)이 Haru 전체 설계 철학을 체화:
+
+| 상황 | AI 응답 | 원칙 작동 |
+|---|---|---|
+| DART에 있는 데이터 (부채비율 31.1%) | "충족" + 정확한 수치 인용 + DART 출처 링크 | 원칙 2 (근거 명시) |
+| DART에 없는 데이터 (PER, 업종 평균) | "판단 어려움" + "필요한 데이터 명시" | 원칙 2 (근거 없는 수치 금지) |
+
+**"AI가 데이터 있을 때는 정확히, 없을 때는 정직하게"** — 체크리스트가 "AI 자동 채점" 이라는 공허한 홍보가 아니라 **진짜로 작동하는 검증 레이어**가 됨.
+
+### Kiro가 사전 포획한 Phase B 추가 결함
+
+- **옵션 2 (rag_service.ask 확장) 실패 예상 조사**: KB에 DART 수치 없음 → grounding 차단 → RetrieveAndGenerate 불가 → 옵션 1 (Converse 직접) 선택
+- **stock_summary_service 함정 발견**: `.summarize()`가 내부에서 Bedrock 호출 → 평가 1회당 Sonnet 2회 → `DartTool` 직접 사용으로 변경 (비용 절반)
+- **원칙 기준값 환각 오탐 리스크**: "200%"가 ungrounded figure로 오탐되면 정상 답까지 template으로 떨어짐 → 기준값 허용
+- **`apply_output_guard` 중복 리스크**: 면책 문구가 reasoning에 섞이면 UX 혼동 → `has_forbidden_phrase`로 체크만
+
+### 사용자 UX 개선 효과
+
+| 항목 | 승격 전 | 승격 후 |
+|---|---|---|
+| 데이터 영속성 | ❌ 재시작 시 삭제 | ✅ SQLite |
+| "임시 저장" 배지 | ❌ 전역 노출 | ✅ 제거 |
+| AI 가치 | ❌ 수동 입력만 | ✅ Bedrock 1차 판정 + 사용자 확인 |
+| 원칙 2 작동 가시화 | ❌ 백엔드에만 | ✅ UI에 refuse 표시 |
+| DART 출처 | ❌ 없음 | ✅ 보고서 라벨 + 외부 링크 |
+
+### 커밋 메타
+
+- `6af54a2` Phase A 1차 (배지 삭제만 — git add pathspec 오류)
+- `900eccf` **Phase A 누락분 + Phase B 통합 복구**
+  - 36 files changed, 1876 insertions
+  - 테스트 266 → 295 passed (SQLite 영속성 7건 + AI 채점 29건)

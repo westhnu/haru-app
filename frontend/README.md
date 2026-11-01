@@ -3,7 +3,7 @@
 개인 투자자가 본인 증권사에서 직접 결정할 때 필요한 **"무엇에 왜 투자할지"의 정보**를
 하루 두 번(아침·저녁) 자동 브리핑으로 받아보는 서비스의 PoC.
 
-> 메인 LLM(GPT)이 브리핑을 생성하면, 보조 LLM(Gemini)이 hallucination·원본 불일치·
+> 메인 LLM(gpt-5-mini)이 브리핑을 생성하면, 다른 모델 family의 검증 LLM(gpt-4o-mini)이 hallucination·원본 불일치·
 > 투자권유 표현을 **교차검증(LLM-as-judge)** 한다. 데이터 결측 시 "없음"을 명시하고
 > disclaimer를 자동 노출해 금융 AI의 평가 책임을 시스템이 지도록 설계했다.
 
@@ -16,7 +16,7 @@
 
 ```
 [스케줄러] ──(매일 08:00 / 17:00 KST)──▶ POST /api/brief/generate?type=morning|evening
-                                              │  (Tavily 수집 → GPT 생성 → Gemini 교차검증)
+                                              │  (Tavily 수집 → gpt-5-mini 생성 → gpt-4o-mini 교차검증)
                                               ▼
                                         저장 (lib/store.ts)
                                               ▲
@@ -79,10 +79,9 @@ curl -X POST "http://localhost:3000/api/brief/generate?type=evening"
 | 변수 | 용도 | 없을 때 |
 |---|---|---|
 | `TAVILY_API_KEY` | 이슈 수집 검색 | 모킹 소스 |
-| `OPENAI_API_KEY` | 메인 LLM(생성) | Gemini fallback → 모킹 |
+| `OPENAI_API_KEY` | 메인 LLM(생성)·교차검증 | 모킹 브리핑, 교차검증 생략 |
 | `OPENAI_MODEL` | 모델 ID (기본 `gpt-5-mini`) | 기본값 |
-| `GOOGLE_API_KEY` 또는 `GEMINI_API_KEY` | 보조 LLM(검증·fallback) | 교차검증 생략 |
-| `GEMINI_MODEL` | 모델 ID (기본 `gemini-2.5-flash`) | 기본값 |
+| `VERIFY_MODEL` | 교차검증 모델 ID (기본 `gpt-4o-mini`) | 기본값 |
 | `DART_API_KEY` | 종목 재무제표(DART) | 재무 데모 |
 | `KIS_APP_KEY_PROD` / `KIS_APP_SECRET_PROD` | KIS 실시간 시세·지표·수급 | 시세·지표·수급 데모 |
 | `CRON_SECRET` | 생성 엔드포인트 보호 토큰 | 미설정 시 누구나 호출 가능(운영 시 필수) |
@@ -90,7 +89,8 @@ curl -X POST "http://localhost:3000/api/brief/generate?type=evening"
 
 > ⚠️ 실제 키는 `.env.local`(gitignore됨)에만 두세요. `.env.example`은 빈 템플릿으로
 > 유지해야 GitHub 노출 사고를 막을 수 있습니다.
-> 모델 ID(`gpt-5-mini` / `gemini-2.5-flash`)는 공식 문서에서 확인 후 갱신하세요.
+> 모델 ID(`gpt-5-mini` / `gpt-4o-mini`)는 공식 문서에서 확인 후 갱신하세요.
+> 2026-06-09 `a70a3cf`에서 Gemini 교차검증을 단일 vendor(OpenAI) 모델 family 분리로 교체했다 (KI-025).
 
 ---
 

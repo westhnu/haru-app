@@ -1,25 +1,26 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import GlossarySearch from "@/components/GlossarySearch";
 
 export const metadata: Metadata = {
   title: "용어 사전 — Haru",
-  description: "투자 용어를 AI가 설명합니다. Bedrock Knowledge Base 기반.",
+  description: "투자 용어를 AI가 설명해요. Bedrock Knowledge Base 기반.",
 };
 
 const SUGGESTED_TERMS = ["PER", "ROE", "EPS", "PBR", "ROA"];
 
-export default function GlossaryPage() {
+export default function GlossaryPage({
+  searchParams,
+}: {
+  searchParams: { q?: string | string[] };
+}) {
+  const q = typeof searchParams.q === "string" ? searchParams.q.slice(0, 200) : undefined;
   return (
-    // 하단 고정 BottomNav에 가리지 않도록 아래 여백을 둔다.
-    <main className="container mx-auto max-w-3xl px-4 pb-28 pt-8">
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">용어 사전</h1>
-        <p className="text-slate-600 dark:text-slate-400">
-          투자 용어를 궁금한 대로 물어보세요. AWS Bedrock Knowledge Base에 색인된 302개 용어에서
-          근거를 찾아 답변합니다.
-        </p>
-      </header>
-      <GlossarySearch suggestedTerms={SUGGESTED_TERMS} />
-    </main>
+    // PageShell이 BottomNav 여백(pb-nav)과 모바일 우선 폭을 맡는다 (Phase F2).
+    <PageShell>
+      <PageHeader title="용어 사전" subtitle="용어를 검색해 보세요. AWS Bedrock Knowledge Base에 색인된 용어 302개에서 근거를 찾아 답해요." />
+      <GlossarySearch suggestedTerms={SUGGESTED_TERMS} initialQuery={q} />
+    </PageShell>
   );
 }

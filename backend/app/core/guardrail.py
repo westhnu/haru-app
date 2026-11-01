@@ -7,13 +7,15 @@
 import re
 
 DISCLAIMER = "본 정보는 투자 판단의 보조이며, 최종 결정은 사용자에게 있습니다."
-# 기획안 §13.5 위반 시 표준 대체 응답
-SAFE_REPLACEMENT = "본 서비스는 종목 추천을 제공하지 않습니다. 판단은 본인에게 있습니다."
+# 기획안 §13.5 위반 시 표준 대체 응답 (말투 가이드 G-4: 명사형)
+SAFE_REPLACEMENT = "종목 추천 미제공. 최종 판단은 본인 책임."
+# AI 평가 화면 안내 (G-4). 원칙 5의 DISCLAIMER를 대신하지 않는다 — 함께 쓴다.
+AI_EVAL_NOTICE = "AI 평가는 참고용. 최종 판단은 본인 책임."
 # 결정 1: 종목·재무 질의에서 KB 근거를 못 찾았을 때의 고정 응답
-NO_EVIDENCE_STOCK_ANSWER = (
-    "확인된 자료가 없습니다. DART 공시 데이터가 아직 인덱싱되지 않았을 수 있습니다."
-)
+NO_EVIDENCE_STOCK_ANSWER = "확인된 자료 없음. DART 공시 데이터 미색인 가능성."
 # KI-020: Bedrock Guardrail이 출력을 막았을 때의 안내. 면책 문구와 달라야 한다.
+# 말투 가이드(F1) 미적용: AWS Guardrail 리소스의 blockedOutputsMessaging과 같은 값이어야 해서,
+# 바꾸려면 update_guardrail.py --apply(AWS 변경, 사람 승인)를 함께 해야 한다.
 # 같으면 enforce_disclaimer가 중복 제거하면서 본문이 비고 사용자는 면책 문구만 본다.
 # Guardrail 리소스의 blockedOutputsMessaging도 이 상수로 설정한다 (단일 소스).
 GUARDRAIL_BLOCKED_ANSWER = (
@@ -83,3 +85,73 @@ def mask_pii(text: str) -> str:
     masked = _CARD.sub("[카드번호]", masked)
     masked = _MOBILE.sub("[전화번호]", masked)
     return _ACCOUNT.sub(_mask_account, masked)
+
+
+# --- 말투 가이드 (Phase F1.5, planning/tone_guide.md) -------------------------------------
+# L1 엄격: AI 생성 텍스트(평가 reasoning·KB 답변 fallback). 명사형·단문 — 환각·사족 방지.
+# L2 서비스: 사용자 안내·빈 상태·에러·메시지 템플릿. 자연스러운 평서문·제안형(~요, ~세요) 허용.
+# L3 액션: 버튼·탭·상태 라벨·배지. 명사·짧은 동사 — L1 규칙으로 검사한다.
+# 원칙 5 면책 문구(DISCLAIMER)·AI_EVAL_NOTICE·SAFE_REPLACEMENT는 고정 문구라 검사 전에 걷어낸다.
+TONE_WHITELIST: tuple[str, ...] = (DISCLAIMER, AI_EVAL_NOTICE, SAFE_REPLACEMENT)
+# "필요"·"개요"·"중요"처럼 '요'로 끝나는 명사를 오탐하지 않도록 어미를 나열한다.
+_POLITE_ENDING = re.compile(
+    r"(해요|에요|예요|이야|어요|아요|여요|워요|네요|군요|죠|세요|까요|게요|래요|대요|"
+    r"보여요|니다|바랍니다)$"
+)
+_PASSIVE = re.compile(r"되지\s*않았|처리되었|확인되었|판단되지")
+_VAGUE = re.compile(r"아직|조금|곧|거의|다소|대략|약간")
+_ADDRESS = re.compile(r"당신|여러분|사용자님")
+_L1_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("passive", _PASSIVE),
+    ("vague", _VAGUE),
+    ("address", _ADDRESS),
+    ("over_polite", re.compile(r"주세요|바랍니다")),
+)
+# L2: "~해 주세요"는 자연스러운 안내라 허용하고, "~바랍니다"·"~주시면 감사"만 과공손으로 본다.
+_L2_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("over_polite", re.compile(r"바랍니다|주시면\s*감사")),
+    ("passive", _PASSIVE),
+    ("vague", _VAGUE),
+    ("address", _ADDRESS),
+    ("self_reference", re.compile(r"저희\s*Haru|Haru는\s+")),
+    # "투자!"처럼 단어 안의 '자!'를 오탐하지 않게 앞이 공백·문두일 때만 본다.
+    ("exclamation", re.compile(r"(?:^|[\s\"'(])(?:자|오|좋아요)!")),
+)
+_SENTENCE_SPLIT = re.compile(r"[.!?。\n]+")
+_TRAILING = " \t\"'”’)]»"
+
+
+def _strip_whitelist(text: str) -> str:
+    for fixed in TONE_WHITELIST:
+        text = text.replace(fixed, " ")
+    return text
+
+
+def find_tone_violations_l1(text: str) -> list[str]:
+    """L1(엄격) 위반 종류 목록. 빈 목록이면 통과. (예: ["ending:보여요", "vague:아직"])"""
+    text = _strip_whitelist(text)
+    found: list[str] = []
+    for sentence in _SENTENCE_SPLIT.split(text):
+        m = _POLITE_ENDING.search(sentence.rstrip(_TRAILING))
+        if m:
+            found.append(f"ending:{m.group(1)}")
+    for kind, pattern in _L1_PATTERNS:
+        found += [f"{kind}:{m.group(0)}" for m in pattern.finditer(text)]
+    return found
+
+
+def has_tone_violation_l1(text: str) -> bool:
+    return bool(find_tone_violations_l1(text))
+
+
+def find_tone_violations_l2(text: str) -> list[str]:
+    """L2(서비스) 위반 종류 목록. 종결 어미(~요·~세요)는 허용한다."""
+    text = _strip_whitelist(text)
+    found: list[str] = []
+    for kind, pattern in _L2_PATTERNS:
+        found += [f"{kind}:{m.group(0).strip()}" for m in pattern.finditer(text)]
+    return found
+
+
+def has_tone_violation_l2(text: str) -> bool:
+    return bool(find_tone_violations_l2(text))

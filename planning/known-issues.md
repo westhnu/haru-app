@@ -351,3 +351,21 @@
   - 자체 intent 분류기(small LM) 레이어 추가.
   - 우회 질문 세트로 시스템 프롬프트 거절률을 실측한다(1차 방어 수치화).
 - **관련**: KI-020 (과잉 차단, Standard 전환으로 normal topic 차단 2→1건), KI-023 (tier 전환 전제)
+## KI-025 — README의 "Gemini 교차검증" 선언이 실제 코드와 불일치
+- **발견**: 2026-10-31, `frontend/.env.example` 작성 중 README 환경변수 표와 코드 대조
+- **상태**: resolved-by-doc-correction (README 2종 수정). 비-README 문서·코드 주석 잔재는 open
+- **증상**: 루트 README와 `frontend/README.md`가 "GPT 생성 → Gemini 2.5-flash 교차검증", `GOOGLE_API_KEY`/`GEMINI_API_KEY`/`GEMINI_MODEL` 환경변수, "Gemini fallback"을 안내했다.
+- **실측 (grep·read-only)**:
+  - `frontend/app·components·lib·scripts`에서 GEMINI/GOOGLE_API/`@google` 참조 0건, `package.json`에 Google/Gemini SDK 0건, `next.config.mjs` env 블록에도 없음.
+  - 교차검증은 실제로 작동한다. `lib/pipeline.ts` 3단계가 live 모드에서 `verifyBriefWithGPT`(`lib/llm.ts`)를 호출하고, 모델은 `VERIFY_MODEL`(기본 `gpt-4o-mini`), 메인은 `OPENAI_MODEL`(기본 `gpt-5-mini`). 결과는 `VerifyBadge`로 화면에 표시된다.
+  - 메인 생성 실패 시 vendor fallback은 없고 retry × 2 후 모킹 브리핑으로 내려간다(`meta.fallbackUsed`는 retry 발생 여부로 재정의됨).
+- **원인**: `a70a3cf`(2026-06-09, "single-vendor LLM with retry + model-family judge (replaces Gemini)")에서 코드를 바꿨지만 README 두 곳은 갱신하지 않았다. `docs/PORTFOLIO_TECH_FACTS.md`에는 교체 이유가 이미 적혀 있었다.
+- **판정**: (b) 다른 모델로 교차검증 — 교차검증 자체는 동작, 검증 모델 설명만 틀림.
+- **수정 (README만)**:
+  - 루트 `README.md`: 소개 문구, 핵심 기능 표, 런타임 흐름 다이어그램, 기술 스택, 로컬 실행 주석의 Gemini → gpt-4o-mini(단일 vendor + 모델 family 분리)
+  - `frontend/README.md`: 소개·다이어그램 문구, 환경변수 표(GOOGLE/GEMINI 2행 삭제, `VERIFY_MODEL` 추가, `OPENAI_API_KEY` "없을 때" 동작 정정), 모델 ID 안내
+- **남은 잔재 (이번 범위 밖, README만 수정 지시)**:
+  - `docs/PORTFOLIO_HANDOVER.md` 156·181·203행: Gemini 2.5-flash 교차검증 서술
+  - `frontend/components/VerifyBadge.tsx` 4행 주석 "Gemini 교차검증 결과 배지" — `/brief` 화면 컴포넌트라 KI-018 범위, 주석만 틀림(동작 영향 없음)
+- **교훈**: 아키텍처를 바꾸는 커밋은 README·포트폴리오 문서의 선언까지 같은 커밋에서 갱신한다. 문서 속 환경변수 표는 코드의 `process.env` 목록과 대조하면 drift가 바로 드러난다.
+- **관련**: KI-018(`/brief` 경로 Guardrail 미적용), `frontend/.env.example`(`ba9574e`)
