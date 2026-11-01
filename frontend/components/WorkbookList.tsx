@@ -44,8 +44,8 @@ export default function WorkbookList() {
   if (load.kind === "loading") {
     return (
       <div className="flex items-center justify-center gap-2 py-16">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-        <span className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">
+        <Loader2 className="h-5 w-5 animate-spin text-fg-subtle" />
+        <span className="text-sm font-semibold text-fg-subtle">
           워크북을 불러오는 중이에요
         </span>
       </div>
@@ -54,12 +54,12 @@ export default function WorkbookList() {
 
   if (load.kind === "error") {
     return (
-      <div className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <p className="text-[13px] font-semibold text-red-600 dark:text-red-400">{load.message}</p>
+      <div className="rounded-[24px] border border-border bg-surface p-5">
+        <p className="text-sm font-semibold text-danger">{load.message}</p>
         <button
           type="button"
           onClick={refresh}
-          className="mt-3 rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-[12px] font-bold text-slate-600 dark:text-slate-300"
+          className="mt-3 rounded-full bg-surface-muted px-4 py-2 text-xs font-bold text-fg-muted"
         >
           다시 시도
         </button>
@@ -69,7 +69,7 @@ export default function WorkbookList() {
 
   if (groups.length === 0) {
     return (
-      <p className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-10 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
+      <p className="rounded-[24px] border border-border bg-surface px-5 py-10 text-center text-sm font-semibold text-fg-subtle">
         만든 워크북이 없어요. 종목 상세의 &quot;워크북&quot; 탭에서 만들어 보세요.
       </p>
     );
@@ -80,11 +80,11 @@ export default function WorkbookList() {
       {groups.map((g) => (
         <section
           key={g.code}
-          className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+          className="rounded-[24px] border border-border bg-surface"
         >
-          <p className="border-b border-slate-100 dark:border-slate-800 px-5 py-3 text-[13px] font-black text-slate-900 dark:text-slate-100">
+          <p className="border-b border-border-subtle px-5 py-3 text-sm font-black text-fg">
             {g.name}
-            <span className="ml-1.5 text-[11px] font-bold tabular-nums text-slate-400 dark:text-slate-500">
+            <span className="ml-1.5 text-xs font-bold tabular-nums text-fg-subtle">
               {g.code}
             </span>
           </p>
@@ -94,22 +94,22 @@ export default function WorkbookList() {
               <Link
                 key={wb.id}
                 href={`/stock/${encodeURIComponent(wb.stock_code)}?name=${encodeURIComponent(wb.stock_name)}&tab=workbook`}
-                className="flex items-center gap-3 px-5 py-3.5 transition hover:bg-slate-50 dark:hover:bg-slate-800/50 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-slate-100 dark:border-slate-800"
+                className="flex items-center gap-3 px-5 py-3.5 transition hover:bg-surface-muted [&:not(:last-child)]:border-b [&:not(:last-child)]:border-border-subtle"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-bold text-slate-900 dark:text-slate-100">
+                  <p className="truncate text-sm font-bold text-fg">
                     {wb.title}
                   </p>
                   {firstMemo && (
-                    <p className="mt-0.5 truncate text-[12px] font-medium text-slate-500 dark:text-slate-400">
+                    <p className="mt-0.5 truncate text-xs font-medium text-fg-muted">
                       {firstMemo}
                     </p>
                   )}
-                  <p className="mt-0.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                  <p className="mt-0.5 text-xs font-semibold text-fg-subtle">
                     블록 {wb.blocks.length}개 · 수정 {formatDateTime(wb.updated_at)}
                   </p>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-fg-subtle" />
               </Link>
             );
           })}

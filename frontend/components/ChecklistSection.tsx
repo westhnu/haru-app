@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ListChecks, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import AiEvaluationDialog from "@/components/AiEvaluationDialog";
+import { STATUS_SOLID } from "@/components/ui/Button";
 import {
   PRINCIPLE_MAX_LENGTH,
   REASONING_MAX_LENGTH,
@@ -20,11 +21,6 @@ import {
   type ItemStatus,
 } from "@/lib/checklist";
 
-const STATUS_ACTIVE: Record<ItemStatus, string> = {
-  satisfied: "bg-emerald-600 text-white dark:bg-emerald-500",
-  unsatisfied: "bg-rose-600 text-white dark:bg-rose-500",
-  uncertain: "bg-slate-700 text-white dark:bg-slate-300 dark:text-slate-900",
-};
 
 type Load =
   | { kind: "loading" }
@@ -143,19 +139,19 @@ export default function ChecklistSection({
   };
 
   const card =
-    "rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5";
+    "rounded-[24px] border border-border bg-surface p-5";
 
   return (
     <section className={card} aria-label="체크리스트">
       <div className="flex items-center gap-2">
-        <ListChecks className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-        <p className="text-[15px] font-black text-slate-900 dark:text-slate-100">체크리스트</p>
+        <ListChecks className="h-4 w-4 text-fg-muted" />
+        <p className="text-base font-black text-fg">체크리스트</p>
       </div>
 
       {load.kind === "loading" && (
         <div className="flex items-center justify-center gap-2 py-8">
-          <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-          <span className="text-[13px] font-semibold text-slate-400 dark:text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin text-fg-subtle" />
+          <span className="text-sm font-semibold text-fg-subtle">
             불러오는 중이에요
           </span>
         </div>
@@ -163,14 +159,14 @@ export default function ChecklistSection({
 
       {load.kind === "error" && (
         <div className="mt-3">
-          <p className="text-[13px] font-semibold text-red-600 dark:text-red-400">{load.message}</p>
+          <p className="text-sm font-semibold text-danger">{load.message}</p>
           <button
             type="button"
             onClick={() => {
               setLoad({ kind: "loading" });
               refresh();
             }}
-            className="mt-2 rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-[12px] font-bold text-slate-600 dark:text-slate-300"
+            className="mt-2 rounded-full bg-surface-muted px-4 py-2 text-xs font-bold text-fg-muted"
           >
             다시 시도
           </button>
@@ -179,14 +175,14 @@ export default function ChecklistSection({
 
       {load.kind === "ready" && !checklist && (
         <div className="py-6 text-center">
-          <p className="text-[13px] font-semibold text-slate-500 dark:text-slate-400">
+          <p className="text-sm font-semibold text-fg-muted">
             체크리스트가 비어 있어요. 본인의 투자 원칙으로 이 종목을 점검해 보세요.
           </p>
           <button
             type="button"
             onClick={onCreate}
             disabled={busy === "create"}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-900 dark:bg-slate-100 px-4 py-2 text-[13px] font-bold text-white dark:text-slate-900 disabled:opacity-50"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-fg px-4 py-2 text-sm font-bold text-surface disabled:opacity-50"
           >
             {busy === "create" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             체크리스트 만들기
@@ -199,15 +195,15 @@ export default function ChecklistSection({
           <ScoreLine items={checklist.items} />
 
           {checklist.items.length === 0 ? (
-            <p className="mt-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 px-4 py-5 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
+            <p className="mt-3 rounded-2xl bg-surface-muted px-4 py-5 text-center text-sm font-semibold text-fg-subtle">
               원칙이 없어요. 아래에서 첫 원칙을 추가해 보세요.
             </p>
           ) : (
             <ul className="mt-3 space-y-2">
               {checklist.items.map((item) => (
-                <li key={item.id} className="rounded-2xl bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
+                <li key={item.id} className="rounded-2xl bg-surface-muted px-4 py-3">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="break-words text-[14px] font-bold leading-snug text-slate-900 dark:text-slate-100">
+                    <p className="break-words text-sm font-bold leading-snug text-fg">
                       {item.principle}
                     </p>
                     <button
@@ -215,7 +211,7 @@ export default function ChecklistSection({
                       onClick={() => onDelete(checklist, item)}
                       disabled={busy === item.id}
                       aria-label="원칙 삭제"
-                      className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-200 hover:text-red-600 dark:hover:bg-slate-700 disabled:opacity-50"
+                      className="shrink-0 rounded-full p-1 text-fg-subtle transition hover:bg-border hover:text-danger disabled:opacity-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -233,22 +229,22 @@ export default function ChecklistSection({
                         aria-checked={item.status === s}
                         onClick={() => onStatus(checklist, item, s)}
                         disabled={busy === item.id}
-                        className={`rounded-full px-3 py-1 text-[12px] font-bold transition disabled:opacity-60 ${
+                        className={`rounded-full px-3 py-1 text-xs font-bold transition disabled:opacity-60 ${
                           item.status === s
-                            ? STATUS_ACTIVE[s]
-                            : "bg-white text-slate-500 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                            ? STATUS_SOLID[s]
+                            : "bg-surface text-fg-muted hover:bg-border-subtle"
                         }`}
                       >
                         {STATUS_LABELS[s]}
                       </button>
                     ))}
-                    {busy === item.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+                    {busy === item.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-fg-subtle" />}
                     {aiEnabled && (
                       <button
                         type="button"
                         onClick={() => setEvalTarget(item)}
                         disabled={busy === item.id}
-                        className="ml-auto inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[12px] font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                        className="ml-auto inline-flex items-center gap-1 rounded-full bg-brand/10 px-2.5 py-1 text-xs font-bold text-brand transition hover:bg-brand/15 disabled:opacity-60"
                       >
                         <Sparkles className="h-3.5 w-3.5" />
                         AI 평가
@@ -262,7 +258,7 @@ export default function ChecklistSection({
                     onBlur={(e) => onReasoning(checklist, item, e.target.value)}
                     maxLength={REASONING_MAX_LENGTH}
                     placeholder="판단 근거 (예: 사업보고서 2025 확인)"
-                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-[13px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-2 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-brand"
                   />
                 </li>
               ))}
@@ -276,12 +272,12 @@ export default function ChecklistSection({
               maxLength={PRINCIPLE_MAX_LENGTH}
               disabled={busy === "add"}
               placeholder="원칙 추가 (예: 영업이익이 3년 연속 늘었는가?)"
-              className="min-w-0 flex-1 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2 text-[13px] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-w-0 flex-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-brand"
             />
             <button
               type="submit"
               disabled={busy === "add" || !newPrinciple.trim()}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-900 dark:bg-slate-100 px-3 py-2 text-[12px] font-bold text-white dark:text-slate-900 disabled:opacity-40"
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-fg px-3 py-2 text-xs font-bold text-surface disabled:opacity-40"
             >
               {busy === "add" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               원칙 추가
@@ -290,7 +286,7 @@ export default function ChecklistSection({
         </>
       )}
 
-      {error && <p className="mt-3 text-[12px] font-semibold text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-xs font-semibold text-danger">{error}</p>}
 
       {checklist && evalTarget && (
         <AiEvaluationDialog
@@ -310,15 +306,15 @@ function ScoreLine({ items }: { items: ChecklistItem[] }) {
   const { satisfied, total, pct } = scoreOf(items);
   const uncertain = items.filter((i) => i.status === "uncertain").length;
   return (
-    <div className="mt-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
-      <p className="text-[14px] font-black tabular-nums text-slate-900 dark:text-slate-100">
-        {total}개 중 {satisfied}개 충족 <span className="text-slate-400 dark:text-slate-500">({pct}%)</span>
+    <div className="mt-3 rounded-2xl bg-surface-muted px-4 py-3">
+      <p className="font-mono text-lg font-semibold tabular-nums text-fg">
+        {total}개 중 {satisfied}개 충족 <span className="text-fg-subtle">({pct}%)</span>
       </p>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
+        <div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} />
       </div>
       {uncertain > 0 && (
-        <p className="mt-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+        <p className="mt-1.5 text-xs font-semibold text-fg-subtle">
           판단 보류 {uncertain}개. 직접 확인한 뒤 상태를 골라 주세요.
         </p>
       )}

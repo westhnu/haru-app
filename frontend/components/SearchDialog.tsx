@@ -119,14 +119,14 @@ export default function SearchDialog({
       className="fixed inset-0 z-50 flex items-end sm:items-start sm:justify-center sm:pt-24"
     >
       <div
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={handleClose}
       />
 
-      <div className="relative z-10 mx-auto w-full max-w-[480px] overflow-hidden rounded-t-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-card sm:rounded-[28px]">
+      <div className="relative z-10 mx-auto w-full max-w-container-sm md:max-w-container-md overflow-hidden rounded-t-[28px] border border-border bg-surface shadow-card sm:rounded-[28px]">
         {/* 검색 입력 */}
-        <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
-          <Search className="h-5 w-5 shrink-0 text-slate-400 dark:text-slate-500" />
+        <div className="flex items-center gap-3 border-b border-border-subtle px-5 py-4">
+          <Search className="h-5 w-5 shrink-0 text-fg-subtle" />
           <input
             ref={inputRef}
             type="text"
@@ -135,13 +135,13 @@ export default function SearchDialog({
             placeholder="종목을 검색해 보세요 (예: 삼성전자, NVDA, 005930)"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold text-slate-900 dark:text-slate-100 placeholder:font-medium placeholder:text-slate-400 dark:text-slate-500 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-base font-semibold text-fg placeholder:font-medium placeholder:text-fg-subtle focus:outline-none"
           />
           <button
             type="button"
             onClick={handleClose}
             aria-label="닫기"
-            className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-400"
+            className="rounded-full p-1.5 text-fg-subtle transition hover:bg-border-subtle hover:text-fg-muted"
           >
             <X className="h-4 w-4" />
           </button>
@@ -154,22 +154,22 @@ export default function SearchDialog({
             <Link
               href={q.trim() ? `/glossary?q=${encodeURIComponent(q.trim())}` : "/glossary"}
               onClick={handleClose}
-              className="mb-1 flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-3 transition hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800"
+              className="mb-1 flex items-center gap-3 rounded-2xl bg-surface-muted px-3 py-3 transition hover:bg-border-subtle"
             >
-              <Book className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-              <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-slate-700 dark:text-slate-200">
+              <Book className="h-4 w-4 shrink-0 text-brand" />
+              <span className="min-w-0 flex-1 truncate text-sm font-bold text-fg">
                 {q.trim() ? `용어 사전에서 "${q.trim()}" 찾기` : "용어 사전으로 이동"}
               </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
+              <ChevronRight className="h-4 w-4 shrink-0 text-fg-subtle" />
             </Link>
           )}
           {!q && (
-            <p className="px-4 py-6 text-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
+            <p className="px-4 py-6 text-center text-sm font-semibold text-fg-subtle">
               국내 종목 2,700개 이상과 주요 미국 종목을 찾을 수 있어요.
             </p>
           )}
           {q && results.length === 0 && (
-            <p className="px-4 py-6 text-center text-[13px] font-semibold text-slate-500 dark:text-slate-400">
+            <p className="px-4 py-6 text-center text-sm font-semibold text-fg-muted">
               검색 결과가 없어요
             </p>
           )}
@@ -178,16 +178,16 @@ export default function SearchDialog({
               key={`${r.code}-${r.name}`}
               href={`/stock/${encodeURIComponent(r.code)}?name=${encodeURIComponent(r.name)}`}
               onClick={handleClose}
-              className="flex items-center justify-between gap-3 rounded-2xl px-3 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-900"
+              className="flex items-center justify-between gap-3 rounded-2xl px-3 py-3 transition hover:bg-surface-muted"
             >
               <div className="min-w-0">
-                <p className="truncate text-[14px] font-black text-slate-900 dark:text-slate-100">
+                <p className="truncate text-sm font-black text-fg">
                   {r.name}
                 </p>
-                <p className="mt-0.5 text-[12px] font-bold tabular-nums text-slate-400 dark:text-slate-500">
+                <p className="mt-0.5 text-xs font-bold tabular-nums text-fg-subtle">
                   {r.code}
                   {r.market && (
-                    <span className="ml-1.5 font-semibold text-slate-300 dark:text-slate-600">
+                    <span className="ml-1.5 font-semibold text-fg-subtle">
                       · {r.market}
                     </span>
                   )}

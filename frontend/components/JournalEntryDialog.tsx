@@ -120,7 +120,7 @@ export default function JournalEntryDialog({
   if (!open || typeof document === "undefined") return null;
 
   const inputCls =
-    "w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-[13px] tabular-nums text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
+    "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm tabular-nums text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-brand";
 
   return createPortal(
     <div
@@ -129,18 +129,18 @@ export default function JournalEntryDialog({
       aria-label={`${stockName} 결정 기록`}
       className="fixed inset-0 z-50 flex items-end sm:items-start sm:justify-center sm:pt-24"
     >
-      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />
 
       <form
         onSubmit={onSubmit}
-        className="relative z-10 mx-auto flex max-h-[85svh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-card sm:rounded-[28px]"
+        className="relative z-10 mx-auto flex max-h-[85svh] w-full max-w-container-sm md:max-w-container-md flex-col overflow-hidden rounded-t-[28px] border border-border bg-surface shadow-card sm:rounded-[28px]"
       >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-black text-slate-900 dark:text-slate-100">
+            <p className="truncate text-base font-black text-fg">
               {stockName} · 결정 기록
             </p>
-            <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+            <p className="text-xs font-semibold text-fg-subtle">
               본인 기록 · 가상
             </p>
           </div>
@@ -148,7 +148,7 @@ export default function JournalEntryDialog({
             type="button"
             onClick={handleClose}
             aria-label="닫기"
-            className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-400"
+            className="rounded-full p-1.5 text-fg-subtle transition hover:bg-border-subtle hover:text-fg-muted"
           >
             <X className="h-4 w-4" />
           </button>
@@ -157,15 +157,15 @@ export default function JournalEntryDialog({
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
           {saved ? (
             <div className="py-6 text-center">
-              <p className="text-[14px] font-bold text-slate-900 dark:text-slate-100">기록했어요.</p>
-              <p className="mt-1 text-[12px] font-semibold text-slate-400 dark:text-slate-500">
+              <p className="text-sm font-bold text-fg">기록했어요.</p>
+              <p className="mt-1 text-xs font-semibold text-fg-subtle">
                 &quot;투자 저널&quot;에서 전체 기록을 볼 수 있어요.
               </p>
             </div>
           ) : (
             <>
               <fieldset>
-                <legend className="mb-1.5 text-[12px] font-bold text-slate-500 dark:text-slate-400">
+                <legend className="mb-1.5 text-xs font-bold text-fg-muted">
                   나의 결정 (본인 기록)
                 </legend>
                 <div className="grid grid-cols-4 gap-1.5" role="radiogroup">
@@ -176,10 +176,10 @@ export default function JournalEntryDialog({
                       role="radio"
                       aria-checked={decision === d}
                       onClick={() => setDecision(d)}
-                      className={`rounded-full px-2 py-2 text-[12px] font-bold transition ${
+                      className={`rounded-full px-2 py-2 text-xs font-bold transition ${
                         decision === d
-                          ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                          ? "bg-fg text-surface"
+                          : "bg-surface-muted text-fg-muted"
                       }`}
                     >
                       {DECISION_LABELS[d]}
@@ -189,7 +189,7 @@ export default function JournalEntryDialog({
               </fieldset>
 
               <div>
-                <label className="mb-1.5 block text-[12px] font-bold text-slate-500 dark:text-slate-400">
+                <label className="mb-1.5 block text-xs font-bold text-fg-muted">
                   결정 근거
                 </label>
                 <textarea
@@ -200,9 +200,9 @@ export default function JournalEntryDialog({
                   rows={5}
                   disabled={saving}
                   placeholder="왜 이렇게 결정했는지 적어 두세요. 회고할 때 다시 봐요."
-                  className="w-full resize-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-[14px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full resize-none rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-brand"
                 />
-                <p className="mt-1 text-right text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">
+                <p className="mt-1 text-right text-xs font-semibold tabular-nums text-fg-subtle">
                   {reasoning.length} / {REASONING_MAX_LENGTH}
                 </p>
               </div>
@@ -210,7 +210,7 @@ export default function JournalEntryDialog({
               {withPosition && (
                 <div className="grid grid-cols-2 gap-2">
                   <label className="block">
-                    <span className="mb-1 block text-[12px] font-bold text-slate-500 dark:text-slate-400">
+                    <span className="mb-1 block text-xs font-bold text-fg-muted">
                       가상 수량 (선택)
                     </span>
                     <input
@@ -222,7 +222,7 @@ export default function JournalEntryDialog({
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-[12px] font-bold text-slate-500 dark:text-slate-400">
+                    <span className="mb-1 block text-xs font-bold text-fg-muted">
                       가상 단가 (선택)
                     </span>
                     <input
@@ -236,11 +236,11 @@ export default function JournalEntryDialog({
                 </div>
               )}
               {fieldError && (
-                <p className="text-[12px] font-semibold text-red-600 dark:text-red-400">{fieldError}</p>
+                <p className="text-xs font-semibold text-danger">{fieldError}</p>
               )}
 
               {(defaultChecklistId || defaultWorkbookId) && (
-                <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                <p className="text-xs font-semibold text-fg-subtle">
                   연결:{" "}
                   {[defaultWorkbookId && "현재 워크북", defaultChecklistId && "체크리스트"]
                     .filter(Boolean)
@@ -249,24 +249,24 @@ export default function JournalEntryDialog({
               )}
 
               {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-[13px] text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+                <div className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
                   {error}
                 </div>
               )}
             </>
           )}
 
-          <p className="rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          <p className="rounded-xl bg-warning/10 px-3 py-2 text-xs font-semibold leading-relaxed text-warning">
             가상 기록이에요. 실제 주문·거래가 아니며, 종목 추천 없이 최종 결정은 본인이 해요.
           </p>
         </div>
 
-        <div className="flex gap-2 border-t border-slate-100 dark:border-slate-800 px-5 py-3">
+        <div className="flex gap-2 border-t border-border-subtle px-5 py-3">
           <button
             type="button"
             onClick={handleClose}
             disabled={saving}
-            className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 py-2.5 text-[13px] font-bold text-slate-600 dark:text-slate-300 transition hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+            className="flex-1 rounded-full bg-surface-muted py-2.5 text-sm font-bold text-fg-muted transition hover:bg-border disabled:opacity-50"
           >
             {saved ? "닫기" : "취소"}
           </button>
@@ -274,7 +274,7 @@ export default function JournalEntryDialog({
             <button
               type="submit"
               disabled={!canSave}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-slate-900 dark:bg-slate-100 py-2.5 text-[13px] font-bold text-white dark:text-slate-900 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-fg py-2.5 text-sm font-bold text-surface transition hover:bg-fg/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               기록하기

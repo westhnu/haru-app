@@ -48,37 +48,37 @@ type Props = {
 // react-markdown은 기본적으로 raw HTML을 렌더링하지 않는다(rehype-raw 미사용) → 답변 속 HTML은 텍스트로 남는다.
 const MARKDOWN_COMPONENTS: Components = {
   p: ({ children }) => (
-    <p className="mb-3 leading-relaxed text-slate-700 last:mb-0 dark:text-slate-200">{children}</p>
+    <p className="mb-3 leading-relaxed text-fg last:mb-0">{children}</p>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold text-slate-900 dark:text-slate-100">{children}</strong>
+    <strong className="font-semibold text-fg">{children}</strong>
   ),
   ul: ({ children }) => (
-    <ul className="mb-3 ml-4 list-disc space-y-1 text-slate-700 dark:text-slate-200">{children}</ul>
+    <ul className="mb-3 ml-4 list-disc space-y-1 text-fg">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="mb-3 ml-4 list-decimal space-y-1 text-slate-700 dark:text-slate-200">
+    <ol className="mb-3 ml-4 list-decimal space-y-1 text-fg">
       {children}
     </ol>
   ),
   li: ({ children }) => <li className="leading-relaxed">{children}</li>,
   h1: ({ children }) => (
-    <h1 className="mb-2 mt-4 text-base font-bold text-slate-900 first:mt-0 dark:text-slate-100">
+    <h1 className="mb-2 mt-4 text-base font-bold text-fg first:mt-0">
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mb-2 mt-4 text-sm font-bold text-slate-900 first:mt-0 dark:text-slate-100">
+    <h2 className="mb-2 mt-4 text-sm font-bold text-fg first:mt-0">
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mb-2 mt-3 text-sm font-semibold text-slate-900 first:mt-0 dark:text-slate-100">
+    <h3 className="mb-2 mt-3 text-sm font-semibold text-fg first:mt-0">
       {children}
     </h3>
   ),
   code: ({ children }) => (
-    <code className="rounded bg-slate-100 px-1 py-0.5 text-xs dark:bg-slate-800">{children}</code>
+    <code className="rounded bg-surface-muted px-1 py-0.5 text-xs">{children}</code>
   ),
 };
 
@@ -88,26 +88,26 @@ export default function GlossaryResult({ answer }: Props) {
   const body = stripTrailingDisclaimer(answer.answer, answer.disclaimer);
 
   return (
-    <article className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <header className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-5 py-3 dark:border-slate-800">
-        <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+    <article className="overflow-hidden rounded-lg border border-border bg-surface">
+      <header className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-3">
+        <span className="rounded bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">
           {sourceLabel}
         </span>
         {isMock && (
-          <span className="flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          <span className="flex items-center gap-1 rounded bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
             <AlertCircle className="h-3 w-3" />
             Mock 응답 (BEDROCK_KB_ID 미설정)
           </span>
         )}
       </header>
 
-      <div className="break-words px-5 py-4 text-slate-800 dark:text-slate-200">
+      <div className="break-words px-5 py-4 text-fg">
         <ReactMarkdown components={MARKDOWN_COMPONENTS}>{body}</ReactMarkdown>
       </div>
 
       {answer.citations && answer.citations.length > 0 && (
-        <div className="border-t border-slate-100 px-5 pb-4 pt-3 dark:border-slate-800">
-          <h3 className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <div className="border-t border-border-subtle px-5 pb-4 pt-3">
+          <h3 className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-fg-muted">
             <FileText className="h-3 w-3" />
             근거
           </h3>
@@ -115,14 +115,14 @@ export default function GlossaryResult({ answer }: Props) {
             {answer.citations.map((c, i) => (
               <li
                 key={`${c.source ?? "src"}-${i}`}
-                className="rounded border border-slate-100 bg-slate-50 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-800/50"
+                className="rounded border border-border-subtle bg-surface-muted px-3 py-2 text-sm"
               >
                 {c.excerpt && (
-                  <p className="mb-1 line-clamp-3 whitespace-pre-wrap break-words text-slate-700 dark:text-slate-300">
+                  <p className="mb-1 line-clamp-3 whitespace-pre-wrap break-words text-fg">
                     {c.excerpt}
                   </p>
                 )}
-                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-fg-muted">
                   {c.source && (
                     <span className="truncate" title={c.source}>
                       출처: {c.source.split("/").pop()}
@@ -138,8 +138,8 @@ export default function GlossaryResult({ answer }: Props) {
         </div>
       )}
 
-      <footer className="border-t border-slate-100 bg-slate-50 px-5 py-3 dark:border-slate-800 dark:bg-slate-800/50">
-        <p className="text-xs italic text-slate-500 dark:text-slate-400">{answer.disclaimer}</p>
+      <footer className="border-t border-border-subtle bg-surface-muted px-5 py-3">
+        <p className="text-xs italic text-fg-muted">{answer.disclaimer}</p>
       </footer>
     </article>
   );

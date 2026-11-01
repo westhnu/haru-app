@@ -4,23 +4,57 @@
 
 :root {
   color-scheme: light dark;
+
+  /* Phase F2 의미 색 토큰 (HSL 채널만, tailwind.config의 hsl(var(--x) / alpha)로 사용) */
+  --color-brand: 224 76% 48%; /* blue-700 (AA: brand/10 배지 위 4.5:1) */
+  --color-brand-foreground: 0 0% 100%;
+  --color-surface: 0 0% 100%;
+  --color-surface-muted: 210 20% 98%; /* slate-50 */
+  --color-surface-elevated: 0 0% 100%;
+  --color-fg: 222 47% 11%; /* slate-900 */
+  --color-fg-muted: 215 16% 47%; /* slate-500 */
+  --color-fg-subtle: 215 16% 45%; /* slate-500~600 (AA: slate-400은 2.5:1이라 상향) */
+  --color-border: 214 32% 91%; /* slate-200 */
+  --color-border-subtle: 220 14% 96%; /* slate-100 */
+  --color-success: 142 72% 26%; /* green-800 (AA: success/10 배지 위) */
+  --color-warning: 26 90% 33%; /* amber-800 (AA: 흰 글씨·warning/10 배지 모두) */
+  --color-danger: 0 74% 42%; /* red-700 (AA: danger/10 배지 위) */
+  /* 차트 (F4): 국내 관례 상승=빨강, 하락=파랑. 상태 색(danger/brand)과 의미가 달라 따로 둔다 */
+  --color-chart-up: 347 77% 50%; /* rose-600 */
+  --color-chart-down: 221 83% 53%; /* blue-600 */
+  --color-chart-grid: 215 14% 65%; /* slate-400 */
+
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.dark {
+  --color-brand: 213 94% 68%; /* blue-400 (AA: brand/10 배지 위) */
+  --color-brand-foreground: 222 47% 11%; /* 밝은 brand 위 어두운 글씨 */
+  --color-surface: 222 47% 11%;
+  --color-surface-muted: 217 33% 17%;
+  --color-surface-elevated: 215 28% 17%;
+  --color-fg: 210 20% 98%;
+  --color-fg-muted: 215 20% 65%;
+  --color-fg-subtle: 215 14% 60%; /* AA 4.5:1 */
+  --color-border: 215 25% 27%;
+  --color-border-subtle: 215 25% 20%;
+  --color-success: 142 69% 58%;
+  --color-warning: 48 96% 76%;
+  --color-danger: 0 91% 71%;
+  --color-chart-up: 351 95% 71%; /* rose-400 */
+  --color-chart-down: 213 94% 68%; /* blue-400 */
+  --color-chart-grid: 215 16% 47%; /* slate-500 */
 }
 
 html,
 body {
-  background: #f8fafc; /* slate-50 */
-  color: #020617; /* slate-950 */
+  background: hsl(var(--color-surface));
+  color: hsl(var(--color-fg));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   /* 한글은 단어 단위로 줄바꿈(어색한 음절 분리 방지), 긴 토큰은 넘치지 않게 */
   word-break: keep-all;
   overflow-wrap: break-word;
-}
-
-html.dark,
-html.dark body {
-  background: #020617; /* slate-950 */
-  color: #f1f5f9; /* slate-100 */
 }
 
 /* ── View Transitions API (Chrome 111+, fallback OK) ──
@@ -82,4 +116,18 @@ html.dark body {
 
 .animate-pulse-soft {
   animation: pulseBg 1.2s ease-in-out infinite;
+}
+
+/* ── Phase F2 레이아웃 유틸 ── 모바일 우선, 데스크톱은 가운데 좁은 폭 */
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-container-sm px-4 md:max-w-container-md md:px-6;
+  }
+  .page-space {
+    @apply space-y-md;
+  }
+  /* 모바일 하단 고정 BottomNav 높이만큼 여백. 데스크톱도 BottomNav가 고정이라 같은 여백을 둔다. */
+  .pb-nav {
+    @apply pb-24;
+  }
 }

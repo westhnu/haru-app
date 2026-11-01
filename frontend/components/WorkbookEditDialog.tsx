@@ -91,19 +91,19 @@ export default function WorkbookEditDialog({
       aria-label="워크북 블록 추가"
       className="fixed inset-0 z-50 flex items-end sm:items-start sm:justify-center sm:pt-24"
     >
-      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />
 
       <form
         onSubmit={onSubmit}
-        className="relative z-10 mx-auto flex max-h-[85svh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-card sm:rounded-[28px]"
+        className="relative z-10 mx-auto flex max-h-[85svh] w-full max-w-container-sm md:max-w-container-md flex-col overflow-hidden rounded-t-[28px] border border-border bg-surface shadow-card sm:rounded-[28px]"
       >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
-          <p className="text-[15px] font-black text-slate-900 dark:text-slate-100">블록 추가</p>
+        <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">
+          <p className="text-base font-black text-fg">블록 추가</p>
           <button
             type="button"
             onClick={handleClose}
             aria-label="닫기"
-            className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-400"
+            className="rounded-full p-1.5 text-fg-subtle transition hover:bg-border-subtle hover:text-fg-muted"
           >
             <X className="h-4 w-4" />
           </button>
@@ -120,14 +120,14 @@ export default function WorkbookEditDialog({
                   role="radio"
                   aria-checked={t === "memo"}
                   disabled={!enabled}
-                  className={`rounded-full px-3 py-1.5 text-[12px] font-bold ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold ${
                     t === "memo"
-                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                      : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                      ? "bg-fg text-surface"
+                      : "cursor-not-allowed bg-surface-muted text-fg-subtle"
                   }`}
                 >
                   {BLOCK_TYPE_LABELS[t]}
-                  {!enabled && <span className="ml-1 text-[10px] font-semibold">준비 중</span>}
+                  {!enabled && <span className="ml-1 text-xs font-semibold">준비 중</span>}
                 </button>
               );
             })}
@@ -142,33 +142,33 @@ export default function WorkbookEditDialog({
               rows={6}
               disabled={saving}
               placeholder="메모를 작성해 보세요 (예: 매수 근거, 확인할 지표)"
-              className="w-full resize-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-[14px] leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full resize-none rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-brand"
             />
-            <p className="mt-1 text-right text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">
+            <p className="mt-1 text-right text-xs font-semibold tabular-nums text-fg-subtle">
               {text.length} / {MEMO_MAX_LENGTH}
             </p>
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-[13px] text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+            <div className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
               {error}
             </div>
           )}
         </div>
 
-        <div className="flex gap-2 border-t border-slate-100 dark:border-slate-800 px-5 py-3">
+        <div className="flex gap-2 border-t border-border-subtle px-5 py-3">
           <button
             type="button"
             onClick={handleClose}
             disabled={saving}
-            className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 py-2.5 text-[13px] font-bold text-slate-600 dark:text-slate-300 transition hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+            className="flex-1 rounded-full bg-surface-muted py-2.5 text-sm font-bold text-fg-muted transition hover:bg-border disabled:opacity-50"
           >
             취소
           </button>
           <button
             type="submit"
             disabled={!canSave}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-slate-900 dark:bg-slate-100 py-2.5 text-[13px] font-bold text-white dark:text-slate-900 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-fg py-2.5 text-sm font-bold text-surface transition hover:bg-fg/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             저장

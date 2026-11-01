@@ -16,6 +16,11 @@ import type { BriefType } from "@/lib/types";
 import { readBrief } from "@/lib/store";
 import { HARU_BACKEND_ENABLED } from "@/lib/featureFlags";
 import TodayCard from "@/components/TodayCard";
+import { Card } from "@/components/layout/Card";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
+import { Section } from "@/components/layout/Section";
+import { Badge } from "@/components/ui/Badge";
 
 // 현재 시각을 반영해야 하므로 매 요청 렌더
 export const dynamic = "force-dynamic";
@@ -202,8 +207,8 @@ export default async function Home() {
         <div
           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
             f.active
-              ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-              : "bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600"
+              ? "bg-surface-muted text-fg"
+              : "bg-surface-muted text-fg-subtle"
           }`}
         >
           <Icon className="h-6 w-6" />
@@ -212,27 +217,27 @@ export default async function Home() {
           <div className="flex items-center gap-2">
             <h3
               className={`text-base font-black ${
-                f.active ? "text-slate-950 dark:text-white" : "text-slate-400 dark:text-slate-500"
+                f.active ? "text-fg" : "text-fg-subtle"
               }`}
             >
               {f.title}
             </h3>
             <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
+              className={`rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${
                 f.active
-                  ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                  : "bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500"
+                  ? "bg-surface-muted text-fg-muted"
+                  : "bg-surface-muted text-fg-subtle"
               }`}
             >
               {f.time}
             </span>
           </div>
-          <p className="mt-1 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm font-semibold leading-6 text-fg-muted">
             {f.description}
           </p>
         </div>
         {f.active && (
-          <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 dark:text-slate-600" />
+          <ArrowRight className="h-5 w-5 shrink-0 text-fg-subtle" />
         )}
       </div>
     );
@@ -240,7 +245,7 @@ export default async function Home() {
       <Link
         key={f.key}
         href={f.href}
-        className="block transition hover:bg-slate-50 dark:hover:bg-slate-900/60"
+        className="block transition hover:bg-surface-muted"
       >
         {Inner}
       </Link>
@@ -250,40 +255,27 @@ export default async function Home() {
   };
 
   return (
-    <div className="min-h-svh bg-slate-50 dark:bg-slate-950">
-      <div className="relative mx-auto min-h-svh w-full max-w-[480px] overflow-hidden bg-white dark:bg-slate-900 px-5 pb-24">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 z-0 h-80"
-          style={{ background: theme.glow }}
-        />
-
-        <div className="relative z-10">
-          {/* 상단 바 */}
-          <header className="flex items-center justify-between py-5">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
-                하루
-              </span>
-              <span className="text-[13px] font-bold tracking-[0.18em] text-slate-300 dark:text-slate-600">
-                HARU
-              </span>
-            </div>
-            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-[13px] font-bold text-slate-600 dark:text-slate-400">
-              Daily 2-Brief
-            </span>
-          </header>
+    // Phase F2: PageShell(모바일 우선 폭·BottomNav 여백). 시간대 glow는 셸 뒤 배경으로 둔다.
+    <div className="relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-80"
+        style={{ background: theme.glow }}
+      />
+      <PageShell className="relative z-10">
+          {/* 상단 바 — 브랜드 헤더 (뒤로가기 없음) */}
+          <PageHeader title="하루 HARU" action={<Badge variant="outline">Daily 2-Brief</Badge>} />
 
           {/* 히어로 */}
           <section className="pt-8 pb-4">
             <div
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 ${theme.badge}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-fg ${theme.badge}`}
             >
               <Sparkles className={`h-3.5 w-3.5 ${theme.badgeIcon}`} />
               AI 마켓 브리핑
             </div>
 
-            <h1 className="mt-5 text-[2.4rem] font-black leading-[1.12] tracking-tight text-slate-950 dark:text-white">
+            <h1 className="mt-5 text-[2.4rem] font-black leading-[1.12] tracking-tight text-fg">
               매일 아침·저녁,
               <br />
               시장을 정리하고
@@ -295,13 +287,13 @@ export default async function Home() {
               </span>
             </h1>
 
-            <p className="mt-5 text-[1.05rem] font-semibold leading-8 text-slate-500 dark:text-slate-400">
+            <p className="mt-5 text-[1.05rem] font-semibold leading-8 text-fg-muted">
               흩어진 뉴스와 시세를 Haru가 정리해 드려요. 판단은 본인의 몫이에요.
             </p>
 
             <Link
               href={`/brief/${period}`}
-              className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white transition hover:bg-slate-800"
+              className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-fg px-5 py-4 text-base font-bold text-surface transition hover:bg-fg/90"
             >
               지금은 {periodLabel} 브리핑 보기
               <ArrowRight className="h-5 w-5" />
@@ -310,7 +302,7 @@ export default async function Home() {
             {/* Today 카드 — S3에 저장된 실제 라이브 브리핑 사용 */}
             <Link
               href={`/brief/${period}`}
-              className="group relative mt-10 block overflow-hidden rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-card transition hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg"
+              className="group relative mt-10 block overflow-hidden rounded-[28px] border border-border bg-surface p-6 shadow-card transition hover:-translate-y-0.5 hover:border-border hover:shadow-lg"
             >
               {/* 상단 그라데이션 hint (시간대 색) */}
               <span
@@ -320,14 +312,14 @@ export default async function Home() {
 
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-fg-subtle">
                     Today · 하루
                   </p>
-                  <p className="mt-1.5 text-[22px] font-black tracking-tight text-slate-950 dark:text-white">
+                  <p className="mt-1.5 text-[22px] font-black tracking-tight text-fg">
                     {LABEL[period]}
                   </p>
                   {/* editorial inline meta — 점(·)으로 구분 */}
-                  <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] font-bold leading-none">
+                  <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs font-bold leading-none">
                     {verifyPassed === true && (
                       <span className="inline-flex items-center gap-1 text-emerald-700">
                         <CheckCircle2 className="h-3 w-3" />
@@ -343,16 +335,16 @@ export default async function Home() {
                     {generatedAt && (
                       <>
                         {verifyPassed !== null && (
-                          <span aria-hidden className="text-slate-300 dark:text-slate-600">·</span>
+                          <span aria-hidden className="text-fg-subtle">·</span>
                         )}
-                        <span className="text-slate-400 dark:text-slate-500">
+                        <span className="text-fg-subtle">
                           업데이트 {timeAgo(generatedAt)}
                         </span>
                       </>
                     )}
                     {!isLive && oneLine && (
                       <>
-                        <span aria-hidden className="text-slate-300 dark:text-slate-600">·</span>
+                        <span aria-hidden className="text-fg-subtle">·</span>
                         <span className="text-amber-600">직전 라이브 데이터</span>
                       </>
                     )}
@@ -371,14 +363,14 @@ export default async function Home() {
                   aria-hidden
                   className={`absolute inset-y-1 left-0 w-[3px] rounded-full bg-gradient-to-b ${theme.grad}`}
                 />
-                <p className="text-[14.5px] font-semibold leading-[1.7] text-slate-700 dark:text-slate-300">
+                <p className="text-sm font-semibold leading-[1.7] text-fg">
                   {oneLine ??
                     "첫 브리핑을 기다리고 있어요. 매일 08:00·17:00 KST에 자동으로 갱신돼요."}
                 </p>
               </blockquote>
 
               {/* 우측 정렬 CTA */}
-              <div className="mt-5 flex items-center justify-end gap-1.5 text-[12px] font-bold text-slate-500 transition group-hover:text-slate-900 dark:hover:text-slate-100">
+              <div className="mt-5 flex items-center justify-end gap-1.5 text-xs font-bold text-fg-muted transition group-hover:text-fg">
                 자세히 보기
                 <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
               </div>
@@ -389,41 +381,37 @@ export default async function Home() {
           <TodayCard />
 
           {/* 기능 */}
-          <section className="pt-12 pb-4">
-            <p className="text-sm font-black text-slate-500 dark:text-slate-400">기능</p>
-            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white">
+          <Section title="기능" className="pt-lg">
+            <p className="text-2xl font-black leading-tight tracking-tight text-fg">
               투자 판단에 필요한 화면을
               <br />
               한곳에 모았어요.
-            </h2>
-
-            <div className="mt-7 divide-y divide-slate-100 dark:divide-slate-800 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            </p>
+            <Card padded={false} className="divide-y divide-border-subtle">
               {primary.map(renderFeature)}
-            </div>
+            </Card>
             {more.length > 0 && (
-              <details className="group mt-3 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-[14px] font-black text-slate-700 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
+              <details className="group rounded-lg border border-border-subtle bg-surface-elevated">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-black text-fg [&::-webkit-details-marker]:hidden">
                   모든 기능 보기
-                  <span className="flex items-center gap-1 text-[12px] font-bold text-slate-400 dark:text-slate-500">
+                  <span className="flex items-center gap-1 text-xs font-bold text-fg-subtle">
                     {more.length}개
                     <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
                   </span>
                 </summary>
-                <div className="divide-y divide-slate-100 dark:divide-slate-800 border-t border-slate-100 dark:border-slate-800">
+                <div className="divide-y divide-border-subtle border-t border-border-subtle">
                   {more.map(renderFeature)}
                 </div>
               </details>
             )}
-          </section>
-
+          </Section>
           {/* 사용법 — 매거진 스타일 numbered */}
-          <section className="pt-12 pb-14">
-            <p className="text-sm font-black text-slate-500 dark:text-slate-400">사용법</p>
-            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white">
+          <Section title="사용법" className="pt-lg pb-xl">
+            <p className="text-2xl font-black leading-tight tracking-tight text-fg">
               세 단계면
               <br />
               충분해요.
-            </h2>
+            </p>
 
             <ol className="mt-10 space-y-9">
               {(HARU_BACKEND_ENABLED ? STEPS_BACKEND : STEPS_BRIEF).map((s) => (
@@ -438,43 +426,42 @@ export default async function Home() {
                     {s.num}
                   </span>
                   <div>
-                    <p className="text-[17px] font-black tracking-tight text-slate-950 dark:text-white">
+                    <p className="text-base font-black tracking-tight text-fg">
                       {s.title}
                     </p>
-                    <p className="mt-2 whitespace-pre-line text-[14px] font-medium leading-7 text-slate-500 dark:text-slate-400">
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-7 text-fg-muted">
                       {s.desc}
                     </p>
                   </div>
                 </li>
               ))}
             </ol>
-          </section>
+          </Section>
 
           {/* 마무리 메시지 — 플래그 on(로컬)에서는 '오늘의 흐름'과 역할이 겹쳐 숨긴다 */}
           {!HARU_BACKEND_ENABLED && (
-          <section className="rounded-[32px] bg-slate-100 dark:bg-slate-800 p-6">
+          <section className="rounded-[32px] bg-surface-muted p-6">
             <div
               className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white ${theme.close}`}
             >
               <Sparkles className="h-6 w-6" />
             </div>
-            <h2 className="mt-5 text-2xl font-black leading-tight text-slate-950 dark:text-white">
+            <h2 className="mt-5 text-2xl font-black leading-tight text-fg">
               읽고, 판단은
               <br />
               본인 증권사에서.
             </h2>
-            <p className="mt-3 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
+            <p className="mt-3 text-sm font-semibold leading-6 text-fg-muted">
               자동매매나 종목 추천은 하지 않아요. 하루 두 번, 결정에 필요한 맥락만 전해 드려요.
             </p>
           </section>
           )}
 
-          <p className="px-1 pt-8 text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500">
+          <p className="px-1 pt-8 text-xs font-medium leading-relaxed text-fg-subtle">
             본 브리핑은 공개 정보를 AI가 정리한 참고 자료이며, 특정 종목의 매수·매도 권유가
             아니에요. 투자 판단과 책임은 본인에게 있어요.
           </p>
-        </div>
-      </div>
+      </PageShell>
     </div>
   );
 }

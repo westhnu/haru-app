@@ -118,3 +118,53 @@ def test_block_order_is_insertion_order(isolated_db: Engine) -> None:
 def test_init_db_is_safe_to_rerun(isolated_db: Engine) -> None:
     init_db(isolated_db)
     init_db(isolated_db)
+
+
+# --- Phase G scaffold: chat_sessions·chat_messages ---------------------------------------
+
+
+def test_chat_tables_created(isolated_db: Engine) -> None:
+    from sqlalchemy import inspect
+
+    tables = set(inspect(isolated_db).get_table_names())
+    assert {"chat_sessions", "chat_messages"} <= tables
+    fks = inspect(isolated_db).get_foreign_keys("chat_messages")
+    assert (
+        fks[0]["referred_table"] == "chat_sessions"
+        and fks[0]["options"].get("ondelete") == "CASCADE"
+    )
+
+
+def test_chat_cascade_at_db_level(isolated_db: Engine) -> None:
+    # ORM을 거치지 않은 삭제에서도 FK ON DELETE CASCADE(PRAGMA foreign_keys)로 메시지가 지워진다
+    from sqlalchemy import text
+
+    from app.db.models import ChatMessageORM, ChatSessionORM
+
+    with Session(isolated_db) as s:
+        s.add(
+            ChatSessionORM(id="cs1", title="t", messages=[ChatMessageORM(role="user", content="a")])
+        )
+        s.commit()
+        s.execute(text("DELETE FROM chat_sessions WHERE id = 'cs1'"))
+        s.commit()
+        assert s.scalar(select(func.count()).select_from(ChatMessageORM)) == 0
+
+
+def test_chat_survives_restart_with_file_db(tmp_path: Path) -> None:
+    from app.db.repositories import chat_repo
+
+    url = f"sqlite:///{tmp_path / 'chat.db'}"
+    first = db_engine.build_engine(url)
+    init_db(first)
+    with Session(first) as s:
+        cs = chat_repo.create_session(s, stock_code="005930", title="삼성전자 질문")
+        chat_repo.append_message(s, cs.id, "user", "PER이 뭐야?")
+    first.dispose()
+    second = db_engine.build_engine(url)
+    init_db(second)
+    with Session(second) as s:
+        loaded = chat_repo.get_session(s, cs.id)
+        assert loaded is not None and loaded.title == "삼성전자 질문"
+        assert [m.content for m in loaded.messages] == ["PER이 뭐야?"]
+    second.dispose()

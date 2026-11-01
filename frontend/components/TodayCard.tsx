@@ -39,12 +39,12 @@ export default function TodayCard() {
 
   if (state.kind === "loading") {
     return (
-      <section aria-label="오늘의 흐름" aria-busy="true" className="mt-6 animate-pulse-soft rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+      <section aria-label="오늘의 흐름" aria-busy="true" className="mt-6 animate-pulse-soft rounded-[28px] border border-border bg-surface p-5">
         <span className="sr-only">오늘의 흐름을 불러오는 중</span>
-        <div className="h-3 w-20 rounded-full bg-slate-200 dark:bg-slate-700" />
-        <div className="mt-4 h-4 w-full rounded-full bg-slate-100 dark:bg-slate-800" />
-        <div className="mt-2 h-4 w-3/4 rounded-full bg-slate-100 dark:bg-slate-800" />
-        <div className="mt-5 h-9 w-36 rounded-full bg-slate-100 dark:bg-slate-800" />
+        <div className="h-3 w-20 rounded-full bg-border" />
+        <div className="mt-4 h-4 w-full rounded-full bg-surface-muted" />
+        <div className="mt-2 h-4 w-3/4 rounded-full bg-surface-muted" />
+        <div className="mt-5 h-9 w-36 rounded-full bg-surface-muted" />
       </section>
     );
   }
@@ -54,25 +54,25 @@ export default function TodayCard() {
   const satisfied = card.context.score_satisfied;
   const total = card.context.score_total;
   const ctaCls =
-    "inline-flex items-center gap-1.5 rounded-full bg-slate-900 dark:bg-slate-100 px-4 py-2.5 text-[13px] font-bold text-white dark:text-slate-900 transition hover:bg-slate-800";
+    "inline-flex items-center gap-1.5 rounded-full bg-fg px-4 py-2.5 text-sm font-bold text-surface transition hover:bg-fg/90";
 
   return (
     <section
       aria-label="오늘의 흐름"
-      className="mt-6 rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-soft"
+      className="mt-6 rounded-[28px] border border-border bg-surface p-5 shadow-soft"
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-[12px] font-black tracking-wide text-slate-500 dark:text-slate-400">
+        <p className="flex items-center gap-1.5 text-xs font-black tracking-wide text-fg-muted">
           <Icon className="h-4 w-4" />
           오늘의 흐름
         </p>
         {typeof satisfied === "number" && typeof total === "number" && (
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-bold tabular-nums text-fg-muted">
             체크리스트 {satisfied}/{total} 충족
           </span>
         )}
       </div>
-      <p className="mt-3 text-[15px] font-bold leading-relaxed text-slate-900 dark:text-slate-100">
+      <p className="mt-3 text-base font-bold leading-relaxed text-fg">
         {card.message}
       </p>
       <div className="mt-4">
@@ -88,7 +88,7 @@ export default function TodayCard() {
           </Link>
         )}
       </div>
-      <p className="mt-3 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+      <p className="mt-3 text-xs font-medium text-fg-subtle">
         {card.disclaimer}
       </p>
       {card.next_action === "empty" && (

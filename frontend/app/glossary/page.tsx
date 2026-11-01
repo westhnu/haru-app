@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import GlossarySearch from "@/components/GlossarySearch";
 
 export const metadata: Metadata = {
@@ -15,15 +17,10 @@ export default function GlossaryPage({
 }) {
   const q = typeof searchParams.q === "string" ? searchParams.q.slice(0, 200) : undefined;
   return (
-    // 하단 고정 BottomNav에 가리지 않도록 아래 여백을 둔다.
-    <main className="container mx-auto max-w-3xl px-4 pb-28 pt-8">
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">용어 사전</h1>
-        <p className="text-slate-600 dark:text-slate-400">
-          용어를 검색해 보세요. AWS Bedrock Knowledge Base에 색인된 용어 302개에서 근거를 찾아 답해요.
-        </p>
-      </header>
+    // PageShell이 BottomNav 여백(pb-nav)과 모바일 우선 폭을 맡는다 (Phase F2).
+    <PageShell>
+      <PageHeader title="용어 사전" subtitle="용어를 검색해 보세요. AWS Bedrock Knowledge Base에 색인된 용어 302개에서 근거를 찾아 답해요." />
       <GlossarySearch suggestedTerms={SUGGESTED_TERMS} initialQuery={q} />
-    </main>
+    </PageShell>
   );
 }

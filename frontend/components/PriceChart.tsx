@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PricePoint } from "@/lib/stocktypes";
+import { chartTheme, lineColor } from "@/lib/chart-theme";
 
 function formatPriceLabel(value: number, currency?: string): string {
   if (!currency || currency === "KRW") {
@@ -34,7 +35,7 @@ export default function PriceChart({
 
   if (prices.length < 2) {
     return (
-      <div className="flex h-[180px] items-center justify-center text-[13px] font-semibold text-slate-400 dark:text-slate-500">
+      <div className="flex h-[180px] items-center justify-center text-sm font-semibold text-fg-subtle">
         표시할 시세가 없어요
       </div>
     );
@@ -52,7 +53,8 @@ export default function PriceChart({
   const line = prices.map((p, i) => `${x(i)},${y(p.close)}`).join(" ");
   const area = `${PAD},${H - PAD} ${line} ${W - PAD},${H - PAD}`;
 
-  const color = up ? "#e11d48" : "#2563eb";
+  // 데이터 로직은 F3(KIS 연동) 전까지 그대로 두고 색만 테마 토큰으로 (F4)
+  const color = lineColor(up);
   const gid = up ? "gUp" : "gDown";
 
   const fmtDate = (d: string) => d.slice(5).replace("-", ".");
@@ -89,15 +91,15 @@ export default function PriceChart({
         >
           <defs>
             <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity="0.18" />
-              <stop offset="100%" stopColor={color} stopOpacity="0" />
+              <stop offset="0%" style={{ stopColor: color, stopOpacity: chartTheme.areaOpacity }} />
+              <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
             </linearGradient>
           </defs>
           <polygon points={area} fill={`url(#${gid})`} />
           <polyline
             points={line}
             fill="none"
-            stroke={color}
+            style={{ stroke: color }}
             strokeWidth="2"
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -109,17 +111,16 @@ export default function PriceChart({
                 y1={PAD}
                 x2={x(idx)}
                 y2={H - PAD}
-                stroke="#94a3b8"
+                style={{ stroke: chartTheme.grid }}
                 strokeWidth="1"
                 strokeDasharray="3 3"
               />
-              <circle cx={x(idx)} cy={y(active.close)} r="3.5" fill={color} />
+              <circle cx={x(idx)} cy={y(active.close)} r="3.5" style={{ fill: color }} />
               <circle
                 cx={x(idx)}
                 cy={y(active.close)}
                 r="7"
-                fill={color}
-                fillOpacity="0.18"
+                style={{ fill: color, fillOpacity: chartTheme.areaOpacity }}
               />
             </>
           )}
@@ -127,13 +128,13 @@ export default function PriceChart({
 
         {active && (
           <div
-            className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 rounded-xl bg-slate-900 px-2.5 py-1.5 text-center shadow-card"
+            className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 rounded-xl bg-fg px-2.5 py-1.5 text-center shadow-card"
             style={{ left: `${Math.min(85, Math.max(15, activePct))}%` }}
           >
-            <div className="text-[10px] font-semibold text-white/60">
+            <div className="text-xs font-semibold text-surface/60">
               {active.date}
             </div>
-            <div className="text-[12px] font-black tabular-nums text-white">
+            <div className="text-xs font-black tabular-nums text-surface">
               {formatPriceLabel(active.close, currency)}
             </div>
           </div>
@@ -141,7 +142,7 @@ export default function PriceChart({
       </div>
 
       {/* x축 날짜 표기 (시작·중간·끝) */}
-      <div className="mt-2 flex items-center justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+      <div className="mt-2 flex items-center justify-between text-xs font-semibold text-fg-subtle">
         <span>{fmtDate(prices[0].date)}</span>
         <span>{fmtDate(prices[Math.floor((n - 1) / 2)].date)}</span>
         <span>{fmtDate(prices[n - 1].date)}</span>

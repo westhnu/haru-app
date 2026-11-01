@@ -123,3 +123,46 @@ class JournalEntryORM(Base):
     virtual_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     virtual_quantity: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+
+# --- Phase G scaffold: 챗 세션·메시지 (Bedrock 호출 없음, 저장소만) -----------------------
+
+CHAT_TITLE_MAX_LENGTH = 100
+CHAT_CONTENT_MAX_LENGTH = 10000
+
+
+class ChatSessionORM(Base):
+    __tablename__ = "chat_sessions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
+    # 종목 맥락 (6자리 국내 코드 또는 해외 티커). 없으면 일반 대화.
+    stock_code: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(CHAT_TITLE_MAX_LENGTH))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, index=True)
+
+    messages: Mapped[list["ChatMessageORM"]] = relationship(
+        back_populates="session",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="(ChatMessageORM.created_at, ChatMessageORM.id)",
+    )
+
+
+class ChatMessageORM(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("chat_sessions.id", ondelete="CASCADE"), index=True
+    )
+    role: Mapped[str] = mapped_column(String(16))  # user | assistant | tool
+    content: Mapped[str] = mapped_column(Text)
+    tool_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    tool_input: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    tool_output: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    evaluation_source: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # µs 정밀도 Python 생성 시각 — 같은 초에 쌓인 메시지 순서 보존
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+    session: Mapped[ChatSessionORM] = relationship(back_populates="messages")

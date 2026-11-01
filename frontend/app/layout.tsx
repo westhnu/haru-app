@@ -29,7 +29,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-white font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <body className="bg-surface font-sans text-fg">
         {children}
         <BottomNav />
       </body>

@@ -92,22 +92,22 @@ export default function BottomNav() {
     <>
       <nav
         aria-label="하단 네비게이션"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/85 backdrop-blur-md"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface backdrop-blur-md"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="mx-auto flex w-full max-w-[480px] items-stretch">
+        <div className="mx-auto flex w-full max-w-container-sm items-stretch md:max-w-container-md">
           {items.map((it) => {
             const Icon = it.icon;
             const inner = (
               <div className="flex flex-col items-center justify-center gap-0.5 py-2.5">
                 <Icon
                   className={`h-5 w-5 transition ${
-                    it.active ? "text-slate-900 dark:text-slate-100" : "text-slate-400 dark:text-slate-500"
+                    it.active ? "text-fg" : "text-fg-subtle"
                   }`}
                 />
                 <span
-                  className={`text-[10.5px] font-bold transition ${
-                    it.active ? "text-slate-900 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"
+                  className={`text-xs font-bold transition ${
+                    it.active ? "text-fg" : "text-fg-muted"
                   }`}
                 >
                   {it.label}
